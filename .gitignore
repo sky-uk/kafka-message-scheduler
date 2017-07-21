@@ -1,0 +1,7 @@
+# SBT
+target/
+
+# IDE
+.idea
+
+.pairs

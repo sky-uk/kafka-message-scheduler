@@ -13,6 +13,9 @@ object TestDataUtils extends RandomDataGenerator {
 
   implicit val arbAlphaString: Arbitrary[String] = Arbitrary(Gen.alphaStr.suchThat(!_.isEmpty))
 
+  //implicit val chooseOffsetDateTime: Choose[OffsetDateTime] = Choose.xmap[OffsetDateTime, OffsetDateTime](OffsetDateTime.MIN, OffsetDateTime.MAX)
+
+  //TODO java.time.DateTimeException: Invalid value for Year (valid values -999999999 - 999999999): 1000000000
   implicit val arbOffsetDateTime: Arbitrary[OffsetDateTime] =
     Arbitrary(Gen.oneOf(OffsetDateTime.MIN, OffsetDateTime.MAX))
 

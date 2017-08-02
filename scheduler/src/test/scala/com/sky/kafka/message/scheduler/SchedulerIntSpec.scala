@@ -17,7 +17,7 @@ class SchedulerIntSpec extends AkkaStreamIntSpec with KafkaIntSpec {
   val conf = SchedulerConfig(ScheduleTopic, ShutdownTimeout(10 seconds, 10 seconds))
 
   "Scheduler stream" should {
-    "publish a given message with a given key to a given topic" in withRunningSchedulerStream {
+    "schedule a message to be sent to Kafka" in withRunningSchedulerStream {
       val schedule = random[Schedule]
 
       writeToKafka(ScheduleTopic, "scheduleId", schedule.toAvro)

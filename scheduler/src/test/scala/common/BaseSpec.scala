@@ -1,5 +1,5 @@
 package common
 
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-trait BaseSpec extends WordSpecLike with Matchers
+trait BaseSpec extends WordSpecLike with Matchers with BeforeAndAfterAll

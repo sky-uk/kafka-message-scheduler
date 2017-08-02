@@ -6,8 +6,8 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorLogging, Cancellable, Scheduler}
 import akka.stream.scaladsl.SourceQueue
-import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, CancelSchedule, CreateOrUpdateSchedule}
-import com.sky.kafka.message.scheduler.domain.Schedule
+import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, Cancel, CreateOrUpdate}
+import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
@@ -16,29 +16,50 @@ object SchedulingActor {
 
   case object Ack
 
-  case class CreateOrUpdateSchedule(scheduleId: String, schedule: Schedule)
+  case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule)
 
-  case class CancelSchedule(scheduleId: String)
+  case class Cancel(scheduleId: ScheduleId)
 
 }
 
 class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: Scheduler) extends Actor with ActorLogging {
 
-  override def receive: Receive = manageSchedules(Map.empty)
+  override def receive: Receive = receiveScheduleMessages(Map.empty)
 
-  def manageSchedules(cancellableSchedules: Map[String, Cancellable]): Receive = {
-    case CreateOrUpdateSchedule(scheduleId: String, schedule: Schedule) =>
-      val timeFromNow = ChronoUnit.MILLIS.between(OffsetDateTime.now, schedule.time)
-      val cancellable = scheduler.scheduleOnce(FiniteDuration(timeFromNow, TimeUnit.MILLISECONDS))(sourceQueue.offer((scheduleId, schedule)))
-      sender ! Ack
-      context.become(manageSchedules(cancellableSchedules + (scheduleId -> cancellable)))
-    case CancelSchedule(scheduleId: String) =>
-      val cancelled = cancellableSchedules.get(scheduleId).exists(_.cancel())
-      if (cancelled)
-        log.info(s"Cancelled schedule $scheduleId")
-      else
-        log.warning(s"Couldn't cancel $scheduleId")
-      sender ! Ack
-      context.become(manageSchedules(cancellableSchedules - scheduleId))
+  def receiveScheduleMessages(schedules: Map[ScheduleId, Cancellable]): Receive = {
+
+    val receiveCreateOrUpdateMessage: PartialFunction[Any, Map[ScheduleId, Cancellable]] = {
+      case CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) =>
+        if (cancel(scheduleId, schedules))
+          log.info(s"Updating schedule $scheduleId")
+        else
+          log.info(s"Creating schedule $scheduleId")
+        val cancellable = scheduler.scheduleOnce(timeFromNow(schedule.time))(sourceQueue.offer((scheduleId, schedule)))
+        schedules + (scheduleId -> cancellable)
+    }
+
+    val receiveCancelMessage: PartialFunction[Any, Map[ScheduleId, Cancellable]] = {
+      case Cancel(scheduleId: String) =>
+        if (cancel(scheduleId, schedules))
+          log.info(s"Cancelled schedule $scheduleId")
+        else
+          log.warning(s"Couldn't cancel $scheduleId")
+        schedules - scheduleId
+    }
+
+    receiveCreateOrUpdateMessage orElse receiveCancelMessage andThen updateStateAndAck
+  }
+
+  def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
+    context.become(receiveScheduleMessages(schedules))
+    sender ! Ack
+  }
+
+  def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =
+    schedules.get(scheduleId).exists(_.cancel())
+
+  def timeFromNow(time: OffsetDateTime): FiniteDuration = {
+    val offset = ChronoUnit.MILLIS.between(OffsetDateTime.now, time)
+    FiniteDuration(offset, TimeUnit.MILLISECONDS)
   }
 }

@@ -1,8 +1,8 @@
 package com.sky.kafka.message.scheduler
 
-import com.sky.kafka.message.scheduler.TestDataUtils._
+import common.TestDataUtils._
 import com.sky.kafka.message.scheduler.domain.Schedule
-import common.{AkkaStreamIntSpec, KafkaIntSpec}
+import common.{AkkaStreamBaseSpec, KafkaIntSpec}
 import org.apache.kafka.common.serialization._
 import org.scalatest.Assertion
 
@@ -10,7 +10,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import avro._
 
-class SchedulerIntSpec extends AkkaStreamIntSpec with KafkaIntSpec {
+class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
 
   val ScheduleTopic = "scheduleTopic"
 
@@ -25,8 +25,8 @@ class SchedulerIntSpec extends AkkaStreamIntSpec with KafkaIntSpec {
       val (consumedKey, consumedValue) =
         consumeFromKafka(schedule.topic, keyDeserializer = new ByteArrayDeserializer).head
 
-      consumedKey.get === schedule.key shouldBe true
-      consumedValue === schedule.value shouldBe true
+      consumedKey.get should contain theSameElementsInOrderAs schedule.key
+      consumedValue should contain theSameElementsInOrderAs schedule.value
     }
 
     "publish a delete to the schedule topic after emitting scheduled message" ignore withRunningSchedulerStream {
@@ -38,7 +38,7 @@ class SchedulerIntSpec extends AkkaStreamIntSpec with KafkaIntSpec {
       records.size shouldBe 2
 
       val (consumedKey, consumedValue) = records.last
-      consumedKey.get === "scheduleId" shouldBe true
+      consumedKey.get shouldBe "scheduleId"
       consumedValue shouldBe null
     }
   }

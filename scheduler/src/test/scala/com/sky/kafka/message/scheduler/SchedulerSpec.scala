@@ -2,7 +2,7 @@ package com.sky.kafka.message.scheduler
 
 import java.time.OffsetDateTime
 
-import com.sky.kafka.message.scheduler.TestDataUtils._
+import common.TestDataUtils._
 import com.sky.kafka.message.scheduler.domain._
 import common.BaseSpec
 import org.apache.kafka.clients.consumer.ConsumerRecord

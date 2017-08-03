@@ -30,6 +30,9 @@ object TestDataUtils extends RandomDataGenerator {
     }
 
     def timeInMillis: Long = schedule.time.toInstant.toEpochMilli
+
+    def secondsFromNow(seconds: Long) =
+      schedule.copy(time = OffsetDateTime.now().plusSeconds(seconds))
   }
 
 }

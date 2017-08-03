@@ -4,8 +4,10 @@ import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorLogging, Cancellable, Scheduler}
-import akka.stream.scaladsl.SourceQueue
+import akka.actor.{Actor, ActorLogging, ActorSystem, Cancellable, Scheduler}
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{Source, SourceQueue}
+import cats.data.Reader
 import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, Cancel, CreateOrUpdate}
 import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
 
@@ -19,6 +21,10 @@ object SchedulingActor {
   case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule)
 
   case class Cancel(scheduleId: ScheduleId)
+
+//  def reader(implicit system: ActorSystem): Reader[AppConfig, SchedulingActor] =
+//    Reader(_ => new SchedulingActor(Source.queue, system.scheduler))
+  // source queue should be using the reader pattern as well, using a materializer
 
 }
 

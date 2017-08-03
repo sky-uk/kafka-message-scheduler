@@ -6,7 +6,7 @@ import akka.stream.ActorMaterializer
 import com.sky.kafka.message.scheduler.kafka._
 import com.typesafe.scalalogging.LazyLogging
 
-case class SchedulerStream(config: SchedulerConfig)(implicit system: ActorSystem, materializer: ActorMaterializer) extends LazyLogging {
+case class SchedulerStream(config: SchedulerConfig)(implicit system: ActorSystem, materialzer: ActorMaterializer) extends LazyLogging {
 
   def run: Control =
     consumeFromKafka(config.scheduleTopic)
@@ -19,3 +19,7 @@ case class SchedulerStream(config: SchedulerConfig)(implicit system: ActorSystem
       .run()
 
 }
+
+//object SchedulerStream {
+//  def reader(implicit system: ActorSystem): Reader[AppConfig, SchedulerStream] = Reader(conf => SchedulerStream(conf.scheduler))
+//}

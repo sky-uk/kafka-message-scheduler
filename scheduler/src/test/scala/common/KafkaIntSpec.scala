@@ -1,6 +1,7 @@
 package common
 
 import EmbeddedKafka._
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer, Deserializer, StringSerializer}
 import org.scalatest.{BeforeAndAfterAll, Suite}
@@ -16,7 +17,9 @@ trait KafkaIntSpec extends BeforeAndAfterAll { this: Suite =>
     kafkaServer.produce(topic, Iterable(producerRecord), new StringSerializer, new ByteArraySerializer)
   }
 
-  def consumeFromKafka[T](topic: String, numRecords: Int = 1, keyDeserializer: Deserializer[T]): Seq[(Option[T], Array[Byte])] =
-    kafkaServer.consume(topic, numRecords, 5000, keyDeserializer, new ByteArrayDeserializer)
+  def consumerRecordConverter[T]: ConsumerRecord[T, Array[Byte]] => ConsumerRecord[T, Array[Byte]] = identity
+
+  def consumeFromKafka[T](topic: String, numRecords: Int = 1, keyDeserializer: Deserializer[T]): Seq[ConsumerRecord[T, Array[Byte]]] =
+    kafkaServer.consumeRecord(topic, numRecords, 5000, keyDeserializer, new ByteArrayDeserializer, consumerRecordConverter[T])
 
 }

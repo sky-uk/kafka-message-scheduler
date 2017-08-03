@@ -6,7 +6,7 @@ import akka.event.LoggingAdapter
 import akka.stream.scaladsl.SourceQueue
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import com.miguno.akka.testing.VirtualTime
-import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, Cancel, CreateOrUpdate}
+import com.sky.kafka.message.scheduler.SchedulingActor._
 import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
 import common.TestDataUtils._
 import common.{BaseSpec, TestActorSystem}
@@ -59,6 +59,11 @@ class SchedulingActorSpec extends TestKit(TestActorSystem()) with ImplicitSender
 
       advanceToTimeFrom(updatedSchedule, schedule.timeInMillis)
       verify(mockSourceQueue).offer((scheduleId, updatedSchedule))
+    }
+
+    "send an Ack to the sender when receiving an Init message" in  new SchedulingActorTest {
+      actorRef ! Init
+      expectMsg(Ack)
     }
 
   }

@@ -4,11 +4,9 @@ import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Cancellable, Scheduler}
-import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{Source, SourceQueue}
-import cats.data.Reader
-import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, Cancel, CreateOrUpdate}
+import akka.actor._
+import akka.stream.scaladsl.SourceQueue
+import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, Cancel, CreateOrUpdate, Init}
 import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,15 +14,24 @@ import scala.concurrent.duration.FiniteDuration
 
 object SchedulingActor {
 
+  sealed trait SchedulingMessage
+
+  case object Init
+
   case object Ack
 
-  case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule)
+  case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) extends SchedulingMessage
 
-  case class Cancel(scheduleId: ScheduleId)
+  case class Cancel(scheduleId: ScheduleId) extends SchedulingMessage
 
-//  def reader(implicit system: ActorSystem): Reader[AppConfig, SchedulingActor] =
-//    Reader(_ => new SchedulingActor(Source.queue, system.scheduler))
-  // source queue should be using the reader pattern as well, using a materializer
+  def props(queue: SourceQueue[(ScheduleId, Schedule)], scheduler: Scheduler): Props =
+    Props(new SchedulingActor(queue, scheduler))
+
+//  def reader(implicit system: ActorSystem): Reader[AppConfig, ActorRef] = {
+//    SchedulerStreamRunner.reader.map { runner =>
+//      system.actorOf(SchedulingActor.props(runner.runningPublisherStream, system.scheduler))
+//    }
+//  }
 
 }
 
@@ -53,7 +60,11 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: S
         schedules - scheduleId
     }
 
-    receiveCreateOrUpdateMessage orElse receiveCancelMessage andThen updateStateAndAck
+    val receiveInitMessage: PartialFunction[Any, Unit] = {
+      case Init => sender ! Ack
+    }
+
+    receiveCreateOrUpdateMessage orElse receiveCancelMessage andThen updateStateAndAck orElse receiveInitMessage
   }
 
   def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {

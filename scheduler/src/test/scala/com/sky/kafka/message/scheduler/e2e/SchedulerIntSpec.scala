@@ -1,26 +1,26 @@
 package com.sky.kafka.message.scheduler.e2e
 
-import java.time.OffsetDateTime
 import java.util.UUID
 
 import com.sky.kafka.message.scheduler.domain.Schedule
-import com.sky.kafka.message.scheduler.{SchedulerConfig, SchedulerStream, ShutdownTimeout}
+import com.sky.kafka.message.scheduler._
 import com.sky.kafka.message.scheduler.avro._
+import com.sky.kafka.message.scheduler.streams.ScheduleReader
 import common.TestDataUtils._
 import common.{AkkaStreamBaseSpec, KafkaIntSpec}
 import org.apache.kafka.common.serialization._
-import org.scalactic.TripleEqualsSupport.Spread
 import org.scalatest.Assertion
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.math.Numeric.LongIsIntegral
 
 class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
 
   val ScheduleTopic = "scheduleTopic"
 
-  val conf = SchedulerConfig(ScheduleTopic, ShutdownTimeout(10 seconds, 10 seconds))
+  val shutdownTimeout = ShutdownTimeout(10 seconds, 10 seconds)
+
+  val conf = AppConfig(SchedulerConfig(ScheduleTopic, shutdownTimeout, 100))
 
   val tolerance = 200 millis
 
@@ -44,11 +44,18 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
   }
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
-    val stream = SchedulerStream(conf).run
+    val app = ScheduleReader.reader(conf)
+
+    val runningStreams = app.stream.run()
 
     scenario
 
-    Await.result(stream.shutdown, 5 seconds)
+    Await.ready(runningStreams.shutdown(), shutdownTimeout.stream)
+    Await.ready({
+      app.queue.complete()
+      app.queue.watchCompletion()
+    }, shutdownTimeout.stream)
+    Await.ready(system.terminate(), shutdownTimeout.system)
   }
 
   private def consumeLatestFromScheduleTopic = consumeFromKafka(ScheduleTopic, 2, new StringDeserializer).last

@@ -1,8 +1,11 @@
 package com.sky.kafka.message
 
+import cats.data.Reader
 import cats.syntax.either._
+import cats.syntax.show._
 import com.sksamuel.avro4s.AvroInputStream
-import com.sky.kafka.message.scheduler.domain._
+import com.sky.kafka.message.scheduler.domain.ApplicationError._
+import com.sky.kafka.message.scheduler.domain.{ApplicationError, _}
 import com.sky.kafka.message.scheduler.kafka.{ConsumerRecordDecoder, ProducerRecordEncoder}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -11,15 +14,16 @@ import com.sky.kafka.message.scheduler.avro._
 
 import scala.concurrent.duration.Duration
 import scala.util.Try
-import com.sky.kafka.message.scheduler.domain.ApplicationError
-import ApplicationError._
-import cats.syntax.show._
 
 package object scheduler extends LazyLogging {
 
   case class AppConfig(scheduler: SchedulerConfig)
 
-  case class SchedulerConfig(scheduleTopic: String, shutdownTimeout: ShutdownTimeout)
+  case class SchedulerConfig(scheduleTopic: String, shutdownTimeout: ShutdownTimeout, queueBufferSize: Int)
+
+  object SchedulerConfig {
+    def reader: Reader[AppConfig, SchedulerConfig] = Reader(_.scheduler)
+  }
 
   case class ShutdownTimeout(stream: Duration, system: Duration)
 

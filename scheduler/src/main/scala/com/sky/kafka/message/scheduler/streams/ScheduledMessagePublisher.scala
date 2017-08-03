@@ -14,7 +14,7 @@ case class ScheduledMessagePublisher(schedulerConfig: SchedulerConfig)
 
   def stream[T: ProducerRecordEncoder]: RunnableGraph[SourceQueueWithComplete[(ScheduleId, Schedule)]] =
     Source.queue[(ScheduleId, Schedule)](schedulerConfig.queueBufferSize, OverflowStrategy.backpressure)
-      .map { case (scheduleId, schedule) => schedule }
+      .map { case (scheduleId, schedule) => schedule } //TODO: implement this flow
       .writeToKafka
 }
 

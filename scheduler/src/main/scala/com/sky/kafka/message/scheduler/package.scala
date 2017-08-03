@@ -27,10 +27,10 @@ package object scheduler extends LazyLogging {
 
   case class ShutdownTimeout(stream: Duration, system: Duration)
 
-  type SchedulerInput = Either[ApplicationError, (ScheduleId, Option[Schedule])]
+  type DecodeScheduleResult = Either[ApplicationError, (ScheduleId, Option[Schedule])]
 
-  implicit val scheduleConsumerRecordDecoder = new ConsumerRecordDecoder[SchedulerInput] {
-    def apply(cr: ConsumerRecord[String, Array[Byte]]): SchedulerInput =
+  implicit val scheduleConsumerRecordDecoder = new ConsumerRecordDecoder[DecodeScheduleResult] {
+    def apply(cr: ConsumerRecord[String, Array[Byte]]): DecodeScheduleResult =
       consumerRecordDecoder(cr).leftMap { error =>
         logger.warn(error.show)
         error
@@ -41,7 +41,7 @@ package object scheduler extends LazyLogging {
     def apply(schedule: Schedule) = new ProducerRecord(schedule.topic, schedule.key, schedule.value)
   }
 
-  def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): SchedulerInput =
+  def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): DecodeScheduleResult =
     Option(cr.value) match {
       case Some(bytes) =>
         for {

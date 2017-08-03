@@ -6,9 +6,9 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{RunnableGraph, Sink}
 import cats.data.Reader
-import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, CreateOrUpdate, SchedulingMessage}
+import com.sky.kafka.message.scheduler.SchedulingActor._
 import com.sky.kafka.message.scheduler.kafka._
-import com.sky.kafka.message.scheduler.{AkkaComponents, AppConfig, SchedulerConfig, SchedulerInput, SchedulingActor}
+import com.sky.kafka.message.scheduler._
 import com.typesafe.scalalogging.LazyLogging
 
 case class ScheduleReader(config: SchedulerConfig, publisherStream: ScheduledMessagePublisher)
@@ -27,7 +27,7 @@ case class ScheduleReader(config: SchedulerConfig, publisherStream: ScheduledMes
 
 object ScheduleReader extends LazyLogging with AkkaComponents {
 
-  val toSchedulingMessage: SchedulerInput => SchedulingMessage = {
+  val toSchedulingMessage: DecodeScheduleResult => SchedulingMessage = {
     case Right((scheduleId, Some(schedule))) =>
       logger.info(s"Publishing scheduled message with ID: $scheduleId to topic: ${schedule.topic}")
       CreateOrUpdate(scheduleId, schedule)

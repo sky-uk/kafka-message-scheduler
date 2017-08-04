@@ -8,4 +8,6 @@ package object domain {
 
   case class Schedule(time: OffsetDateTime, topic: String, key: Array[Byte], value: Array[Byte])
 
+  case class ScheduleMetadata(scheduleId: ScheduleId, topic: String)
+
 }

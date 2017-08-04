@@ -8,9 +8,15 @@ import org.scalatest.{BeforeAndAfterAll, Suite}
 
 trait KafkaIntSpec extends BeforeAndAfterAll { this: Suite =>
 
-  override def beforeAll() = kafkaServer.startup()
+  override def beforeAll() = {
+    kafkaServer.startup()
+    super.beforeAll()
+  }
 
-  override def afterAll() = kafkaServer.close()
+  override def afterAll() = {
+    kafkaServer.close()
+    super.afterAll()
+  }
 
   def writeToKafka(topic: String, key: String, value: Array[Byte]) {
     val producerRecord = new ProducerRecord[String, Array[Byte]](topic, key, value)

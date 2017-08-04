@@ -1,25 +1,30 @@
 package com.sky.kafka.message.scheduler.streams
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{RunnableGraph, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{Source, SourceQueueWithComplete}
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import cats.data.Reader
-import com.sky.kafka.message.scheduler._
-import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
-import com.sky.kafka.message.scheduler.kafka.{ProducerRecordEncoder, _}
-import com.sky.kafka.message.scheduler.{AppConfig, SchedulerConfig}
+import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId, ScheduleMetadata}
+import com.sky.kafka.message.scheduler.kafka._
+import com.sky.kafka.message.scheduler.{AppConfig, SchedulerConfig, _}
 
-case class ScheduledMessagePublisher(schedulerConfig: SchedulerConfig)
-                                       (implicit system: ActorSystem) {
+case class ScheduledMessagePublisher(config: SchedulerConfig)
+                                       (implicit system: ActorSystem, materializer: ActorMaterializer) extends ScheduledMessagePublisherStream {
 
-  def stream[T: ProducerRecordEncoder]: RunnableGraph[SourceQueueWithComplete[(ScheduleId, Schedule)]] =
-    Source.queue[(ScheduleId, Schedule)](schedulerConfig.queueBufferSize, OverflowStrategy.backpressure)
-      .map { case (scheduleId, schedule) => schedule } //TODO: implement this flow
+  def stream: SourceQueueWithComplete[(ScheduleId, Schedule)] =
+    Source.queue[(ScheduleId, Schedule)](config.queueBufferSize, OverflowStrategy.backpressure)
+      .mapConcat(splitToScheduleAndMetadata)
       .writeToKafka
+      .run()
+
+  val splitToScheduleAndMetadata: ((ScheduleId, Schedule)) => List[Either[ScheduleMetadata, Schedule]] = {
+    case (scheduleId, schedule) =>
+      List(Right(schedule), Left(ScheduleMetadata(scheduleId, config.scheduleTopic)))
+  }
 }
 
 object ScheduledMessagePublisher {
 
-  def reader(implicit system: ActorSystem): Reader[AppConfig, ScheduledMessagePublisher] =
+  def reader(implicit system: ActorSystem, materializer: ActorMaterializer): Reader[AppConfig, ScheduledMessagePublisher] =
     SchedulerConfig.reader.map(ScheduledMessagePublisher.apply)
 }

@@ -12,29 +12,6 @@ import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
-object SchedulingActor {
-
-  sealed trait SchedulingMessage
-
-  case object Init
-
-  case object Ack
-
-  case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) extends SchedulingMessage
-
-  case class Cancel(scheduleId: ScheduleId) extends SchedulingMessage
-
-  def props(queue: SourceQueue[(ScheduleId, Schedule)], scheduler: Scheduler): Props =
-    Props(new SchedulingActor(queue, scheduler))
-
-//  def reader(implicit system: ActorSystem): Reader[AppConfig, ActorRef] = {
-//    SchedulerStreamRunner.reader.map { runner =>
-//      system.actorOf(SchedulingActor.props(runner.runningPublisherStream, system.scheduler))
-//    }
-//  }
-
-}
-
 class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: Scheduler) extends Actor with ActorLogging {
 
   override def receive: Receive = receiveScheduleMessages(Map.empty)
@@ -60,11 +37,9 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: S
         schedules - scheduleId
     }
 
-    val receiveInitMessage: PartialFunction[Any, Unit] = {
+    receiveCreateOrUpdateMessage orElse receiveCancelMessage andThen updateStateAndAck orElse {
       case Init => sender ! Ack
     }
-
-    receiveCreateOrUpdateMessage orElse receiveCancelMessage andThen updateStateAndAck orElse receiveInitMessage
   }
 
   def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
@@ -79,4 +54,21 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: S
     val offset = ChronoUnit.MILLIS.between(OffsetDateTime.now, time)
     FiniteDuration(offset, TimeUnit.MILLISECONDS)
   }
+}
+
+object SchedulingActor {
+
+  sealed trait SchedulingMessage
+
+  case object Init
+
+  case object Ack
+
+  case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) extends SchedulingMessage
+
+  case class Cancel(scheduleId: ScheduleId) extends SchedulingMessage
+
+  def props(queue: SourceQueue[(ScheduleId, Schedule)], scheduler: Scheduler): Props =
+    Props(new SchedulingActor(queue, scheduler))
+
 }

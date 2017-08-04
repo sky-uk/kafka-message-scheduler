@@ -19,6 +19,12 @@ class ScheduleReaderSpec extends AkkaStreamBaseSpec {
       ScheduleReader.toSchedulingMessage(Right((scheduleId, Some(schedule)))) shouldBe
         SchedulingActor.CreateOrUpdate(scheduleId, schedule)
     }
+
+    "generate a Cancel message if there is no schedule" in {
+      val scheduleId = UUID.randomUUID().toString
+      ScheduleReader.toSchedulingMessage(Right((scheduleId, None))) shouldBe
+        SchedulingActor.Cancel(scheduleId)
+    }
   }
 
 }

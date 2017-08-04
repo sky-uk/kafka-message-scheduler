@@ -1,5 +1,7 @@
 package com.sky.kafka.message
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import cats.data.Reader
 import cats.syntax.either._
 import cats.syntax.show._
@@ -17,7 +19,7 @@ import scala.util.Try
 
 package object scheduler extends LazyLogging {
 
-  case class AppConfig(scheduler: SchedulerConfig)
+  case class AppConfig(scheduler: SchedulerConfig)(implicit system: ActorSystem, materialzer: ActorMaterializer)
 
   case class SchedulerConfig(scheduleTopic: String, shutdownTimeout: ShutdownTimeout, queueBufferSize: Int)
 
@@ -37,9 +39,11 @@ package object scheduler extends LazyLogging {
       }
   }
 
-  implicit val scheduleProducerRecordEncoder = new ProducerRecordEncoder[Schedule] {
-    def apply(schedule: Schedule) = new ProducerRecord(schedule.topic, schedule.key, schedule.value)
-  }
+  implicit val scheduleProducerRecordEncoder: ProducerRecordEncoder[Schedule] =
+    ProducerRecordEncoder.instance(schedule => new ProducerRecord(schedule.topic, schedule.key, schedule.value))
+
+  implicit val scheduleMedatadataProducerRecordEncoder: ProducerRecordEncoder[ScheduleMetadata] =
+    ProducerRecordEncoder.instance(schedule => new ProducerRecord(schedule.topic, schedule.scheduleId.getBytes, null))
 
   def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): DecodeScheduleResult =
     Option(cr.value) match {

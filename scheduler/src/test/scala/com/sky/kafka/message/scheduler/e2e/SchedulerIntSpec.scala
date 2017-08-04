@@ -10,6 +10,7 @@ import common.TestDataUtils._
 import common.{AkkaStreamBaseSpec, KafkaIntSpec}
 import org.apache.kafka.common.serialization._
 import org.scalatest.Assertion
+import org.zalando.grafter.Rewriter
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -44,17 +45,11 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
   }
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
-    val app = ScheduleReader.reader(conf)
-
-    val runningStreams = app.stream.run()
+    val app = ScheduleReader.reader.run(conf)
 
     scenario
-
-    Await.ready(runningStreams.shutdown(), shutdownTimeout.stream)
-    Await.ready({
-      app.queue.complete()
-      app.queue.watchCompletion()
-    }, shutdownTimeout.stream)
+    Rewriter.stop(app).value
+    materializer.shutdown()
     Await.ready(system.terminate(), shutdownTimeout.system)
   }
 

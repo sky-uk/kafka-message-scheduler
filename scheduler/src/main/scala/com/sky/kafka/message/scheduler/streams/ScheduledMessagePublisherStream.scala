@@ -2,8 +2,9 @@ package com.sky.kafka.message.scheduler.streams
 
 import akka.stream.scaladsl.SourceQueueWithComplete
 import cats.Eval
-import com.sky.kafka.message.scheduler.SchedulerConfig
-import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
+import com.sky.kafka.message.scheduler.config.SchedulerConfig
+import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
+import com.sky.kafka.message.scheduler.domain.ScheduleId
 import org.zalando.grafter.{Stop, StopResult}
 
 import scala.concurrent.Await

@@ -8,6 +8,7 @@ import common.BaseSpec
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import avro._
 import com.sky.kafka.message.scheduler.domain.ApplicationError._
+import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 
 class SchedulerSpec extends BaseSpec {
 

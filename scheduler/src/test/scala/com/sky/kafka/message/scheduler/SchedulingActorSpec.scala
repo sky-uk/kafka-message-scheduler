@@ -7,7 +7,8 @@ import akka.stream.scaladsl.SourceQueue
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import com.miguno.akka.testing.VirtualTime
 import com.sky.kafka.message.scheduler.SchedulingActor._
-import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
+import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
+import com.sky.kafka.message.scheduler.domain.ScheduleId
 import common.TestDataUtils._
 import common.{BaseSpec, TestActorSystem}
 import org.mockito.Mockito._

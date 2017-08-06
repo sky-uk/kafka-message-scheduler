@@ -2,9 +2,9 @@ package com.sky.kafka.message.scheduler.e2e
 
 import java.util.UUID
 
-import com.sky.kafka.message.scheduler.domain.Schedule
-import com.sky.kafka.message.scheduler._
 import com.sky.kafka.message.scheduler.avro._
+import com.sky.kafka.message.scheduler.config.{AppConfig, SchedulerConfig, ShutdownTimeout}
+import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 import com.sky.kafka.message.scheduler.streams.ScheduleReader
 import common.TestDataUtils._
 import common.{AkkaStreamBaseSpec, KafkaIntSpec}

@@ -5,9 +5,9 @@ import java.time.{Instant, OffsetDateTime, ZoneId}
 
 import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.sksamuel.avro4s.{AvroOutputStream, ToRecord}
-import com.sky.kafka.message.scheduler.domain.Schedule
 import org.scalacheck._
 import com.sky.kafka.message.scheduler.avro._
+import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 
 object TestDataUtils extends RandomDataGenerator {
 

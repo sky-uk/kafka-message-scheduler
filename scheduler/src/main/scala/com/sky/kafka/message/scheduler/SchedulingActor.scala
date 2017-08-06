@@ -5,9 +5,14 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.SourceQueue
+import cats.data.Reader
 import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, Cancel, CreateOrUpdate, Init}
-import com.sky.kafka.message.scheduler.domain.{Schedule, ScheduleId}
+import com.sky.kafka.message.scheduler.config.AppConfig
+import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
+import com.sky.kafka.message.scheduler.domain.ScheduleId
+import com.sky.kafka.message.scheduler.streams.ScheduledMessagePublisher
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
@@ -60,15 +65,20 @@ object SchedulingActor {
 
   sealed trait SchedulingMessage
 
-  case object Init
-
-  case object Ack
-
   case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) extends SchedulingMessage
 
   case class Cancel(scheduleId: ScheduleId) extends SchedulingMessage
 
-  def props(queue: SourceQueue[(ScheduleId, Schedule)], scheduler: Scheduler): Props =
+  case object Init
+
+  case object Ack
+
+  def reader(implicit system: ActorSystem, mat: ActorMaterializer): Reader[AppConfig, ActorRef] =
+    ScheduledMessagePublisher.reader.map(publisher =>
+      system.actorOf(props(publisher.stream, system.scheduler), "scheduling-actor")
+    )
+
+  private def props(queue: SourceQueue[(ScheduleId, Schedule)], scheduler: Scheduler): Props =
     Props(new SchedulingActor(queue, scheduler))
 
 }

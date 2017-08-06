@@ -1,10 +1,16 @@
 package com.sky.kafka.message.scheduler.domain
+import akka.Done
+import akka.stream.scaladsl.Sink
 import cats.Show
 import cats.Show._
+import cats.syntax.show._
+import com.typesafe.scalalogging.LazyLogging
+
+import scala.concurrent.Future
 
 sealed abstract class ApplicationError(key: String)
 
-object ApplicationError {
+object ApplicationError extends LazyLogging {
 
   case class InvalidSchemaError(key: String) extends ApplicationError(key)
 
@@ -22,4 +28,8 @@ object ApplicationError {
     case schemaError: InvalidSchemaError => invalidSchemaErrorShow.show(schemaError)
     case messageFormatError: AvroMessageFormatError => avroMessageFormatErrorShow.show(messageFormatError)
   }
+
+  //TODO: is this enough for now?
+  implicit val errorSink: Sink[ApplicationError, Future[Done]] =
+    Sink.foreach(error => logger.warn(error.show))
 }

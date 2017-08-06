@@ -1,51 +1,27 @@
 package com.sky.kafka.message
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import cats.data.Reader
 import cats.syntax.either._
-import cats.syntax.show._
 import com.sksamuel.avro4s.AvroInputStream
 import com.sky.kafka.message.scheduler.domain.ApplicationError._
 import com.sky.kafka.message.scheduler.domain.{ApplicationError, _}
-import com.sky.kafka.message.scheduler.kafka.{ConsumerRecordDecoder, ProducerRecordEncoder}
+import com.sky.kafka.message.scheduler.kafka.ConsumerRecordDecoder
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.clients.producer.ProducerRecord
 import com.sky.kafka.message.scheduler.avro._
+import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 
-import scala.concurrent.duration.Duration
 import scala.util.Try
 
 package object scheduler extends LazyLogging {
 
-  case class AppConfig(scheduler: SchedulerConfig)(implicit system: ActorSystem, materialzer: ActorMaterializer)
+  type DecodeResult = Either[ApplicationError, (ScheduleId, Option[Schedule])]
 
-  case class SchedulerConfig(scheduleTopic: String, shutdownTimeout: ShutdownTimeout, queueBufferSize: Int)
-
-  object SchedulerConfig {
-    def reader: Reader[AppConfig, SchedulerConfig] = Reader(_.scheduler)
+  implicit val scheduleConsumerRecordDecoder = new ConsumerRecordDecoder[DecodeResult] {
+    def apply(cr: ConsumerRecord[String, Array[Byte]]): DecodeResult =
+      consumerRecordDecoder(cr)
   }
 
-  case class ShutdownTimeout(stream: Duration, system: Duration)
-
-  type DecodeScheduleResult = Either[ApplicationError, (ScheduleId, Option[Schedule])]
-
-  implicit val scheduleConsumerRecordDecoder = new ConsumerRecordDecoder[DecodeScheduleResult] {
-    def apply(cr: ConsumerRecord[String, Array[Byte]]): DecodeScheduleResult =
-      consumerRecordDecoder(cr).leftMap { error =>
-        logger.warn(error.show)
-        error
-      }
-  }
-
-  implicit val scheduleProducerRecordEncoder: ProducerRecordEncoder[Schedule] =
-    ProducerRecordEncoder.instance(schedule => new ProducerRecord(schedule.topic, schedule.key, schedule.value))
-
-  implicit val scheduleMedatadataProducerRecordEncoder: ProducerRecordEncoder[ScheduleMetadata] =
-    ProducerRecordEncoder.instance(schedule => new ProducerRecord(schedule.topic, schedule.scheduleId.getBytes, null))
-
-  def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): DecodeScheduleResult =
+  def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): DecodeResult =
     Option(cr.value) match {
       case Some(bytes) =>
         for {

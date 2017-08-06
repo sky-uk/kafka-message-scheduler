@@ -2,12 +2,12 @@ package com.sky.kafka.message.scheduler.streams
 
 import akka.kafka.scaladsl.Consumer.Control
 import cats.Eval
-import com.sky.kafka.message.scheduler.SchedulerConfig
+import com.sky.kafka.message.scheduler.config.SchedulerConfig
 import org.zalando.grafter.{Stop, StopResult}
 
 import scala.concurrent.Await
 
-trait SchedulerReaderStream extends Stop {
+trait ScheduleReaderStream extends Stop {
 
   def config: SchedulerConfig
 

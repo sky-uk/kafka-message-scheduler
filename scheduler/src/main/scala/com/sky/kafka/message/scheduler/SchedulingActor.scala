@@ -29,7 +29,10 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: S
           log.info(s"Updating schedule $scheduleId")
         else
           log.info(s"Creating schedule $scheduleId")
-        val cancellable = scheduler.scheduleOnce(timeFromNow(schedule.time))(sourceQueue.offer((scheduleId, schedule)))
+        val cancellable = scheduler.scheduleOnce(timeFromNow(schedule.time)){
+          log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
+          sourceQueue.offer((scheduleId, schedule))
+        }
         schedules + (scheduleId -> cancellable)
     }
 
@@ -47,15 +50,15 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: S
     }
   }
 
-  def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
+  private def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
     context.become(receiveScheduleMessages(schedules))
     sender ! Ack
   }
 
-  def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =
+  private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =
     schedules.get(scheduleId).exists(_.cancel())
 
-  def timeFromNow(time: OffsetDateTime): FiniteDuration = {
+  private def timeFromNow(time: OffsetDateTime): FiniteDuration = {
     val offset = ChronoUnit.MILLIS.between(OffsetDateTime.now, time)
     FiniteDuration(offset, TimeUnit.MILLISECONDS)
   }

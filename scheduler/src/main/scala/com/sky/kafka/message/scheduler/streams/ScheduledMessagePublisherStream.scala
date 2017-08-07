@@ -5,11 +5,12 @@ import cats.Eval
 import com.sky.kafka.message.scheduler.config.SchedulerConfig
 import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 import com.sky.kafka.message.scheduler.domain.ScheduleId
+import com.typesafe.scalalogging.LazyLogging
 import org.zalando.grafter.{Stop, StopResult}
 
 import scala.concurrent.Await
 
-trait ScheduledMessagePublisherStream extends Stop {
+trait ScheduledMessagePublisherStream extends Stop with LazyLogging {
 
   def config: SchedulerConfig
 

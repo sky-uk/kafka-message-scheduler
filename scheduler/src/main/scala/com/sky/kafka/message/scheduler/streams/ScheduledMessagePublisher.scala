@@ -26,6 +26,7 @@ case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sin
 
   val splitToScheduleAndMetadata: ((ScheduleId, Schedule)) => List[In] = {
     case (scheduleId, schedule) =>
+      logger.info(s"Publishing scheduled message $scheduleId to ${schedule.topic} and deleting it from ${config.scheduleTopic}")
       List(schedule, ScheduleMetadata(scheduleId, config.scheduleTopic))
   }
 }

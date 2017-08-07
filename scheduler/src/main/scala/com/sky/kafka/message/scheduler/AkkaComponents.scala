@@ -1,11 +1,22 @@
 package com.sky.kafka.message.scheduler
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.Supervision.Restart
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import com.typesafe.scalalogging.LazyLogging
 
-trait AkkaComponents {
+trait AkkaComponents extends LazyLogging {
 
   implicit val system = ActorSystem("kafka-message-scheduler")
-  implicit val materializer = ActorMaterializer()
+
+  val decider: Supervision.Decider = { t =>
+    logger.error(s"Supervision failed.", t)
+    Restart
+  }
+
+  val settings = ActorMaterializerSettings(system)
+    .withSupervisionStrategy(decider)
+
+  implicit val materializer = ActorMaterializer(settings)
 
 }

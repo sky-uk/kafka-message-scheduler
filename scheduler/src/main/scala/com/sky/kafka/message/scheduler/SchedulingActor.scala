@@ -45,7 +45,7 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: S
         schedules - scheduleId
     }
 
-    receiveCreateOrUpdateMessage orElse receiveCancelMessage andThen updateStateAndAck orElse {
+    (receiveCreateOrUpdateMessage orElse receiveCancelMessage andThen updateStateAndAck) orElse {
       case Init => sender ! Ack
     }
   }

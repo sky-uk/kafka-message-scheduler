@@ -12,7 +12,6 @@ import org.apache.kafka.common.serialization._
 import org.scalatest.Assertion
 import org.zalando.grafter.Rewriter
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
@@ -49,8 +48,6 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
 
     scenario
     Rewriter.stop(app).value
-    materializer.shutdown()
-    Await.ready(system.terminate(), shutdownTimeout.system)
   }
 
   private def consumeLatestFromScheduleTopic = consumeFromKafka(ScheduleTopic, 2, new StringDeserializer).last

@@ -4,19 +4,19 @@ import java.util.UUID
 
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl.SourceQueue
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import akka.testkit.{ImplicitSender, TestActorRef}
 import com.miguno.akka.testing.VirtualTime
 import com.sky.kafka.message.scheduler.SchedulingActor._
 import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 import com.sky.kafka.message.scheduler.domain.ScheduleId
+import common.AkkaBaseSpec
 import common.TestDataUtils._
-import common.{BaseSpec, TestActorSystem}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 
-class SchedulingActorSpec extends TestKit(TestActorSystem()) with ImplicitSender with BaseSpec with MockitoSugar {
+class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar {
 
   "A scheduler actor" must {
     "schedule new messages at the given time" in new SchedulingActorTest {

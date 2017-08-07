@@ -22,9 +22,9 @@ class ScheduledMessagePublisherSpec extends AkkaStreamBaseSpec {
   )
 
   "splitToScheduleAndMetadata" should {
-    "split a (scheduleId, schedule) to a list containing a schedule and a schedule metadata" in {
+    "split schedule and convert to producer records" in {
       val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule])
-      publisher.splitToScheduleAndMetadata((scheduleId, schedule)) shouldBe List(
+      publisher.splitToScheduleAndMetadata((scheduleId, schedule)) === List(
         new ProducerRecord(schedule.topic, schedule.key, schedule.value),
         new ProducerRecord(testTopic, scheduleId.getBytes, null)
       )

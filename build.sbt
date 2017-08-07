@@ -27,6 +27,7 @@ val dependencies = Seq(
   "net.cakesolutions"          %% "scala-kafka-client-testkit" % kafkaVersion % Test,
   "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.21"     % Test,
   "com.danielasfregola"        %% "random-data-generator"      % "2.1"        % Test,
+  "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.2"      % Test,
   "com.miguno.akka"            %% "akka-mock-scheduler"        % "0.5.1"      % Test,
   "org.mockito"                 % "mockito-all"                % "1.10.19"    % Test
 )
@@ -77,7 +78,8 @@ lazy val scheduler = (project in file("scheduler"))
     javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.10",
     javaOptions in Universal += jmxSettings,
     buildInfoSettings,
-    dockerSettings
+    dockerSettings,
+    dependencyOverrides += "org.scalacheck" %% "scalacheck" % "1.13.5"
   ).enablePlugins(DockerPlugin)
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")

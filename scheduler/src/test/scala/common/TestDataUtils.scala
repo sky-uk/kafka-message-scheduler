@@ -1,23 +1,25 @@
 package common
 
 import java.io.ByteArrayOutputStream
-import java.time.{Instant, OffsetDateTime, ZoneId}
+import java.time._
 
 import com.danielasfregola.randomdatagenerator.RandomDataGenerator
+import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
+import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, ToRecord}
+import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 import org.scalacheck._
 import com.sky.kafka.message.scheduler.avro._
-import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 
 object TestDataUtils extends RandomDataGenerator {
 
-  implicit val arbAlphaString: Arbitrary[String] = Arbitrary(Gen.alphaStr.suchThat(!_.isEmpty))
+  implicit val arbAlphaString: Arbitrary[String] =
+    Arbitrary(Gen.alphaStr.suchThat(_.nonEmpty).retryUntil(_.nonEmpty))
 
   implicit val arbNextMonthOffsetDateTime: Arbitrary[OffsetDateTime] = {
-    val low = OffsetDateTime.now()
-    val high = low.plusMonths(1)
-    Arbitrary(Gen.choose(low.toEpochSecond, high.toEpochSecond)
-      .map(epoch => OffsetDateTime.ofInstant(Instant.ofEpochSecond(epoch), ZoneId.systemDefault())))
+    val from = ZonedDateTime.now()
+    val range = Duration.ofDays(20)
+    Arbitrary(genDateTimeWithinRange(from, range).map(_.toOffsetDateTime))
   }
 
   implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {

@@ -10,14 +10,14 @@ import akka.stream.scaladsl.SourceQueue
 import cats.data.Reader
 import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, Cancel, CreateOrUpdate, Init}
 import com.sky.kafka.message.scheduler.config.AppConfig
-import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
-import com.sky.kafka.message.scheduler.domain.ScheduleId
+import com.sky.kafka.message.scheduler.domain.PublishableMessage.ScheduledMessage
+import com.sky.kafka.message.scheduler.domain._
 import com.sky.kafka.message.scheduler.streams.ScheduledMessagePublisher
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
-class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: Scheduler) extends Actor with ActorLogging {
+class SchedulingActor(sourceQueue: SourceQueue[(String, ScheduledMessage)], scheduler: Scheduler) extends Actor with ActorLogging {
 
   override def receive: Receive = receiveScheduleMessages(Map.empty)
 
@@ -29,9 +29,9 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: S
           log.info(s"Updating schedule $scheduleId")
         else
           log.info(s"Creating schedule $scheduleId")
-        val cancellable = scheduler.scheduleOnce(timeFromNow(schedule.time)){
+        val cancellable = scheduler.scheduleOnce(timeFromNow(schedule.time)) {
           log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
-          sourceQueue.offer((scheduleId, schedule))
+          sourceQueue.offer((scheduleId, messageFrom(schedule)))
         }
         schedules + (scheduleId -> cancellable)
     }
@@ -62,6 +62,9 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, Schedule)], scheduler: S
     val offset = ChronoUnit.MILLIS.between(OffsetDateTime.now, time)
     FiniteDuration(offset, TimeUnit.MILLISECONDS)
   }
+
+  private def messageFrom(schedule: Schedule) =
+    ScheduledMessage(schedule.topic, schedule.key, schedule.value)
 }
 
 object SchedulingActor {
@@ -81,7 +84,7 @@ object SchedulingActor {
       system.actorOf(props(publisher.stream, system.scheduler), "scheduling-actor")
     )
 
-  private def props(queue: SourceQueue[(ScheduleId, Schedule)], scheduler: Scheduler): Props =
+  private def props(queue: SourceQueue[(ScheduleId, ScheduledMessage)], scheduler: Scheduler): Props =
     Props(new SchedulingActor(queue, scheduler))
 
 }

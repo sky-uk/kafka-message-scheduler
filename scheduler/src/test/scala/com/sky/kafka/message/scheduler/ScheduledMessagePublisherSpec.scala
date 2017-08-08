@@ -3,7 +3,7 @@ package com.sky.kafka.message.scheduler
 import java.util.UUID
 
 import com.sky.kafka.message.scheduler.config.{SchedulerConfig, ShutdownTimeout}
-import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
+import com.sky.kafka.message.scheduler.domain._
 import com.sky.kafka.message.scheduler.kafka.KafkaStream
 import com.sky.kafka.message.scheduler.streams.ScheduledMessagePublisher
 import common.AkkaStreamBaseSpec
@@ -24,7 +24,7 @@ class ScheduledMessagePublisherSpec extends AkkaStreamBaseSpec {
   "splitToScheduleAndMetadata" should {
     "split schedule and convert to producer records" in {
       val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule])
-      publisher.splitToScheduleAndMetadata((scheduleId, schedule)) === List(
+      publisher.splitToScheduleAndMetadata((scheduleId, schedule.toScheduledMessage)) === List(
         new ProducerRecord(schedule.topic, schedule.key, schedule.value),
         new ProducerRecord(testTopic, scheduleId.getBytes, null)
       )

@@ -3,7 +3,7 @@ package com.sky.kafka.message.scheduler.streams
 import akka.stream.scaladsl.SourceQueueWithComplete
 import cats.Eval
 import com.sky.kafka.message.scheduler.config.SchedulerConfig
-import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
+import com.sky.kafka.message.scheduler.domain.PublishableMessage.ScheduledMessage
 import com.sky.kafka.message.scheduler.domain.ScheduleId
 import com.typesafe.scalalogging.LazyLogging
 import org.zalando.grafter.{Stop, StopResult}
@@ -14,7 +14,7 @@ trait ScheduledMessagePublisherStream extends Stop with LazyLogging {
 
   def config: SchedulerConfig
 
-  def stream: SourceQueueWithComplete[(ScheduleId, Schedule)]
+  def stream: SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]
 
   override def stop: Eval[StopResult] = StopResult.eval("Shutting down queue...") {
     stream.complete()

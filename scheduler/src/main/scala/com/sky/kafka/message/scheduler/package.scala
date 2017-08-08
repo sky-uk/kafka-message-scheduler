@@ -3,12 +3,11 @@ package com.sky.kafka.message
 import cats.syntax.either._
 import com.sksamuel.avro4s.AvroInputStream
 import com.sky.kafka.message.scheduler.domain.ApplicationError._
-import com.sky.kafka.message.scheduler.domain.{ApplicationError, _}
+import com.sky.kafka.message.scheduler.domain._
 import com.sky.kafka.message.scheduler.kafka.ConsumerRecordDecoder
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import com.sky.kafka.message.scheduler.avro._
-import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
 
 import scala.util.Try
 

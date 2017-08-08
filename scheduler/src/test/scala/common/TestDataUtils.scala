@@ -7,9 +7,10 @@ import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, ToRecord}
-import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
+import com.sky.kafka.message.scheduler.domain._
 import org.scalacheck._
 import com.sky.kafka.message.scheduler.avro._
+import com.sky.kafka.message.scheduler.domain.PublishableMessage.ScheduledMessage
 
 object TestDataUtils extends RandomDataGenerator {
 
@@ -33,8 +34,11 @@ object TestDataUtils extends RandomDataGenerator {
 
     def timeInMillis: Long = schedule.time.toInstant.toEpochMilli
 
-    def secondsFromNow(seconds: Long) =
+    def secondsFromNow(seconds: Long): Schedule =
       schedule.copy(time = OffsetDateTime.now().plusSeconds(seconds))
+
+    def toScheduledMessage: ScheduledMessage =
+      ScheduledMessage(schedule.topic, schedule.key, schedule.value)
   }
 
 }

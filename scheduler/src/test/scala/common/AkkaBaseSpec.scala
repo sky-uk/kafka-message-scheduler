@@ -7,7 +7,7 @@ abstract class AkkaBaseSpec extends TestKit(TestActorSystem())
   with BaseSpec with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
+    shutdown(system, verifySystemShutdown = true)
     super.afterAll()
   }
 }

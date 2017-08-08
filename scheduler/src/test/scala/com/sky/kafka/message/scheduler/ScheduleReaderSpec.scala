@@ -2,7 +2,7 @@ package com.sky.kafka.message.scheduler
 
 import java.util.UUID
 
-import com.sky.kafka.message.scheduler.domain.ScheduleData.Schedule
+import com.sky.kafka.message.scheduler.domain._
 import com.sky.kafka.message.scheduler.streams.ScheduleReader
 import common.AkkaStreamBaseSpec
 import common.TestDataUtils._

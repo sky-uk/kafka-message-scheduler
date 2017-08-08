@@ -16,7 +16,7 @@ import org.scalatest.mockito.MockitoSugar
 
 class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar {
 
-  "A scheduler actor" must {
+  "A scheduling actor" must {
     "schedule new messages at the given time" in new SchedulingActorTest {
       val (scheduleId, schedule) = generateSchedule()
 

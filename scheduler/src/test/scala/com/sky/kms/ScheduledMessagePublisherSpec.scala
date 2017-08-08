@@ -21,10 +21,10 @@ class ScheduledMessagePublisherSpec extends AkkaStreamBaseSpec {
     KafkaStream.sink
   )
 
-  "splitToScheduleAndMetadata" should {
+  "splitToMessageAndDeletion" should {
     "split schedule and convert to producer records" in {
       val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule])
-      publisher.splitToScheduleAndMetadata((scheduleId, schedule.toScheduledMessage)) === List(
+      publisher.splitToMessageAndDeletion((scheduleId, schedule.toScheduledMessage)) === List(
         new ProducerRecord(schedule.topic, schedule.key, schedule.value),
         new ProducerRecord(testTopic, scheduleId.getBytes, null)
       )

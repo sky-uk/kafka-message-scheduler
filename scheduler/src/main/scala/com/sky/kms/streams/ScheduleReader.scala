@@ -11,17 +11,18 @@ import com.sky.kms._
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
 import com.sky.kms.domain._
 import com.sky.kms.kafka._
+import com.sky.kms.streams.ScheduleReader.{In, Mat}
 import com.typesafe.scalalogging.LazyLogging
 
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
 case class ScheduleReader(config: SchedulerConfig,
-                          scheduleSource: Source[Either[ApplicationError, (ScheduleId, Option[Schedule])], Control],
+                          scheduleSource: Source[In, Mat],
                           schedulingSink: Sink[Any, NotUsed])
                          (implicit system: ActorSystem, materializer: ActorMaterializer) extends ScheduleReaderStream {
 
-  val stream: Control =
+  val stream: Mat =
     scheduleSource
       .map(ScheduleReader.toSchedulingMessage)
       .to(PartitionedSink.withRight(schedulingSink))
@@ -30,8 +31,12 @@ case class ScheduleReader(config: SchedulerConfig,
 
 object ScheduleReader extends LazyLogging {
 
-  def toSchedulingMessage[T](either: Either[ApplicationError, (ScheduleId, Option[Schedule])]): Either[ApplicationError, SchedulingMessage] =
-    either.map { case (scheduleId, scheduleOpt) =>
+  type In = Either[ApplicationError, (ScheduleId, Option[Schedule])]
+
+  type Mat = Control
+
+  def toSchedulingMessage[T](readResult: In): Either[ApplicationError, SchedulingMessage] =
+    readResult.map { case (scheduleId, scheduleOpt) =>
       scheduleOpt match {
         case Some(schedule) =>
           logger.info(s"Publishing scheduled message with ID: $scheduleId to topic: ${schedule.topic}")

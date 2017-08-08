@@ -15,7 +15,8 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import scala.concurrent.Future
 
 /**
-  * Provides stream from the queue of due messages to kafka
+  * Provides a stream that consumes from the queue of triggered messages,
+  * writes the messages to Kafka and then deletes the schedules from Kafka
   */
 case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sink[In, Mat])
                                     (implicit system: ActorSystem, materializer: ActorMaterializer)
@@ -23,11 +24,11 @@ case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sin
 
   def stream: SourceQueueWithComplete[(ScheduleId, ScheduledMessage)] =
     Source.queue[(ScheduleId, ScheduledMessage)](config.queueBufferSize, OverflowStrategy.backpressure)
-      .mapConcat(splitToScheduleAndMetadata)
+      .mapConcat(splitToMessageAndDeletion)
       .to(publisherSink)
       .run()
 
-  val splitToScheduleAndMetadata: ((ScheduleId, ScheduledMessage)) => List[In] = {
+  val splitToMessageAndDeletion: ((ScheduleId, ScheduledMessage)) => List[In] = {
     case (scheduleId, scheduledMessage) =>
       logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.topic} and deleting it from ${config.scheduleTopic}")
       List(scheduledMessage, ScheduleDeletion(scheduleId, config.scheduleTopic))

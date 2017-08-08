@@ -74,7 +74,13 @@ lazy val scheduler = (project in file("scheduler"))
     libraryDependencies ++= dependencies,
     resolvers += Resolver.bintrayRepo("cakesolutions", "maven"),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-    scalacOptions += "-language:implicitConversions",
+    scalacOptions ++= Seq(
+      "-language:implicitConversions",
+      "-language:postfixOps",
+      "-Xfatal-warnings",
+      "-Ywarn-dead-code",
+      "-encoding", "utf-8"
+    ),
     fork in run := true,
     javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.10",
     javaOptions in Universal += jmxSettings,

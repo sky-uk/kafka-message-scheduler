@@ -57,3 +57,9 @@ for generating the Avro schema.
 
 JMX metrics are exposed using Kamon. Port 9186 has to be exposed to obtain them.
 
+### Topic configuration
+
+The `schedule-topic` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). 
+This is to allow the scheduler to delete the schedule after it has been written to its destination topic. This is very 
+important because the scheduler uses the `schedule-topic` to reconstruct its state.
+

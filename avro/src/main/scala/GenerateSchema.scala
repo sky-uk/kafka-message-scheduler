@@ -2,7 +2,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
 import com.sksamuel.avro4s._
-import com.sky.kafka.message.scheduler.domain.Schedule
+import com.sky.kafkamessage.scheduler.domain.Schedule
 
 object GenerateSchema extends App {
 

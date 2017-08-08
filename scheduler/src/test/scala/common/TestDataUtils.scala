@@ -7,10 +7,10 @@ import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, ToRecord}
-import com.sky.kafka.message.scheduler.domain._
+import com.sky.kafkamessage.scheduler.domain._
 import org.scalacheck._
-import com.sky.kafka.message.scheduler.avro._
-import com.sky.kafka.message.scheduler.domain.PublishableMessage.ScheduledMessage
+import com.sky.kafkamessage.scheduler.avro._
+import com.sky.kafkamessage.scheduler.domain.PublishableMessage.ScheduledMessage
 
 object TestDataUtils extends RandomDataGenerator {
 

@@ -8,7 +8,7 @@ import scala.concurrent.duration.Duration
 
 package object config {
 
-  case class AppConfig(scheduler: SchedulerConfig)(implicit system: ActorSystem, materialzer: ActorMaterializer)
+  case class AppConfig(scheduler: SchedulerConfig)(implicit system: ActorSystem, materializer: ActorMaterializer)
 
   case class SchedulerConfig(scheduleTopic: String, shutdownTimeout: ShutdownTimeout, queueBufferSize: Int)
 

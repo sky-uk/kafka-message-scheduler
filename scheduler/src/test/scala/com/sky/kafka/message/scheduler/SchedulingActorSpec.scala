@@ -60,7 +60,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       verify(mockSourceQueue).offer((scheduleId, updatedSchedule.toScheduledMessage))
     }
 
-    "send an Ack to the sender when receiving an Init message" in  new SchedulingActorTest {
+    "does nothing when an Init message is received" in  new SchedulingActorTest {
       actorRef ! Init
       expectMsg(Ack)
     }

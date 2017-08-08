@@ -14,6 +14,13 @@ object EmbeddedKafka {
 
   val bootstrapServer = s"localhost:${kafkaServer.kafkaPort}"
 
+  /* The consume method provided by [cakesolutions kafka testkit](https://github.com/cakesolutions/scala-kafka-client)
+    * doesn't provide a way of extracting a consumer record, we have added this so we can access the timestamp
+    * from a consumer record.
+    *
+    * This should be contributed to the library.
+    *
+    */
   implicit class KafkaServerOps(val kafkaServer: KafkaServer) extends AnyVal {
 
     def consumeRecord[Key, Value, T](

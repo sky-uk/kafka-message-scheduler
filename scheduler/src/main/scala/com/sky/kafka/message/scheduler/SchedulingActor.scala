@@ -5,10 +5,10 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, QueueOfferResult}
 import akka.stream.scaladsl.SourceQueue
 import cats.data.Reader
-import com.sky.kafka.message.scheduler.SchedulingActor.{Ack, Cancel, CreateOrUpdate, Init}
+import com.sky.kafka.message.scheduler.SchedulingActor._
 import com.sky.kafka.message.scheduler.config.AppConfig
 import com.sky.kafka.message.scheduler.domain.PublishableMessage.ScheduledMessage
 import com.sky.kafka.message.scheduler.domain._
@@ -16,6 +16,8 @@ import com.sky.kafka.message.scheduler.streams.ScheduledMessagePublisher
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.Future
+import akka.pattern.pipe
 
 class SchedulingActor(sourceQueue: SourceQueue[(String, ScheduledMessage)], scheduler: Scheduler) extends Actor with ActorLogging {
 
@@ -23,20 +25,15 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, ScheduledMessage)], sche
 
   def receiveScheduleMessages(schedules: Map[ScheduleId, Cancellable]): Receive = {
 
-    val receiveCreateOrUpdateMessage: PartialFunction[Any, Map[ScheduleId, Cancellable]] = {
+    val receiveSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancellable]] = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) =>
         if (cancel(scheduleId, schedules))
           log.info(s"Updating schedule $scheduleId")
         else
           log.info(s"Creating schedule $scheduleId")
-        val cancellable = scheduler.scheduleOnce(timeFromNow(schedule.time)) {
-          log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
-          sourceQueue.offer((scheduleId, messageFrom(schedule)))
-        }
+        val cancellable = scheduler.scheduleOnce(timeFromNow(schedule.time))(self ! TriggerMessage(scheduleId, schedule))
         schedules + (scheduleId -> cancellable)
-    }
 
-    val receiveCancelMessage: PartialFunction[Any, Map[ScheduleId, Cancellable]] = {
       case Cancel(scheduleId: String) =>
         if (cancel(scheduleId, schedules))
           log.info(s"Cancelled schedule $scheduleId")
@@ -45,7 +42,13 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, ScheduledMessage)], sche
         schedules - scheduleId
     }
 
-    (receiveCreateOrUpdateMessage orElse receiveCancelMessage andThen updateStateAndAck) orElse {
+    val receiveTriggerMessage: PartialFunction[Any, Unit] = {
+      case TriggerMessage(scheduleId, schedule) =>
+        log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
+        sourceQueue.offer((scheduleId, messageFrom(schedule)))
+    }
+
+    (receiveSchedulingMessage andThen updateStateAndAck) orElse receiveTriggerMessage orElse {
       case Init => sender ! Ack
     }
   }
@@ -74,6 +77,8 @@ object SchedulingActor {
   case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) extends SchedulingMessage
 
   case class Cancel(scheduleId: ScheduleId) extends SchedulingMessage
+
+  case class TriggerMessage(scheduleId: ScheduleId, schedule: Schedule)
 
   case object Init
 

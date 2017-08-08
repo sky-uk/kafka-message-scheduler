@@ -14,6 +14,9 @@ import org.apache.kafka.clients.producer.ProducerRecord
 
 import scala.concurrent.Future
 
+/**
+  * Provides stream from the queue of due messages to the sink
+  */
 case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sink[In, Mat])
                                     (implicit system: ActorSystem, materializer: ActorMaterializer)
   extends ScheduledMessagePublisherStream {

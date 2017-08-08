@@ -9,11 +9,16 @@ import cats.data.Reader
 import com.sky.kafka.message.scheduler.SchedulingActor._
 import com.sky.kafka.message.scheduler._
 import com.sky.kafka.message.scheduler.config.{AppConfig, SchedulerConfig}
-import com.sky.kafka.message.scheduler.domain.ApplicationError
+import com.sky.kafka.message.scheduler.domain.{ApplicationError, Schedule, ScheduleId}
 import com.sky.kafka.message.scheduler.kafka._
 import com.typesafe.scalalogging.LazyLogging
 
-case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[DecodeResult, Control], schedulingSink: Sink[Any, NotUsed])
+/**
+  * Provides stream from the schedule source to the scheduling actor.
+  */
+case class ScheduleReader(config: SchedulerConfig,
+                          scheduleSource: Source[Either[ApplicationError, (ScheduleId, Option[Schedule])], Control],
+                          schedulingSink: Sink[Any, NotUsed])
                          (implicit system: ActorSystem, materializer: ActorMaterializer) extends ScheduleReaderStream {
 
   val stream: Control =
@@ -25,8 +30,8 @@ case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[Decode
 
 object ScheduleReader extends LazyLogging {
 
-  def toSchedulingMessage(decodeResult: DecodeResult): Either[ApplicationError, SchedulingMessage] =
-    decodeResult.map { case (scheduleId, scheduleOpt) =>
+  def toSchedulingMessage[T](either: Either[ApplicationError, (ScheduleId, Option[Schedule])]): Either[ApplicationError, SchedulingMessage] =
+    either.map { case (scheduleId, scheduleOpt) =>
       scheduleOpt match {
         case Some(schedule) =>
           logger.info(s"Publishing scheduled message with ID: $scheduleId to topic: ${schedule.topic}")

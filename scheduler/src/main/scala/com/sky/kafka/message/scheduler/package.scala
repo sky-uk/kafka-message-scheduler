@@ -13,14 +13,10 @@ import scala.util.Try
 
 package object scheduler extends LazyLogging {
 
-  type DecodeResult = Either[ApplicationError, (ScheduleId, Option[Schedule])]
+  implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[Either[ApplicationError, (ScheduleId, Option[Schedule])]] =
+    ConsumerRecordDecoder.instance(consumerRecordDecoder)
 
-  implicit val scheduleConsumerRecordDecoder = new ConsumerRecordDecoder[DecodeResult] {
-    def apply(cr: ConsumerRecord[String, Array[Byte]]): DecodeResult =
-      consumerRecordDecoder(cr)
-  }
-
-  def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): DecodeResult =
+  def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): Either[ApplicationError, (ScheduleId, Option[Schedule])] =
     Option(cr.value) match {
       case Some(bytes) =>
         for {

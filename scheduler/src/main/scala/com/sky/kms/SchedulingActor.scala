@@ -17,13 +17,19 @@ import com.sky.kms.streams.ScheduledMessagePublisher
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
-class SchedulingActor(sourceQueue: SourceQueue[(String, ScheduledMessage)], scheduler: Scheduler) extends Actor with ActorLogging {
+class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], scheduler: Scheduler) extends Actor with ActorLogging {
 
-  override def receive: Receive = receiveScheduleMessages(Map.empty)
+  override def receive: Receive = waitForInit
 
-  def receiveScheduleMessages(schedules: Map[ScheduleId, Cancellable]): Receive = {
+  private val waitForInit: Receive = {
+    case Init =>
+      context.become(receiveWithSchedules(Map.empty))
+      sender ! Ack
+  }
 
-    val receiveSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancellable]] = {
+  private def receiveWithSchedules(schedules: Map[ScheduleId, Cancellable]): Receive = {
+
+    val handleSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancellable]] = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) =>
         if (cancel(scheduleId, schedules))
           log.info(s"Updating schedule $scheduleId")
@@ -40,20 +46,18 @@ class SchedulingActor(sourceQueue: SourceQueue[(String, ScheduledMessage)], sche
         schedules - scheduleId
     }
 
-    val receiveTriggerMessage: PartialFunction[Any, Unit] = {
-      case Trigger(scheduleId, schedule) =>
-        log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
-        sourceQueue.offer((scheduleId, messageFrom(schedule)))
-    }
-
-    (receiveSchedulingMessage andThen updateStateAndAck) orElse receiveTriggerMessage orElse {
-      case Init => sender ! Ack
-    }
+    (handleSchedulingMessage andThen updateStateAndAck) orElse handleTrigger
   }
 
   private def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
-    context.become(receiveScheduleMessages(schedules))
+    context.become(receiveWithSchedules(schedules))
     sender ! Ack
+  }
+
+  private val handleTrigger: Receive = {
+    case Trigger(scheduleId, schedule) =>
+      log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
+      queue.offer((scheduleId, messageFrom(schedule)))
   }
 
   private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =

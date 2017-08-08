@@ -2,19 +2,23 @@ package com.sky.kms
 
 import java.util.UUID
 
+import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl.SourceQueue
 import akka.testkit.{ImplicitSender, TestActorRef}
 import com.miguno.akka.testing.VirtualTime
 import com.sky.kms.SchedulingActor._
+import com.sky.kms.common.AkkaBaseSpec
+import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
-import common.AkkaBaseSpec
-import common.TestDataUtils._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 
 class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar {
+
+  val mockLogger = mock[LoggingAdapter]
+  val mockSourceQueue = mock[SourceQueue[(ScheduleId, ScheduledMessage)]]
 
   "A scheduling actor" must {
     "schedule new messages at the given time" in new SchedulingActorTest {
@@ -60,8 +64,17 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       verify(mockSourceQueue).offer((scheduleId, updatedSchedule.toScheduledMessage))
     }
 
-    "does nothing when an Init message is received" in  new SchedulingActorTest {
-      actorRef ! Init
+    "accept scheduling messages only after it has received an Init" in {
+
+      val actorRef = TestActorRef(new SchedulingActor(mockSourceQueue, system.scheduler))
+      val (scheduleId, schedule) = generateSchedule()
+
+      actorRef ! CreateOrUpdate(scheduleId, schedule)
+      expectNoMsg()
+
+      init(actorRef)
+
+      actorRef ! CreateOrUpdate(scheduleId, schedule)
       expectMsg(Ack)
     }
 
@@ -70,16 +83,13 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
   private class SchedulingActorTest {
     val now = System.currentTimeMillis()
 
-    val mockLogger = mock[LoggingAdapter]
-    val mockSourceQueue = mock[SourceQueue[(ScheduleId, ScheduledMessage)]]
     val time = new VirtualTime
 
     val actorRef = TestActorRef(new SchedulingActor(mockSourceQueue, time.scheduler) {
       override def log: LoggingAdapter = mockLogger
     })
 
-    def generateSchedule(): (ScheduleId, Schedule) =
-      (UUID.randomUUID().toString, random[Schedule])
+    init(actorRef)
 
     def advanceToTimeFrom(schedule: Schedule, startTime: Long = now): Unit =
       time.advance(schedule.timeInMillis - startTime)
@@ -93,6 +103,14 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       actorRef ! Cancel(scheduleId)
       expectMsg(Ack)
     }
+  }
+
+  private def generateSchedule(): (ScheduleId, Schedule) =
+    (UUID.randomUUID().toString, random[Schedule])
+
+  private def init(actorRef: ActorRef) = {
+    actorRef ! Init
+    expectMsg(Ack)
   }
 
 }

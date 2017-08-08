@@ -8,7 +8,6 @@ trait ConsumerRecordDecoder[T] {
 
 object ConsumerRecordDecoder {
   def instance[T](f: ConsumerRecord[String, Array[Byte]] => T) = new ConsumerRecordDecoder[T] {
-    final def apply(cr: ConsumerRecord[String, Array[Byte]]): T =
-      f(cr)
+    final def apply(cr: ConsumerRecord[String, Array[Byte]]): T = f(cr)
   }
 }

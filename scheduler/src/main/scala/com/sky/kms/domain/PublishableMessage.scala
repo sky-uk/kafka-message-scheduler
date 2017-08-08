@@ -16,8 +16,7 @@ object PublishableMessage {
 
   implicit val scheduleDeletionProducerRecordEnc: ProducerRecordEncoder[ScheduleDeletion] =
     ProducerRecordEncoder.instance(deletion => new ProducerRecord(deletion.scheduleTopic, deletion.scheduleId.getBytes, null))
-
-
+  
   implicit def scheduleDataToProducerRecord(msg: PublishableMessage): ProducerRecord[Array[Byte], Array[Byte]] =
     msg match {
       case scheduledMsg: ScheduledMessage => scheduledMessageProducerRecordEnc(scheduledMsg)

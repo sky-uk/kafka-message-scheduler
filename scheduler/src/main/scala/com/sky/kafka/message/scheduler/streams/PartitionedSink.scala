@@ -1,6 +1,7 @@
 package com.sky.kafka.message.scheduler.streams
 
 import akka.stream.SinkShape
+import akka.stream.contrib.PartitionWith
 import akka.stream.scaladsl.{GraphDSL, Sink}
 
 object PartitionedSink {
@@ -10,11 +11,11 @@ object PartitionedSink {
       (left, right) =>
         import GraphDSL.Implicits._
 
-        val eitherFanOut = b.add(new EitherFanOut[A, B])
+        val partition = b.add(PartitionWith[Either[A, B], A, B](identity))
 
-        eitherFanOut.out0 ~> left.in
-        eitherFanOut.out1 ~> right.in
+        partition.out0 ~> left.in
+        partition.out1 ~> right.in
 
-        SinkShape(eitherFanOut.in)
+        SinkShape(partition.in)
     })
 }

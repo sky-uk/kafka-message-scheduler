@@ -9,6 +9,7 @@ val dependencies = Seq(
   "com.typesafe.akka"          %% "akka-stream"                % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.16",
+  "com.typesafe.akka"          %% "akka-stream-contrib"        % "0.8",
 
   "com.typesafe.scala-logging" %% "scala-logging"              % "3.5.0",
   "com.sksamuel.avro4s"        %% "avro4s-core"                % "1.7.0",

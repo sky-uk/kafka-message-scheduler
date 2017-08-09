@@ -1,7 +1,6 @@
 package com.sky.kms
 
 import com.sky.BuildInfo
-import com.sky.kafka.message.scheduler.SchedulerApp.logger
 import com.sky.kms.config.AppConfig
 import com.sky.kms.streams.ScheduleReader
 import com.typesafe.scalalogging.LazyLogging

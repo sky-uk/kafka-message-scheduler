@@ -1,0 +1,23 @@
+language: scala
+
+scala:
+  - 2.12.2
+jdk:
+  - oraclejdk8
+
+# Avoid triggering a duplicate build for PRs
+branches:
+  only:
+    - master
+
+# http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/
+before_cache:
+  - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
+  - find $HOME/.sbt -name "*.lock" -delete
+
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION ciBuild

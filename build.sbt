@@ -46,7 +46,7 @@ val commonSettings = Seq(
 val jmxPort = 9186
 
 val dockerSettings = Seq(
-  packageName in Docker := packageName.value,
+  packageName in Docker := "kafka-message-scheduler",
   dockerBaseImage := "openjdk:8u131-jre-alpine",
   dockerRepository := Some("skyuk"),
   maintainer in Docker := "Sky",

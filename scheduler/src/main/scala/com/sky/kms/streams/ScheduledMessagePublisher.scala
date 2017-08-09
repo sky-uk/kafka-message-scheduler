@@ -16,7 +16,8 @@ import scala.concurrent.Future
 
 /**
   * Provides a stream that consumes from the queue of triggered messages,
-  * writes the messages to Kafka and then deletes the schedules from Kafka
+  * writes the scheduled messages to the specified Kafka topics and then deletes the schedules
+  * from the scheduling Kafka topic to mark completion
   */
 case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sink[In, Mat])
                                     (implicit system: ActorSystem, materializer: ActorMaterializer)

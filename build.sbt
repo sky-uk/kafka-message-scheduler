@@ -26,7 +26,7 @@ val dependencies = Seq(
   "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion  % Test,
   "com.typesafe.akka"          %% "akka-stream-testkit"        % akkaVersion  % Test,
   "net.cakesolutions"          %% "scala-kafka-client-testkit" % kafkaVersion % Test,
-  "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.21"     % Test,
+  "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.25"     % Test,
   "com.danielasfregola"        %% "random-data-generator"      % "2.1"        % Test,
   "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.2"      % Test,
   "com.miguno.akka"            %% "akka-mock-scheduler"        % "0.5.1"      % Test,

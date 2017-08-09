@@ -14,11 +14,10 @@ object EmbeddedKafka {
 
   val bootstrapServer = s"localhost:${kafkaServer.kafkaPort}"
 
-  /** The consume method provided by [[cakesolutions.kafka.testkit.KafkaServer]] doesn't provide a way of
-    * extracting a consumer record, we have added this so we can access the timestamp from a consumer record.
-    *
-    * This should be contributed to the library.
-    *
+  /**
+    * The consume method provided by [[cakesolutions.kafka.testkit.KafkaServer]] doesn't provide a way of
+    * extracting a consumer record, we have added this so we can access the timestamp from a consumer record. In the
+    * future we should contribute this to the library as it provides better flexibility.
     */
   implicit class KafkaServerOps(val kafkaServer: KafkaServer) extends AnyVal {
 

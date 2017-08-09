@@ -1,6 +1,5 @@
 import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
-import BuildInfo._
 import Git._
 import Release._
 

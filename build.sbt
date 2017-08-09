@@ -57,6 +57,11 @@ val dockerSettings = Seq(
   dockerExposedPorts in Docker := Seq(jmxPort)
 )
 
+val buildInfoSettings = Seq(
+  buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+  buildInfoPackage := "com.sky"
+)
+
 val jmxSettings = Seq(
   "-Djava.rmi.server.hostname=127.0.0.1",
   s"-Dcom.sun.management.jmxremote.port=$jmxPort",

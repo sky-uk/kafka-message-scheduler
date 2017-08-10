@@ -23,8 +23,11 @@ object Release {
       inquireVersions,
       setReleaseVersion,
       runTest,
+      commitReleaseVersion,
       tagRelease,
-      ReleaseStep(releaseStepTask(publish in docker))
+      ReleaseStep(releaseStepTask(publish in docker)),
+      setNextVersion,
+      commitNextVersion
       //pushChanges
     ),
     showReleaseVersion := { val rV = releaseVersion.value.apply(version.value); println(rV); rV },

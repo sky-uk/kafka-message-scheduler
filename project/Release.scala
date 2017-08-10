@@ -27,8 +27,8 @@ object Release {
       tagRelease,
       ReleaseStep(releaseStepTask(publish in docker)),
       setNextVersion,
-      commitNextVersion
-      //pushChanges
+      commitNextVersion,
+      pushChanges
     ),
     showReleaseVersion := { val rV = releaseVersion.value.apply(version.value); println(rV); rV },
     showNextVersion := { val nV = releaseNextVersion.value.apply(version.value); println(nV); nV }

@@ -15,7 +15,7 @@ object SchedulerApp extends App with LazyLogging with AkkaComponents {
   val conf = loadConfigOrThrow[AppConfig]
   Kamon.start()
 
-  logger.info("Kafka Message Scheduler {} {} starting up...", BuildInfo.name, BuildInfo.version)
+  logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")
   val app = ScheduleReader.reader.run(conf)
 
   sys.addShutdownHook {

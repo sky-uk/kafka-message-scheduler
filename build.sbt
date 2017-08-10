@@ -73,7 +73,6 @@ lazy val scheduler = (project in file("scheduler"))
   .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
   .settings(commonSettings)
   .settings(
-    defineCommandAliases,
     libraryDependencies ++= dependencies,
     dependencyOverrides += "org.scalacheck" %% "scalacheck" % "1.13.5",
     resolvers += Resolver.bintrayRepo("cakesolutions", "maven"),
@@ -103,5 +102,6 @@ lazy val avro = (project in file("avro"))
 
 lazy val root = (project in file("."))
   .settings(commonSettings)
+  .settings(defineCommandAliases)
   .aggregate(scheduler, avro)
   .disablePlugins(ReleasePlugin)

@@ -15,24 +15,24 @@ use it as input, output and data store.
 
 ## How it works
 
-The Kafka Message Scheduler (KMS, for short) consumes messages from a source
-topic. The keys are Schedule IDs, and the values Schedule messages in Avro
-format.
+The Kafka Message Scheduler (KMS, for short) consumes messages from a source topic.  On this topic:
+-  message keys are "Schedule IDs" - string values, with an expectation of uniqueness
+-  message values are Schedule messages, encoded in Avro binary format according to the [Schema](#schema).
 
 A schedule is composed of:
 - The topic you want to send the delayed message to
 - The timestamp telling when you want that message to be delivered
 - The actual message to be sent, both key and value
 
-The KMS will be responsible of sending the actual message to the specified
-topic when the time comes.
+The KMS is responsible for sending the actual message to the specified topic at the specified time.
 
-The Schedule ID can be used to delete a scheduled message, via a delete
-message (with a null value) in the source topic.
+The Schedule ID can be used to delete a scheduled message, via a delete message (with a null message value)
+in the source topic.
 
-## Schema generation
+## Schema
 
-To generate the avro schema from the Schedule case class, run `sbt schema`. The schema will appear in `avro/target/schemas/schedule.avsc`
+To generate the avro schema from the Schedule case class, run `sbt schema`. The schema will be written to
+`avro/target/schemas/schedule.avsc`.
 
 ## How to run it
 
@@ -44,14 +44,12 @@ Start Kafka:
 
 Start KMS:
 
-`docker run --net=host --add-host moby:127.0.0.1 -e SCHEDULE_TOPIC=scheduler skyuk/scheduler`
-
+`docker run --net=host --add-host moby:127.0.0.1 -e SCHEDULE_TOPIC=scheduler skyuk/kafka-message-scheduler`
 
 ### Send messages
 
-With the services running, you can send a message to `scheduler` topic. See [Schema generation](#schema-generation)
-for generating the Avro schema.
-
+With the services running, you can send a message to the defined scheduler topic (`scheduler` in the example
+above). See the [Schema](#schema) section for details of generating the Avro schema to be used.
 
 ### Monitoring
 
@@ -60,7 +58,7 @@ JMX metrics are exposed using Kamon. Port 9186 has to be exposed to obtain them.
 ### Topic configuration
 
 The `schedule-topic` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). 
-This is to allow the scheduler to delete the schedule after it has been written to its destination topic. This is very 
-important because the scheduler uses the `schedule-topic` to reconstruct its state. This application will also support 
-longer-term schedules so log compaction is required to ensure they are not prematurely removed from Kafka allowing the 
-application to recover them after a restart.
+This is for two reasons:
+1.  to allow the scheduler to delete the schedule after it has been written to its destination topic.
+2.  because the scheduler uses the `schedule-topic` to reconstruct its state - in case of a restart of the
+    KMS, this ensures that schedules are not lost.

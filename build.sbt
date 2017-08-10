@@ -1,4 +1,6 @@
 import com.typesafe.sbt.packager.docker.Cmd
+import Aliases._
+import Release._
 
 val kafkaVersion = "0.10.2.1" // TODO: move to 0.11.0.0 when akka-stream-kafka upgrades
 val akkaVersion = "2.5.3"
@@ -42,7 +44,7 @@ val commonSettings = Seq(
 val jmxPort = 9186
 
 val dockerSettings = Seq(
-  packageName in Docker := packageName.value,
+  packageName in Docker := "kafka-message-scheduler",
   dockerBaseImage := "openjdk:8u131-jre-alpine",
   dockerRepository := Some("skyuk"),
   maintainer in Docker := "Sky",
@@ -68,10 +70,11 @@ val jmxSettings = Seq(
 ).mkString(" ")
 
 lazy val scheduler = (project in file("scheduler"))
-  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent)
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= dependencies,
+    dependencyOverrides += "org.scalacheck" %% "scalacheck" % "1.13.5",
     resolvers += Resolver.bintrayRepo("cakesolutions", "maven"),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
     scalacOptions ++= Seq(
@@ -86,8 +89,8 @@ lazy val scheduler = (project in file("scheduler"))
     javaOptions in Universal += jmxSettings,
     buildInfoSettings,
     dockerSettings,
-    dependencyOverrides += "org.scalacheck" %% "scalacheck" % "1.13.5"
-  ).enablePlugins(DockerPlugin)
+    releaseSettings
+  )
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 
@@ -95,8 +98,10 @@ lazy val avro = (project in file("avro"))
   .settings(commonSettings)
   .settings(schema := (run in Compile).toTask("").value)
   .dependsOn(scheduler % "compile->compile")
+  .disablePlugins(ReleasePlugin)
 
 lazy val root = (project in file("."))
   .settings(commonSettings)
+  .settings(defineCommandAliases)
   .aggregate(scheduler, avro)
-  .disablePlugins(DockerPlugin)
+  .disablePlugins(ReleasePlugin)

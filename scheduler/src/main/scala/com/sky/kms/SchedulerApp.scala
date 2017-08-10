@@ -1,5 +1,6 @@
 package com.sky.kms
 
+import com.sky.BuildInfo
 import com.sky.kms.config.AppConfig
 import com.sky.kms.streams.ScheduleReader
 import com.typesafe.scalalogging.LazyLogging
@@ -14,7 +15,7 @@ object SchedulerApp extends App with LazyLogging with AkkaComponents {
   val conf = loadConfigOrThrow[AppConfig]
   Kamon.start()
 
-  logger.info("Kafka Message Scheduler starting up...")
+  logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")
   val app = ScheduleReader.reader.run(conf)
 
   sys.addShutdownHook {

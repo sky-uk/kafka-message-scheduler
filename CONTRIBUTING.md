@@ -21,7 +21,9 @@ To compile and run tests: `sbt test`.
 
 ## Performing a release (for project maintainers)
 
-TODO
+1. Run `docker login --username=<username>` and when prompted add the password for your Docker Hub account. Note that you need to be a member of the `skyuk` Docker Hub organization.
+2. Run `sbt ciRelease` to perform the release of the Docker artifact to Docker Hub.
+3. The Docker Image will be immediately live and therefore will need to be deleted if there has been a problem.
 
 ## Contributor Code of Conduct
 

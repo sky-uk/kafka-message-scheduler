@@ -43,17 +43,23 @@ val commonSettings = Seq(
 
 val jmxPort = 9186
 
-val dockerSettings = Seq(
+lazy val dockerSettings = Seq(
   packageName in Docker := "kafka-message-scheduler",
   dockerBaseImage := "openjdk:8u131-jre-alpine",
   dockerRepository := Some("skyuk"),
-  maintainer in Docker := "Sky",
+  dockerLabels := Map("maintainer" -> "Sky"),
+  dockerUpdateLatest := updateLatest.value,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
     Cmd("RUN", "apk update && apk add bash")
   ),
   dockerExposedPorts in Docker := Seq(jmxPort)
 )
+
+def updateLatest = Def.setting {
+  if (!version.value.contains("SNAPSHOT")) true
+  else false
+}
 
 val buildInfoSettings = Seq(
   buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),

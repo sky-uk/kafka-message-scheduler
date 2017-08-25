@@ -1,30 +1,37 @@
 package com.sky.kms
 
-import com.sky.BuildInfo
-import com.sky.kms.config.AppConfig
-import com.sky.kms.streams.ScheduleReader
-import com.typesafe.scalalogging.LazyLogging
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import cats.data.Reader
+import com.sky.kms.config.{AppConfig, ShutdownTimeout}
+import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
-import org.zalando.grafter._
-import pureconfig._
 
-import scala.concurrent.Await
+case class SchedulerApp(scheduleReader: ScheduleReader, scheduledMessagePublisher: ScheduledMessagePublisher)
 
-object SchedulerApp extends App with LazyLogging with AkkaComponents {
+object SchedulerApp {
 
-  val conf = loadConfigOrThrow[AppConfig]
-  Kamon.start()
+  case class RunningSchedulerApp private(runningReader: ScheduleReader.Mat, runningPublisher: ScheduledMessagePublisher.Mat)
 
-  logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")
-  val app = ScheduleReader.reader.run(conf)
+  def reader(implicit system: ActorSystem): Reader[AppConfig, SchedulerApp] =
+    for {
+      scheduleReader <- ScheduleReader.reader
+      publisher <- ScheduledMessagePublisher.reader
+    } yield SchedulerApp(scheduleReader, publisher)
 
-  sys.addShutdownHook {
-    logger.info("Kafka Message Scheduler shutting down...")
-    Rewriter.stop(app).value
-
-    materializer.shutdown()
-    Await.result(system.terminate(), conf.scheduler.shutdownTimeout.system)
-
-    Kamon.shutdown()
+  def runner(implicit system: ActorSystem, mat: ActorMaterializer): Reader[SchedulerApp, RunningSchedulerApp] = {
+    Kamon.start()
+    for {
+      runningReader <- ScheduleReader.runner
+      runningPublisher <- ScheduledMessagePublisher.runner
+    } yield RunningSchedulerApp(runningReader, runningPublisher)
   }
+
+  def stop(implicit timeout: ShutdownTimeout): Reader[RunningSchedulerApp, Unit] =
+    for {
+      _ <- ScheduleReader.stop
+      _ <- ScheduledMessagePublisher.stop
+      _ = Kamon.shutdown()
+      _ = AkkaComponents.stop()
+    } yield ()
 }

@@ -3,30 +3,32 @@ package com.sky.kms.streams
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream._
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
 import akka.{Done, NotUsed}
 import cats.data.Reader
+import com.sky.kms.SchedulerApp.RunningSchedulerApp
 import com.sky.kms.SchedulingActor._
 import com.sky.kms._
-import com.sky.kms.config.{AppConfig, SchedulerConfig}
+import com.sky.kms.config.{AppConfig, SchedulerConfig, ShutdownTimeout}
 import com.sky.kms.domain._
 import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, Mat}
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.concurrent.Await
+
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
 case class ScheduleReader(config: SchedulerConfig,
-                          scheduleSource: Source[In, Mat],
-                          schedulingSink: Sink[Any, NotUsed])
-                         (implicit system: ActorSystem, materializer: ActorMaterializer) extends ScheduleReaderStream {
+                          scheduleSource: Source[In, Mat]) {
 
-  val stream: Mat =
-    scheduleSource
-      .map(ScheduleReader.toSchedulingMessage)
-      .to(PartitionedSink.withRight(schedulingSink))
-      .run()
+  val stream: Reader[Sink[Any, NotUsed], RunnableGraph[Mat]] =
+    Reader(sink =>
+      scheduleSource
+        .map(ScheduleReader.toSchedulingMessage)
+        .to(PartitionedSink.withRight(sink))
+    )
 }
 
 object ScheduleReader extends LazyLogging {
@@ -47,13 +49,15 @@ object ScheduleReader extends LazyLogging {
       }
     }
 
-  def reader(implicit system: ActorSystem, materializer: ActorMaterializer): Reader[AppConfig, ScheduleReader] =
-    for {
-      config <- SchedulerConfig.reader
-      schedulingActorRef <- SchedulingActor.reader
-    } yield ScheduleReader(
-      config = config,
-      scheduleSource = KafkaStream.source(config),
-      schedulingSink = Sink.actorRefWithAck(schedulingActorRef, SchedulingActor.Init, Ack, Done)
-    )
+  def reader(implicit system: ActorSystem): Reader[AppConfig, ScheduleReader] =
+    SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
+
+  def runner(implicit system: ActorSystem, mat: ActorMaterializer): Reader[SchedulerApp, Mat] =
+    ScheduledMessagePublisher.runner.flatMap { queue =>
+      val actorRef = system.actorOf(SchedulingActor.props(queue))
+      Reader(_.scheduleReader.stream(Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)).run())
+    }
+
+  def stop(implicit timeout: ShutdownTimeout): Reader[RunningSchedulerApp, Unit] =
+    Reader(app => Await.ready(app.runningReader.shutdown(), timeout.stream))
 }

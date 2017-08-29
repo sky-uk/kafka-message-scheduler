@@ -32,7 +32,7 @@ case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sin
   }
 
   val stream: RunnableGraph[Mat] =
-    Source.queue[(ScheduleId, ScheduledMessage)](config.queueBufferSize, OverflowStrategy.backpressure)
+    Source.queue[In](config.queueBufferSize, OverflowStrategy.backpressure)
       .mapConcat(splitToMessageAndDeletion)
       .to(publisherSink)
 }
@@ -48,7 +48,8 @@ object ScheduledMessagePublisher {
   def reader(implicit system: ActorSystem): Reader[AppConfig, ScheduledMessagePublisher] =
     SchedulerConfig.reader.map(ScheduledMessagePublisher(_, KafkaStream.sink))
 
-  def runner(implicit mat: ActorMaterializer): Reader[SchedulerApp, Mat] = Reader(_.scheduledMessagePublisher.stream.run())
+  def run(implicit mat: ActorMaterializer): Reader[SchedulerApp, Mat] =
+    Reader(_.scheduledMessagePublisher.stream.run())
 
   def stop(implicit timeout: ShutdownTimeout): Reader[RunningSchedulerApp, Unit] =
     Reader { app =>

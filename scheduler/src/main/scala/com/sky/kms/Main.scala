@@ -3,7 +3,6 @@ package com.sky.kms
 import com.sky.BuildInfo
 import com.sky.kms.config.AppConfig
 import com.typesafe.scalalogging.LazyLogging
-import org.zalando.grafter.Rewriter._
 import pureconfig._
 
 object Main extends App with LazyLogging with AkkaComponents {
@@ -14,12 +13,12 @@ object Main extends App with LazyLogging with AkkaComponents {
 
   logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")
 
-  val app = SchedulerApp.reader.run(conf).singletons
+  val app = SchedulerApp.reader <~ conf
 
-  val runningApp = SchedulerApp.runner.run(app).singletons
+  val runningApp = SchedulerApp.run <~ app
 
   sys.addShutdownHook {
     logger.info("Kafka Message Scheduler shutting down...")
-    SchedulerApp.stop.run(runningApp)
+    SchedulerApp.stop <~ runningApp
   }
 }

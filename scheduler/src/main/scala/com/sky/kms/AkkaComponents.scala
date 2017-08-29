@@ -15,7 +15,7 @@ trait AkkaComponents {
 }
 
 object AkkaComponents extends AkkaComponents {
-  def stop()(implicit timeout: ShutdownTimeout): Unit = {
+  def stop()(implicit timeout: ShutdownTimeout) {
     materializer.shutdown()
     Await.ready(system.terminate(), timeout.system)
   }

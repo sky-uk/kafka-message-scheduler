@@ -19,11 +19,11 @@ object SchedulerApp {
       publisher <- ScheduledMessagePublisher.reader
     } yield SchedulerApp(scheduleReader, publisher)
 
-  def runner(implicit system: ActorSystem, mat: ActorMaterializer): Reader[SchedulerApp, RunningSchedulerApp] = {
+  def run(implicit system: ActorSystem, mat: ActorMaterializer): Reader[SchedulerApp, RunningSchedulerApp] = {
     Kamon.start()
     for {
-      runningReader <- ScheduleReader.runner
-      runningPublisher <- ScheduledMessagePublisher.runner
+      runningPublisher <- ScheduledMessagePublisher.run
+      runningReader <- ScheduleReader.run(runningPublisher)
     } yield RunningSchedulerApp(runningReader, runningPublisher)
   }
 
@@ -32,6 +32,5 @@ object SchedulerApp {
       _ <- ScheduleReader.stop
       _ <- ScheduledMessagePublisher.stop
       _ = Kamon.shutdown()
-      _ = AkkaComponents.stop()
-    } yield ()
+    } yield AkkaComponents.stop()
 }

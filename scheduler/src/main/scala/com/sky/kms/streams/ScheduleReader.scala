@@ -3,7 +3,7 @@ package com.sky.kms.streams
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream._
-import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
+import akka.stream.scaladsl._
 import akka.{Done, NotUsed}
 import cats.data.Reader
 import com.sky.kms.SchedulingActor._

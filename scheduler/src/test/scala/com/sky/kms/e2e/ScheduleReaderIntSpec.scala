@@ -6,61 +6,68 @@ import akka.stream.scaladsl.Sink
 import akka.testkit.TestProbe
 import com.sky.kms.SchedulingActor.CreateOrUpdate
 import com.sky.kms.avro._
+import com.sky.kms.base.SchedulerIntBaseSpec
 import com.sky.kms.common.TestDataUtils.{random, _}
-import com.sky.kms.common.{AkkaStreamBaseSpec, KafkaIntSpec}
 import com.sky.kms.config._
 import com.sky.kms.domain.{Schedule, ScheduleId}
-import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduleReader
 import kafka.admin.AdminUtils
 import kafka.utils.ZkUtils
-import org.zalando.grafter.StopOk
+import org.scalatest.Assertion
 
-import scala.concurrent.duration._
-import com.sky.kms.common.EmbeddedKafka._
+import scala.concurrent.Await
 
-class ScheduleReaderIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
+class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
 
-  val ScheduleTopic = "scheduleTopic"
+  val NumSchedules = 10
 
-  val conf = SchedulerConfig(ScheduleTopic, ShutdownTimeout(10 seconds, 10 seconds), 100)
+  lazy val zkUtils = ZkUtils(zkServer, 3000, 3000, isZkSecurityEnabled = false)
+
+  override def afterAll() {
+    zkUtils.close()
+    super.afterAll()
+  }
 
   "stream" should {
-    "consume from the beginning of the topic when it restarts" in {
-//      BUG!
-//      AdminUtils.createTopic(ZkUtils(s"localhost:${kafkaServer.zookeeperPort}", 3000, 3000, false), conf.scheduleTopic, 20, 1)
+    "consume from the beginning of the topic on restart" in {
+      AdminUtils.createTopic(zkUtils, conf.scheduleTopic, partitions = 20, replicationFactor = 1)
 
-      val probe = TestProbe()
-      val reader = ScheduleReader(conf, KafkaStream.source(conf), Sink.actorRef(probe.ref, "complete"))
+      val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
 
-      reader.stream()
-      val firstScheduleId = writeScheduleToKafka
+      withRunningScheduleReader { probe =>
+        writeSchedulesToKafka(firstSchedule)
 
-      probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe firstScheduleId
-      reader.stop.value shouldBe a[StopOk]
-      probe.expectMsg("complete")
+        probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe firstSchedule._1
+      }
 
-      reader.stream()
-      //without this we consume the second and third messages twice :S BECAUSE WHY NOT
-      Thread.sleep(2000)
+      withRunningScheduleReader { probe =>
+        writeSchedulesToKafka(newSchedules: _*)
 
-      val secondScheduleId = writeScheduleToKafka
-      val thirdScheduleId = writeScheduleToKafka
+        val allScheduleIds = (firstSchedule :: newSchedules).map { case (scheduleId, _) => scheduleId }
+        val receivedScheduleIds = List.fill(NumSchedules)(probe.expectMsgType[CreateOrUpdate].scheduleId)
 
-      probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe firstScheduleId
-      probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe secondScheduleId
-      probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe thirdScheduleId
-      reader.stop.value shouldBe a[StopOk]
-      probe.expectMsg("complete")
+        receivedScheduleIds should contain theSameElementsAs allScheduleIds
 
-      system.stop(probe.ref)
+      }
     }
   }
 
-  private def writeScheduleToKafka: ScheduleId = {
-    val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule])
-    writeToKafka(ScheduleTopic, scheduleId, schedule.toAvro)
-    scheduleId
+  private def generateSchedules: (ScheduleId, Schedule) =
+    (UUID.randomUUID().toString, random[Schedule])
+
+  private def withRunningScheduleReader(scenario: TestProbe => Assertion) {
+    val probe = TestProbe()
+    val scheduleReader = ScheduleReader.configure apply AppConfig(conf)
+    val running = scheduleReader.stream(Sink.actorRef(probe.ref, "complete")).run()
+
+    scenario(probe)
+
+    Await.ready(running.shutdown(), conf.shutdownTimeout)
+    probe.expectMsg("complete")
+  }
+
+  private def writeSchedulesToKafka(schedules: (ScheduleId, Schedule)*) {
+    writeToKafka(ScheduleTopic, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) }: _*)
   }
 
 }

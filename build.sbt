@@ -94,7 +94,8 @@ lazy val scheduler = (project in file("scheduler"))
     javaOptions in Universal += jmxSettings,
     buildInfoSettings,
     dockerSettings,
-    releaseSettings
+    releaseSettings,
+    parallelExecution in Test := false
   )
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")

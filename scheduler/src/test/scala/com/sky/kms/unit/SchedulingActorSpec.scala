@@ -1,4 +1,4 @@
-package com.sky.kms
+package com.sky.kms.unit
 
 import java.util.UUID
 
@@ -7,8 +7,9 @@ import akka.event.LoggingAdapter
 import akka.stream.scaladsl.SourceQueue
 import akka.testkit.{ImplicitSender, TestActorRef}
 import com.miguno.akka.testing.VirtualTime
+import com.sky.kms.SchedulingActor
 import com.sky.kms.SchedulingActor._
-import com.sky.kms.common.AkkaBaseSpec
+import com.sky.kms.base.AkkaBaseSpec
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._

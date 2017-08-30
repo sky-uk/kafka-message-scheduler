@@ -47,7 +47,7 @@ object ScheduleReader extends LazyLogging {
     }
 
   def configure(implicit system: ActorSystem): Configured[ScheduleReader] =
-    SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
+    SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.beginningOffsetSource(config)))
 
   def run(queue: ScheduledMessagePublisher.Mat)(implicit system: ActorSystem, mat: ActorMaterializer): Start[Mat] = {
     val actorRef = system.actorOf(SchedulingActor.props(queue))

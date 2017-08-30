@@ -11,18 +11,35 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer, StringDeserializer}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 object KafkaStream {
 
-  def source[T](config: SchedulerConfig)(implicit system: ActorSystem, crDecoder: ConsumerRecordDecoder[T]): Source[T, Control] = {
+  type Offset = Long
+
+  def beginningOffsetSource[T](config: SchedulerConfig)(implicit system: ActorSystem, crDecoder: ConsumerRecordDecoder[T]): Source[T, Control] = {
+    val consumerSettings = ConsumerSettings(system, new StringDeserializer, new ByteArrayDeserializer)
     Consumer.plainSource(
-      ConsumerSettings(system, new StringDeserializer, new ByteArrayDeserializer),
-      Subscriptions.assignmentWithOffset(new TopicPartition(config.scheduleTopic, 0), offset = 0)
+      consumerSettings,
+      Subscriptions.assignmentWithOffset(beginningPartitionPositions(config.scheduleTopic, consumerSettings))
     ).map(crDecoder(_))
+  }
+
+  private def beginningPartitionPositions(topic: String, settings: ConsumerSettings[String, Array[Byte]]): Map[TopicPartition, Offset] = {
+    val consumer = settings.createKafkaConsumer()
+
+    consumer.subscribe(List(topic).asJava)
+    consumer.poll(1)
+
+    val partitions = consumer.assignment
+    consumer.seekToBeginning(partitions)
+    val partitionPositions = partitions.asScala.map(p => p -> consumer.position(p)).toMap
+
+    consumer.close()
+    partitionPositions
   }
 
   def sink(implicit system: ActorSystem): Sink[ProducerRecord[Array[Byte], Array[Byte]], Future[Done]] =
     Producer.plainSink(ProducerSettings(system, new ByteArraySerializer, new ByteArraySerializer))
-
 }

@@ -11,7 +11,7 @@ case class SchedulerApp(scheduleReader: ScheduleReader, scheduledMessagePublishe
 
 object SchedulerApp {
 
-  case class RunningSchedulerApp private(runningReader: ScheduleReader.Mat, runningPublisher: ScheduledMessagePublisher.Mat)
+  case class RunningSchedulerApp(runningReader: ScheduleReader.Mat, runningPublisher: ScheduledMessagePublisher.Mat)
 
   def reader(implicit system: ActorSystem): Reader[AppConfig, SchedulerApp] =
     for {

@@ -21,4 +21,6 @@ object Main extends App with LazyLogging with AkkaComponents {
     logger.info("Kafka Message Scheduler shutting down...")
     SchedulerApp.stop <~ runningApp
   }
+
+  logger.info("Kafka Message Scheduler initialisation complete.")
 }

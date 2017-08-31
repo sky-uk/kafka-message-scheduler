@@ -4,6 +4,8 @@ import java.util.UUID
 
 import akka.actor.ActorRef
 import akka.event.LoggingAdapter
+import akka.stream.QueueOfferResult
+import akka.stream.QueueOfferResult.Enqueued
 import akka.stream.scaladsl.SourceQueue
 import akka.testkit.{ImplicitSender, TestActorRef}
 import com.miguno.akka.testing.VirtualTime
@@ -13,17 +15,20 @@ import com.sky.kms.base.AkkaBaseSpec
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
+import org.mockito.Matchers.any
 import org.mockito.Mockito._
+import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 
-class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar {
+import scala.concurrent.Future
 
-  val mockLogger = mock[LoggingAdapter]
-  val mockSourceQueue = mock[SourceQueue[(ScheduleId, ScheduledMessage)]]
+class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar with Eventually {
 
   "A scheduling actor" must {
     "schedule new messages at the given time" in new SchedulingActorTest {
       val (scheduleId, schedule) = generateSchedule()
+      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
+        .thenReturn(Future.successful(Enqueued))
 
       createSchedule(scheduleId, schedule)
 
@@ -66,8 +71,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "accept scheduling messages only after it has received an Init" in {
-
-      val actorRef = TestActorRef(new SchedulingActor(mockSourceQueue, system.scheduler))
+      val actorRef = TestActorRef(new SchedulingActor(mock[SourceQueue[(ScheduleId, ScheduledMessage)]], system.scheduler))
       val (scheduleId, schedule) = generateSchedule()
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
@@ -79,9 +83,45 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       expectMsg(Ack)
     }
 
+    "warn and do nothing when the downstream queue has been failed" in new SchedulingActorTest {
+      val (scheduleId, schedule) = generateSchedule()
+      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
+        .thenReturn(Future.failed(new Exception("Test")))
+
+      createSchedule(scheduleId, schedule)
+
+      advanceToTimeFrom(schedule, now)
+
+      eventually {
+        verify(mockLogger).warning(s"Failed to enqueue $scheduleId. Test")
+      }
+    }
+
+    import QueueOfferResult._
+
+    List(Dropped, QueueClosed, Failure(new Exception("Test"))).foreach { queueOfferResult =>
+      s"warn and do nothing when queue offer result is $queueOfferResult" in new SchedulingActorTest {
+        val (scheduleId, schedule) = generateSchedule()
+        when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
+          .thenReturn(Future.successful(queueOfferResult))
+
+        createSchedule(scheduleId, schedule)
+
+        advanceToTimeFrom(schedule, now)
+
+        eventually {
+          verify(mockLogger).warning(any[String])
+        }
+      }
+    }
+
   }
 
   private class SchedulingActorTest {
+
+    val mockLogger = mock[LoggingAdapter]
+    val mockSourceQueue = mock[SourceQueue[(ScheduleId, ScheduledMessage)]]
+
     val now = System.currentTimeMillis()
 
     val time = new VirtualTime

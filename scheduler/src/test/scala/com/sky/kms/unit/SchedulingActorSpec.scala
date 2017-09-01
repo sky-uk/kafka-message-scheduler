@@ -5,9 +5,9 @@ import java.util.UUID
 import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import akka.stream.QueueOfferResult
-import akka.stream.QueueOfferResult.Enqueued
 import akka.stream.scaladsl.SourceQueue
 import akka.testkit.{ImplicitSender, TestActorRef}
+import cats.syntax.show._
 import com.miguno.akka.testing.VirtualTime
 import com.sky.kms.SchedulingActor
 import com.sky.kms.SchedulingActor._
@@ -15,7 +15,6 @@ import com.sky.kms.base.AkkaBaseSpec
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
-import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
@@ -27,8 +26,6 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
   "A scheduling actor" must {
     "schedule new messages at the given time" in new SchedulingActorTest {
       val (scheduleId, schedule) = generateSchedule()
-      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
-        .thenReturn(Future.successful(Enqueued))
 
       createSchedule(scheduleId, schedule)
 
@@ -83,7 +80,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       expectMsg(Ack)
     }
 
-    "warn and do nothing when the downstream queue has been failed" in new SchedulingActorTest {
+    "warn and do nothing when the downstream queue is in a failed state" in new SchedulingActorTest {
       val (scheduleId, schedule) = generateSchedule()
       when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
         .thenReturn(Future.failed(new Exception("Test")))
@@ -110,11 +107,10 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
         advanceToTimeFrom(schedule, now)
 
         eventually {
-          verify(mockLogger).warning(any[String])
+          verify(mockLogger).warning(ScheduleQueueOfferResult(scheduleId, queueOfferResult).show)
         }
       }
     }
-
   }
 
   private class SchedulingActorTest {

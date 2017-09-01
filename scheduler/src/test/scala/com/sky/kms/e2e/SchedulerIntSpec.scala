@@ -10,6 +10,7 @@ import com.sky.kms.config._
 import com.sky.kms.domain._
 import org.apache.kafka.common.serialization._
 import org.scalatest.Assertion
+import com.sky.kms.AkkaComponents._
 
 import scala.concurrent.duration._
 
@@ -43,11 +44,11 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
   }
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
-    val app = SchedulerApp.reader <~ conf
-    val runningApp = SchedulerApp.run <~ app
+    val app = SchedulerApp.reader akka conf
+    val runningApp = SchedulerApp.run akka app
 
     scenario
-    SchedulerApp.stop <~ runningApp
+    SchedulerApp.stop akka runningApp
   }
 
   private def consumeLatestFromScheduleTopic =

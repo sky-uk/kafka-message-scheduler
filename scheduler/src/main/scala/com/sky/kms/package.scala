@@ -1,8 +1,5 @@
 package com.sky
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import cats.data.Reader
 import cats.syntax.either._
 import com.sksamuel.avro4s.AvroInputStream
 import com.sky.kms.avro._
@@ -35,9 +32,4 @@ package object kms extends LazyLogging {
 
   private def valueDecoder(avro: Array[Byte]): Option[Try[Schedule]] =
     AvroInputStream.binary[Schedule](avro).tryIterator.toSeq.headOption
-
-  implicit class ReaderOps[A, B](val reader: Reader[A, B]) extends AnyVal {
-    def <~(a: A)(implicit system: ActorSystem, mat: ActorMaterializer): B =
-      reader.run(a)
-  }
 }

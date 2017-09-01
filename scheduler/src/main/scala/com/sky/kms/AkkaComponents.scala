@@ -1,11 +1,7 @@
 package com.sky.kms
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Terminated}
 import akka.stream.ActorMaterializer
-import cats.data.Reader
-import com.sky.kms.config.ShutdownTimeout
-
-import scala.concurrent.Await
 
 trait AkkaComponents {
 
@@ -17,13 +13,8 @@ trait AkkaComponents {
 
 object AkkaComponents extends AkkaComponents {
 
-  implicit class AkkaReader[A, B](val reader: Reader[A, B]) extends AnyVal {
-    def akka(a: A)(implicit system: ActorSystem, mat: ActorMaterializer): B =
-      reader.run(a)
-  }
-
-  def stop()(implicit timeout: ShutdownTimeout) {
+  def stop(): Stop[Terminated] = Stop { _ =>
     materializer.shutdown()
-    Await.ready(system.terminate(), timeout.system)
+    system.terminate()
   }
 }

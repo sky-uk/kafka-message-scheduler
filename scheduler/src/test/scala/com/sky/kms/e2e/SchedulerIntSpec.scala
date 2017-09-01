@@ -10,17 +10,15 @@ import com.sky.kms.config._
 import com.sky.kms.domain._
 import org.apache.kafka.common.serialization._
 import org.scalatest.Assertion
-import com.sky.kms.AkkaComponents._
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
 
   val ScheduleTopic = "scheduleTopic"
 
-  implicit val shutdownTimeout = ShutdownTimeout(10 seconds, 10 seconds)
-
-  val conf = AppConfig(SchedulerConfig(ScheduleTopic, shutdownTimeout, 100))
+  val conf = AppConfig(SchedulerConfig(ScheduleTopic, 10 seconds, 100))
 
   val tolerance = 200 millis
 
@@ -44,11 +42,13 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
   }
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
-    val app = SchedulerApp.reader akka conf
-    val runningApp = SchedulerApp.run akka app
+    val app = SchedulerApp.reader apply conf
+    val runningApp = SchedulerApp.run apply app
 
     scenario
-    SchedulerApp.stop akka runningApp
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Await.ready(SchedulerApp.stop apply runningApp, conf.scheduler.shutdownTimeout)
   }
 
   private def consumeLatestFromScheduleTopic =

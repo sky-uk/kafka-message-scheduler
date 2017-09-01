@@ -8,12 +8,10 @@ package object config {
 
   case class AppConfig(scheduler: SchedulerConfig)
 
-  case class SchedulerConfig(scheduleTopic: String, shutdownTimeout: ShutdownTimeout, queueBufferSize: Int)
+  case class SchedulerConfig(scheduleTopic: String, shutdownTimeout: Duration, queueBufferSize: Int)
 
   object SchedulerConfig {
     def reader: Reader[AppConfig, SchedulerConfig] = Reader(_.scheduler)
   }
-
-  case class ShutdownTimeout(stream: Duration, system: Duration)
 
 }

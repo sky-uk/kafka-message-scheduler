@@ -5,17 +5,16 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import cats.data.Reader
-import com.sky.kms.SchedulerApp
-import com.sky.kms.SchedulerApp.RunningSchedulerApp
 import com.sky.kms.config._
 import com.sky.kms.domain.PublishableMessage._
 import com.sky.kms.domain._
 import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduledMessagePublisher._
+import com.sky.kms.{SchedulerApp, Stop}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.ProducerRecord
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 /**
   * Provides a stream that consumes from the queue of triggered messages,
@@ -51,10 +50,10 @@ object ScheduledMessagePublisher {
   def run(implicit mat: ActorMaterializer): Reader[SchedulerApp, Mat] =
     Reader(_.scheduledMessagePublisher.stream.run())
 
-  def stop(implicit timeout: ShutdownTimeout): Reader[RunningSchedulerApp, Unit] =
-    Reader { app =>
+  def stop: Stop[Done] =
+    Stop { app =>
       app.runningPublisher.complete()
-      Await.ready(app.runningPublisher.watchCompletion(), timeout.stream)
+      app.runningPublisher.watchCompletion()
     }
 
 }

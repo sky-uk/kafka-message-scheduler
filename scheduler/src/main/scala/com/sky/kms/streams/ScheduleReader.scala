@@ -6,7 +6,6 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.{Done, NotUsed}
 import cats.data.Reader
-import com.sky.kms.SchedulerApp.RunningSchedulerApp
 import com.sky.kms.SchedulingActor._
 import com.sky.kms._
 import com.sky.kms.config._
@@ -15,8 +14,6 @@ import com.sky.kms.domain._
 import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, Mat, SinkIn, SinkMat}
 import com.typesafe.scalalogging.LazyLogging
-
-import scala.concurrent.Await
 
 /**
   * Provides stream from the schedule source to the scheduling actor.
@@ -59,6 +56,6 @@ object ScheduleReader extends LazyLogging {
     Reader(_.scheduleReader.stream(actorSink).run())
   }
 
-  def stop(implicit timeout: ShutdownTimeout): Reader[RunningSchedulerApp, Unit] =
-    Reader(app => Await.ready(app.runningReader.shutdown(), timeout.stream))
+  def stop: Stop[Done] =
+    Stop(app => app.runningReader.shutdown())
 }

@@ -34,6 +34,6 @@ object SchedulerApp {
     for {
       _ <- ScheduleReader.stop
       _ <- ScheduledMessagePublisher.stop
-      _ <- AkkaComponents.stop()
+      _ <- AkkaComponents.stop
     } yield Kamon.shutdown()
 }

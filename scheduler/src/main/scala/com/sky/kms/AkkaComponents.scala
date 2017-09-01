@@ -13,7 +13,7 @@ trait AkkaComponents {
 
 object AkkaComponents extends AkkaComponents {
 
-  def stop(): Stop[Terminated] = Stop { _ =>
+  def stop: Stop[Terminated] = Stop { _ =>
     materializer.shutdown()
     system.terminate()
   }

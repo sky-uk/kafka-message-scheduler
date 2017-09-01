@@ -57,5 +57,5 @@ object ScheduleReader extends LazyLogging {
   }
 
   def stop: Stop[Done] =
-    Stop(app => app.runningReader.shutdown())
+    Stop(_.runningReader.shutdown())
 }

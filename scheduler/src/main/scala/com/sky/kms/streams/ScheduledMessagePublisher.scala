@@ -55,5 +55,4 @@ object ScheduledMessagePublisher {
       app.runningPublisher.complete()
       app.runningPublisher.watchCompletion()
     }
-
 }

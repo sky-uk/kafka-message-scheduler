@@ -10,10 +10,6 @@ import scala.collection.mutable.ArrayBuffer
 
 object EmbeddedKafka {
 
-  val kafkaServer = new KafkaServer
-
-  val bootstrapServer = s"localhost:${kafkaServer.kafkaPort}"
-
   /**
     * The consume method provided by [[cakesolutions.kafka.testkit.KafkaServer]] doesn't provide a way of
     * extracting a consumer record, we have added this so we can access the timestamp from a consumer record. In the
@@ -31,7 +27,7 @@ object EmbeddedKafka {
                                 consumerConfig: Map[String, String] = defaultConsumerConfig
                               ): Seq[T] = {
 
-      val extendedConfig: Map[String, Object] = consumerConfig + (ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> bootstrapServer)
+      val extendedConfig: Map[String, Object] = consumerConfig + (ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> s"localhost:${kafkaServer.kafkaPort}")
       val consumer = new KafkaConsumer(extendedConfig.asJava, keyDeserializer, valueDeserializer)
 
       try {

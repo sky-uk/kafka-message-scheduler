@@ -1,13 +1,15 @@
-package com.sky.kms
+package com.sky.kms.unit
 
 import java.time.OffsetDateTime
 
-import common.TestDataUtils._
-import com.sky.kms.domain._
-import common.BaseSpec
-import org.apache.kafka.clients.consumer.ConsumerRecord
-import avro._
+import com.sky.kms.avro._
+import com.sky.kms.base.BaseSpec
+import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.consumerRecordDecoder
 import com.sky.kms.domain.ApplicationError._
+import com.sky.kms.domain._
+import org.apache.kafka.clients.consumer.ConsumerRecord
+
 
 class SchedulerSpec extends BaseSpec {
 

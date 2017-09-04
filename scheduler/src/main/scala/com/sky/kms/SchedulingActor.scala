@@ -84,5 +84,4 @@ object SchedulingActor {
 
   def props(queue: SourceQueue[(String, ScheduledMessage)])(implicit system: ActorSystem): Props =
     Props(new SchedulingActor(queue, system.scheduler))
-
 }

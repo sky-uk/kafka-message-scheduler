@@ -4,8 +4,8 @@ import java.util.UUID
 
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
+import com.sky.kms.base.SchedulerIntBaseSpec
 import com.sky.kms.common.TestDataUtils._
-import com.sky.kms.common.{AkkaStreamBaseSpec, KafkaIntSpec}
 import com.sky.kms.config._
 import com.sky.kms.domain._
 import org.apache.kafka.common.serialization._
@@ -14,11 +14,7 @@ import org.scalatest.Assertion
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
-
-  val ScheduleTopic = "scheduleTopic"
-
-  val conf = AppConfig(SchedulerConfig(ScheduleTopic, 10 seconds, 100))
+class SchedulerIntSpec extends SchedulerIntBaseSpec {
 
   val tolerance = 200 millis
 
@@ -26,7 +22,7 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
     "schedule a message to be sent to Kafka and delete it after it has been emitted" in withRunningSchedulerStream {
       val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule].secondsFromNow(2))
 
-      writeToKafka(ScheduleTopic, scheduleId, schedule.toAvro)
+      writeToKafka(ScheduleTopic, (scheduleId, schedule.toAvro))
 
       val cr = consumeFromKafka(schedule.topic, keyDeserializer = new ByteArrayDeserializer).head
 
@@ -42,13 +38,13 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
   }
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
-    val app = SchedulerApp.configure apply conf
+    val app = SchedulerApp.configure apply AppConfig(conf)
     val runningApp = SchedulerApp.run apply app
 
     scenario
 
     import scala.concurrent.ExecutionContext.Implicits.global
-    Await.ready(SchedulerApp.stop apply runningApp, conf.scheduler.shutdownTimeout)
+    Await.ready(SchedulerApp.stop apply runningApp, conf.shutdownTimeout)
   }
 
   private def consumeLatestFromScheduleTopic =

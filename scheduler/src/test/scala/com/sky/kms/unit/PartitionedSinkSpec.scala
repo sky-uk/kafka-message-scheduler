@@ -1,8 +1,8 @@
-package com.sky.kms
+package com.sky.kms.unit
 
 import akka.stream.scaladsl._
+import com.sky.kms.base.AkkaStreamBaseSpec
 import com.sky.kms.streams.PartitionedSink
-import common.AkkaStreamBaseSpec
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}

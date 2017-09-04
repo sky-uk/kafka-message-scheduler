@@ -8,26 +8,26 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 
 object TestActorSystem {
 
-  val config =
+  def config(kafkaPort: Int) =
     s"""
        |akka {
        | kafka {
        |  consumer {
        |    kafka-clients {
-       |      bootstrap.servers = "${EmbeddedKafka.bootstrapServer}"
+       |      bootstrap.servers = "localhost:$kafkaPort"
        |      ${ConsumerConfig.AUTO_OFFSET_RESET_CONFIG} = "earliest"
        |    }
        |  }
        |
-       |  producer.kafka-clients.bootstrap.servers = "${EmbeddedKafka.bootstrapServer}"
+       |  producer.kafka-clients.bootstrap.servers = "localhost:$kafkaPort"
        | }
        |}
     """.stripMargin
 
 
-  def apply(): ActorSystem =
+  def apply(kafkaPort: Int = 9092): ActorSystem =
     ActorSystem(
       name = s"test-actor-system-${UUID.randomUUID().toString}",
-      config = ConfigFactory.parseString(config).withFallback(ConfigFactory.load())
+      config = ConfigFactory.parseString(config(kafkaPort)).withFallback(ConfigFactory.load())
     )
 }

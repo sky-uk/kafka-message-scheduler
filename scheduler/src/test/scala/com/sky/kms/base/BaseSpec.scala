@@ -1,4 +1,4 @@
-package com.sky.kms.common
+package com.sky.kms.base
 
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 

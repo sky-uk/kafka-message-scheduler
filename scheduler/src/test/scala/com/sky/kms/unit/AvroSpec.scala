@@ -1,9 +1,10 @@
-package com.sky.kms.avro
+package com.sky.kms.unit
 
 import java.time.OffsetDateTime
 
 import com.sksamuel.avro4s._
-import com.sky.kms.common.BaseSpec
+import com.sky.kms.base.BaseSpec
+import com.sky.kms.avro._
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 

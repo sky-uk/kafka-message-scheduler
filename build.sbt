@@ -18,6 +18,7 @@ val dependencies = Seq(
   "org.typelevel"              %% "cats"                       % "0.9.0",
   "ch.qos.logback"              % "logback-classic"            % "1.2.3"      % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                 % "0.7.2",
+  "org.zalando"                %% "grafter"                    % "2.1.1",
 
   "io.kamon"                   %% "kamon-jmx"                  % kamonVersion,
   "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,

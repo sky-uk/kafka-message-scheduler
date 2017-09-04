@@ -39,7 +39,7 @@ class SchedulerIntSpec extends SchedulerIntBaseSpec {
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
     val app = SchedulerApp.configure apply AppConfig(conf)
-    val runningApp = SchedulerApp.run apply app
+    val runningApp = SchedulerApp.run apply app value
 
     scenario
 

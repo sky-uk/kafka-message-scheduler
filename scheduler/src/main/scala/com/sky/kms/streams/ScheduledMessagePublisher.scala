@@ -4,7 +4,6 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, OverflowStrategy}
-import cats.data.Reader
 import com.sky.kms.config._
 import com.sky.kms.domain.PublishableMessage._
 import com.sky.kms.domain._
@@ -48,7 +47,7 @@ object ScheduledMessagePublisher {
     SchedulerConfig.reader.map(ScheduledMessagePublisher(_, KafkaStream.sink))
 
   def run(implicit mat: ActorMaterializer): Start[Mat] =
-    Reader(_.scheduledMessagePublisher.stream.run())
+    Start(_.scheduledMessagePublisher.stream.run())
 
   def stop: Stop[Done] =
     Stop { app =>

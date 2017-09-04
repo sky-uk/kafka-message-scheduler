@@ -8,7 +8,7 @@ import akka.{Done, NotUsed}
 import cats.data.Reader
 import com.sky.kms.SchedulingActor._
 import com.sky.kms._
-import com.sky.kms.config.{SchedulerConfig, _}
+import com.sky.kms.config._
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
 import com.sky.kms.kafka._

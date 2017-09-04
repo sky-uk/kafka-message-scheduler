@@ -1,6 +1,6 @@
 package com.sky
 
-import cats.data.{Kleisli, ReaderT}
+import cats.data.{Kleisli, Reader, ReaderT}
 import cats.syntax.either._
 import com.sksamuel.avro4s.AvroInputStream
 import com.sky.kms.avro._
@@ -34,6 +34,8 @@ package object kms extends LazyLogging {
 
   private def valueDecoder(avro: Array[Byte]): Option[Try[Schedule]] =
     AvroInputStream.binary[Schedule](avro).tryIterator.toSeq.headOption
+
+  type Start[T] = Reader[SchedulerApp, T]
 
   type Stop[T] = ReaderT[Future, SchedulerApp.Running, T]
 

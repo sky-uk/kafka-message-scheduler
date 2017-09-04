@@ -18,8 +18,7 @@ import com.typesafe.scalalogging.LazyLogging
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
-case class ScheduleReader(config: SchedulerConfig,
-                          scheduleSource: Source[In, Mat]) {
+case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) {
 
   def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[Mat] =
     scheduleSource
@@ -47,10 +46,10 @@ object ScheduleReader extends LazyLogging {
       }
     }
 
-  def reader(implicit system: ActorSystem): Reader[AppConfig, ScheduleReader] =
+  def configure(implicit system: ActorSystem): Configured[ScheduleReader] =
     SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
 
-  def run(queue: ScheduledMessagePublisher.Mat)(implicit system: ActorSystem, mat: ActorMaterializer): Reader[SchedulerApp, Mat] = {
+  def run(queue: ScheduledMessagePublisher.Mat)(implicit system: ActorSystem, mat: ActorMaterializer): Start[Mat] = {
     val actorRef = system.actorOf(SchedulingActor.props(queue))
     val actorSink = Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)
     Reader(_.scheduleReader.stream(actorSink).run())

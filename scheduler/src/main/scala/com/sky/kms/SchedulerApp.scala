@@ -2,9 +2,8 @@ package com.sky.kms
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import cats.data.Reader
 import cats.implicits.catsStdInstancesForFuture
-import com.sky.kms.config.AppConfig
+import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
 
@@ -16,13 +15,13 @@ object SchedulerApp {
 
   case class Running(runningReader: ScheduleReader.Mat, runningPublisher: ScheduledMessagePublisher.Mat)
 
-  def reader(implicit system: ActorSystem): Reader[AppConfig, SchedulerApp] =
+  def configure(implicit system: ActorSystem): Configured[SchedulerApp] =
     for {
-      scheduleReader <- ScheduleReader.reader
-      publisher <- ScheduledMessagePublisher.reader
+      scheduleReader <- ScheduleReader.configure
+      publisher <- ScheduledMessagePublisher.configure
     } yield SchedulerApp(scheduleReader, publisher)
 
-  def run(implicit system: ActorSystem, mat: ActorMaterializer): Reader[SchedulerApp, Running] = {
+  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
     Kamon.start()
     for {
       runningPublisher <- ScheduledMessagePublisher.run

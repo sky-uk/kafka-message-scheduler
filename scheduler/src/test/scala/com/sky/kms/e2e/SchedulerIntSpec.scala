@@ -42,7 +42,7 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
   }
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
-    val app = SchedulerApp.reader apply conf
+    val app = SchedulerApp.configure apply conf
     val runningApp = SchedulerApp.run apply app
 
     scenario

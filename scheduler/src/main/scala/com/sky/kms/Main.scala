@@ -13,7 +13,7 @@ object Main extends App with LazyLogging with AkkaComponents {
 
   logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")
 
-  val app = SchedulerApp.reader apply conf
+  val app = SchedulerApp.configure apply conf
 
   val runningApp = SchedulerApp.run apply app
 

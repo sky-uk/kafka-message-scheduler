@@ -14,4 +14,6 @@ package object config {
     def reader: Reader[AppConfig, SchedulerConfig] = Reader(_.scheduler)
   }
 
+  type Configured[T] = Reader[AppConfig, T]
+
 }

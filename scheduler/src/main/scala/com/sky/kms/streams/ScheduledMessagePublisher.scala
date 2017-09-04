@@ -10,7 +10,7 @@ import com.sky.kms.domain.PublishableMessage._
 import com.sky.kms.domain._
 import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduledMessagePublisher._
-import com.sky.kms.{SchedulerApp, Stop}
+import com.sky.kms.{Start, Stop}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.ProducerRecord
 
@@ -44,10 +44,10 @@ object ScheduledMessagePublisher {
   type SinkIn = ProducerRecord[Array[Byte], Array[Byte]]
   type SinkMat = Future[Done]
 
-  def reader(implicit system: ActorSystem): Reader[AppConfig, ScheduledMessagePublisher] =
+  def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] =
     SchedulerConfig.reader.map(ScheduledMessagePublisher(_, KafkaStream.sink))
 
-  def run(implicit mat: ActorMaterializer): Reader[SchedulerApp, Mat] =
+  def run(implicit mat: ActorMaterializer): Start[Mat] =
     Reader(_.scheduledMessagePublisher.stream.run())
 
   def stop: Stop[Done] =

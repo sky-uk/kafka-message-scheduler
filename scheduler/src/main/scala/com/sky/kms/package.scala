@@ -1,14 +1,16 @@
 package com.sky
 
+import cats.data.{Kleisli, Reader, ReaderT}
 import cats.syntax.either._
 import com.sksamuel.avro4s.AvroInputStream
+import com.sky.kms.avro._
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
+import com.sky.kms.kafka.ConsumerRecordDecoder
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import com.sky.kms.avro._
-import com.sky.kms.kafka.ConsumerRecordDecoder
 
+import scala.concurrent.Future
 import scala.util.Try
 
 package object kms extends LazyLogging {
@@ -32,4 +34,13 @@ package object kms extends LazyLogging {
 
   private def valueDecoder(avro: Array[Byte]): Option[Try[Schedule]] =
     AvroInputStream.binary[Schedule](avro).tryIterator.toSeq.headOption
+
+  type Start[T] = Reader[SchedulerApp, T]
+
+  type Stop[T] = ReaderT[Future, SchedulerApp.Running, T]
+
+  object Stop {
+    def apply[T](f: SchedulerApp.Running => Future[T]): Stop[T] = Kleisli(f)
+  }
+
 }

@@ -10,6 +10,8 @@ import com.sky.kms.domain.PublishableMessage._
 import com.sky.kms.domain._
 import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduledMessagePublisher._
+import com.sky.kms.{Start, Stop}
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.ProducerRecord
 
 import scala.concurrent.Future
@@ -19,29 +21,38 @@ import scala.concurrent.Future
   * writes the scheduled messages to the specified Kafka topics and then deletes the schedules
   * from the scheduling Kafka topic to mark completion
   */
-case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sink[In, Mat])
-                                    (implicit system: ActorSystem, materializer: ActorMaterializer)
-  extends ScheduledMessagePublisherStream {
+case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sink[SinkIn, SinkMat])
+                                    (implicit system: ActorSystem) extends LazyLogging {
 
-  def stream: SourceQueueWithComplete[(ScheduleId, ScheduledMessage)] =
-    Source.queue[(ScheduleId, ScheduledMessage)](config.queueBufferSize, OverflowStrategy.backpressure)
-      .mapConcat(splitToMessageAndDeletion)
-      .to(publisherSink)
-      .run()
-
-  val splitToMessageAndDeletion: ((ScheduleId, ScheduledMessage)) => List[In] = {
+  val splitToMessageAndDeletion: (In) => List[SinkIn] = {
     case (scheduleId, scheduledMessage) =>
       logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.topic} and deleting it from ${config.scheduleTopic}")
       List(scheduledMessage, ScheduleDeletion(scheduleId, config.scheduleTopic))
   }
+
+  val stream: RunnableGraph[Mat] =
+    Source.queue[In](config.queueBufferSize, OverflowStrategy.backpressure)
+      .mapConcat(splitToMessageAndDeletion)
+      .to(publisherSink)
 }
 
 object ScheduledMessagePublisher {
 
-  type In = ProducerRecord[Array[Byte], Array[Byte]]
-  type Mat = Future[Done]
+  type In = (ScheduleId, ScheduledMessage)
+  type Mat = SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]
 
-  def reader(implicit system: ActorSystem,
-             materializer: ActorMaterializer): Reader[AppConfig, ScheduledMessagePublisher] =
-    SchedulerConfig.reader.map(conf => ScheduledMessagePublisher(conf, KafkaStream.sink))
+  type SinkIn = ProducerRecord[Array[Byte], Array[Byte]]
+  type SinkMat = Future[Done]
+
+  def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] =
+    SchedulerConfig.reader.map(ScheduledMessagePublisher(_, KafkaStream.sink))
+
+  def run(implicit mat: ActorMaterializer): Start[Mat] =
+    Reader(_.scheduledMessagePublisher.stream.run())
+
+  def stop: Stop[Done] =
+    Stop { app =>
+      app.runningPublisher.complete()
+      app.runningPublisher.watchCompletion()
+    }
 }

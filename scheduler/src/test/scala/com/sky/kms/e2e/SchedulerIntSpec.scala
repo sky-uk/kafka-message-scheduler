@@ -2,25 +2,23 @@ package com.sky.kms.e2e
 
 import java.util.UUID
 
+import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
-import com.sky.kms.config._
-import com.sky.kms.domain._
-import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.common.{AkkaStreamBaseSpec, KafkaIntSpec}
+import com.sky.kms.config._
+import com.sky.kms.domain._
 import org.apache.kafka.common.serialization._
 import org.scalatest.Assertion
-import org.zalando.grafter.Rewriter
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
 
   val ScheduleTopic = "scheduleTopic"
 
-  val shutdownTimeout = ShutdownTimeout(10 seconds, 10 seconds)
-
-  val conf = AppConfig(SchedulerConfig(ScheduleTopic, shutdownTimeout, 100))
+  val conf = AppConfig(SchedulerConfig(ScheduleTopic, 10 seconds, 100))
 
   val tolerance = 200 millis
 
@@ -44,11 +42,15 @@ class SchedulerIntSpec extends AkkaStreamBaseSpec with KafkaIntSpec {
   }
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
-    val app = ScheduleReader.reader.run(conf)
+    val app = SchedulerApp.configure apply conf
+    val runningApp = SchedulerApp.run apply app
 
     scenario
-    Rewriter.stop(app).value
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Await.ready(SchedulerApp.stop apply runningApp, conf.scheduler.shutdownTimeout)
   }
 
-  private def consumeLatestFromScheduleTopic = consumeFromKafka(ScheduleTopic, 2, new StringDeserializer).last
+  private def consumeLatestFromScheduleTopic =
+    consumeFromKafka(ScheduleTopic, 2, new StringDeserializer).last
 }

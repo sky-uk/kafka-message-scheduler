@@ -5,14 +5,10 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.SourceQueue
-import cats.data.Reader
 import com.sky.kms.SchedulingActor._
-import com.sky.kms.config.AppConfig
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
-import com.sky.kms.streams.ScheduledMessagePublisher
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
@@ -86,12 +82,7 @@ object SchedulingActor {
 
   case object Ack
 
-  def reader(implicit system: ActorSystem, mat: ActorMaterializer): Reader[AppConfig, ActorRef] =
-    ScheduledMessagePublisher.reader.map(publisher =>
-      system.actorOf(props(publisher.stream, system.scheduler), "scheduling-actor")
-    )
-
-  private def props(queue: SourceQueue[(ScheduleId, ScheduledMessage)], scheduler: Scheduler): Props =
-    Props(new SchedulingActor(queue, scheduler))
+  def props(queue: SourceQueue[(String, ScheduledMessage)])(implicit system: ActorSystem): Props =
+    Props(new SchedulingActor(queue, system.scheduler))
 
 }

@@ -1,30 +1,38 @@
 package com.sky.kms
 
-import com.sky.BuildInfo
-import com.sky.kms.config.AppConfig
-import com.sky.kms.streams.ScheduleReader
-import com.typesafe.scalalogging.LazyLogging
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import cats.implicits.catsStdInstancesForFuture
+import com.sky.kms.config.Configured
+import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
-import org.zalando.grafter._
-import pureconfig._
 
-import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
 
-object SchedulerApp extends App with LazyLogging with AkkaComponents {
+case class SchedulerApp(scheduleReader: ScheduleReader, scheduledMessagePublisher: ScheduledMessagePublisher)
 
-  val conf = loadConfigOrThrow[AppConfig]
-  Kamon.start()
+object SchedulerApp {
 
-  logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")
-  val app = ScheduleReader.reader.run(conf)
+  case class Running(runningReader: ScheduleReader.Mat, runningPublisher: ScheduledMessagePublisher.Mat)
 
-  sys.addShutdownHook {
-    logger.info("Kafka Message Scheduler shutting down...")
-    Rewriter.stop(app).value
+  def configure(implicit system: ActorSystem): Configured[SchedulerApp] =
+    for {
+      scheduleReader <- ScheduleReader.configure
+      publisher <- ScheduledMessagePublisher.configure
+    } yield SchedulerApp(scheduleReader, publisher)
 
-    materializer.shutdown()
-    Await.result(system.terminate(), conf.scheduler.shutdownTimeout.system)
-
-    Kamon.shutdown()
+  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
+    Kamon.start()
+    for {
+      runningPublisher <- ScheduledMessagePublisher.run
+      runningReader <- ScheduleReader.run(runningPublisher)
+    } yield Running(runningReader, runningPublisher)
   }
+
+  def stop(implicit ec: ExecutionContext): Stop[Unit] =
+    for {
+      _ <- ScheduleReader.stop
+      _ <- ScheduledMessagePublisher.stop
+      _ <- AkkaComponents.stop
+    } yield Kamon.shutdown()
 }

@@ -15,7 +15,7 @@ object Main extends App with LazyLogging with AkkaComponents {
 
   val app = SchedulerApp.configure apply conf
 
-  val runningApp = SchedulerApp.run apply app
+  val runningApp = SchedulerApp.run apply app value
 
   sys.addShutdownHook {
     logger.info("Kafka Message Scheduler shutting down...")

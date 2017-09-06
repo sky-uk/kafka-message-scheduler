@@ -5,7 +5,6 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.{Done, NotUsed}
-import cats.data.Reader
 import com.sky.kms.SchedulingActor._
 import com.sky.kms._
 import com.sky.kms.config._
@@ -49,11 +48,13 @@ object ScheduleReader extends LazyLogging {
   def configure(implicit system: ActorSystem): Configured[ScheduleReader] =
     SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
 
-  def run(queue: ScheduledMessagePublisher.Mat)(implicit system: ActorSystem, mat: ActorMaterializer): Start[Mat] = {
-    val actorRef = system.actorOf(SchedulingActor.props(queue))
-    val actorSink = Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)
-    Reader(_.scheduleReader.stream(actorSink).run())
-  }
+  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Mat] =
+    for {
+      queue <- ScheduledMessagePublisher.run
+      actorRef = system.actorOf(SchedulingActor.props(queue))
+      actorSink = Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)
+      running <- Start(_.scheduleReader.stream(actorSink).run())
+    } yield running
 
   def stop: Stop[Done] =
     Stop(_.runningReader.shutdown())

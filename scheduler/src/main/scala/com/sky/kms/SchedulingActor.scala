@@ -53,7 +53,10 @@ class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaSchedu
   private val handleTrigger: Receive = {
     case Trigger(scheduleId, schedule) =>
       log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
-      queue.offer((scheduleId, messageFrom(schedule)))
+      queue.offer((scheduleId, messageFrom(schedule))).failed.foreach { error =>
+        log.warning(s"Could not add schedule $scheduleId to queue. Queue returned error: ${error.getMessage}")
+      }
+
   }
 
   private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =

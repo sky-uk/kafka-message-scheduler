@@ -86,7 +86,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       advanceToTimeFrom(schedule, now)
 
       eventually {
-        verify(mockLogger).warning(s"Could not add schedule $scheduleId to queue. Queue returned error: bad")
+        verify(mockLogger).warning(s"Could not add schedule $scheduleId to the publisher. Publisher returned error: bad")
       }
     }
 

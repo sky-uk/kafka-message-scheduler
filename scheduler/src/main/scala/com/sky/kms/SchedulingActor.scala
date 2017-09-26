@@ -13,7 +13,7 @@ import com.sky.kms.domain._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
-class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaScheduler: Scheduler) extends Actor with ActorLogging {
+class SchedulingActor(publisher: SourceQueue[(String, ScheduledMessage)], akkaScheduler: Scheduler) extends Actor with ActorLogging {
 
   override def receive: Receive = waitForInit
 
@@ -52,8 +52,10 @@ class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaSchedu
 
   private val handleTrigger: Receive = {
     case Trigger(scheduleId, schedule) =>
-      log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
-      queue.offer((scheduleId, messageFrom(schedule)))
+      log.info(s"$scheduleId is due. Adding schedule to the publisher. Scheduled time was ${schedule.time}")
+      publisher.offer((scheduleId, messageFrom(schedule))).failed.foreach { error =>
+        log.warning(s"Could not add schedule $scheduleId to the publisher. Publisher returned error: ${error.getMessage}")
+      }
   }
 
   private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =

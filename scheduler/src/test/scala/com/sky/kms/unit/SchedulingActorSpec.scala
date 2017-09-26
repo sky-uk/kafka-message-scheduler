@@ -14,12 +14,12 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
 import org.mockito.Mockito._
+import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 
-class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar {
+import scala.concurrent.Future
 
-  val mockLogger = mock[LoggingAdapter]
-  val mockSourceQueue = mock[SourceQueue[(ScheduleId, ScheduledMessage)]]
+class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar with Eventually {
 
   "A scheduling actor" must {
     "schedule new messages at the given time" in new SchedulingActorTest {
@@ -66,8 +66,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "accept scheduling messages only after it has received an Init" in {
-
-      val actorRef = TestActorRef(new SchedulingActor(mockSourceQueue, system.scheduler))
+      val actorRef = TestActorRef(new SchedulingActor(mock[SourceQueue[(ScheduleId, ScheduledMessage)]], system.scheduler))
       val (scheduleId, schedule) = generateSchedule()
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
@@ -79,9 +78,24 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       expectMsg(Ack)
     }
 
+    "warn if the publishing queue returns a failure" in new SchedulingActorTest {
+      val (scheduleId, schedule) = generateSchedule()
+      createSchedule(scheduleId, schedule)
+
+      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage))).thenReturn(Future.failed(new Exception("bad")))
+      advanceToTimeFrom(schedule, now)
+
+      eventually {
+        verify(mockLogger).warning(s"Could not add schedule $scheduleId to the publisher. Publisher returned error: bad")
+      }
+    }
+
   }
 
   private class SchedulingActorTest {
+    val mockLogger = mock[LoggingAdapter]
+    val mockSourceQueue = mock[SourceQueue[(ScheduleId, ScheduledMessage)]]
+
     val now = System.currentTimeMillis()
 
     val time = new VirtualTime

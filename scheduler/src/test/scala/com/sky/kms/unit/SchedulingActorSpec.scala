@@ -94,9 +94,13 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       }
     }
 
-    import QueueOfferResult._
+    val queueOfferResults = List(
+      QueueOfferResult.Dropped,
+      QueueOfferResult.QueueClosed,
+      QueueOfferResult.Failure(new Exception("Test"))
+    )
 
-    List(Dropped, QueueClosed, Failure(new Exception("Test"))).foreach { queueOfferResult =>
+    queueOfferResults.foreach { queueOfferResult =>
       s"warn and do nothing when queue offer result is $queueOfferResult" in new SchedulingActorTest {
         val (scheduleId, schedule) = generateSchedule()
         when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))

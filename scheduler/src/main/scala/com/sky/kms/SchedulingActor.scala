@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.stream.QueueOfferResult._
+import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueue
 import cats.syntax.show._
 import com.sky.kms.SchedulingActor._
@@ -14,7 +14,7 @@ import com.sky.kms.domain._
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaScheduler: Scheduler) extends Actor with ActorLogging {
 
@@ -59,9 +59,9 @@ class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaSchedu
     case Trigger(scheduleId, schedule) =>
       log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
       queue.offer((scheduleId, messageFrom(schedule))) onComplete {
-        case Success(Enqueued) => log.info(ScheduleQueueOfferResult(scheduleId, Enqueued).show)
+        case Success(QueueOfferResult.Enqueued) => log.info(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
         case Success(res) => log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
-        case scala.util.Failure(t) => log.warning(s"Failed to enqueue $scheduleId. ${t.getMessage}")
+        case Failure(t) => log.warning(s"Failed to enqueue $scheduleId. ${t.getMessage}")
       }
   }
 

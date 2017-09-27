@@ -5,15 +5,20 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueue
+import cats.syntax.show._
 import com.sky.kms.SchedulingActor._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success}
 
 class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaScheduler: Scheduler) extends Actor with ActorLogging {
+
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
 
   override def receive: Receive = waitForInit
 
@@ -53,7 +58,11 @@ class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaSchedu
   private val handleTrigger: Receive = {
     case Trigger(scheduleId, schedule) =>
       log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
-      queue.offer((scheduleId, messageFrom(schedule)))
+      queue.offer((scheduleId, messageFrom(schedule))) onComplete {
+        case Success(QueueOfferResult.Enqueued) => log.info(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
+        case Success(res) => log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
+        case Failure(t) => log.warning(s"Failed to enqueue $scheduleId. ${t.getMessage}")
+      }
   }
 
   private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =

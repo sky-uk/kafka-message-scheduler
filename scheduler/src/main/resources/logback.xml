@@ -5,7 +5,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.sky.kafka.message.scheduler" level="INFO" additivity="false">
+    <logger name="com.sky.kms" level="INFO" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
 

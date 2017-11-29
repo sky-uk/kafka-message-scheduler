@@ -5,11 +5,11 @@
         </encoder>
     </appender>
 
-    <logger name="com.sky.kms" level="${KMS-LOGGING-LEVEL:-INFO}" additivity="false">
+    <logger name="com.sky.kms" level="${KMS_LOGGING_LEVEL:-INFO}" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
 
-    <root level="${KMS-ROOT-LOGGING-LEVEL:-WARN}">
+    <root level="${KMS_ROOT_LOGGING_LEVEL:-WARN}">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

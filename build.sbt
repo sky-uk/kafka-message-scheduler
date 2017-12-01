@@ -17,6 +17,8 @@ val dependencies = Seq(
   "com.sksamuel.avro4s"        %% "avro4s-core"                % "1.7.0",
   "org.typelevel"              %% "cats"                       % "0.9.0",
   "ch.qos.logback"              % "logback-classic"            % "1.2.3"      % Runtime,
+  "net.logstash.logback"        % "logstash-logback-encoder"   % "4.11"       % Runtime,
+  "org.codehaus.janino"         % "janino"                     % "2.7.8"      % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                 % "0.7.2",
   "org.zalando"                %% "grafter"                    % "2.1.1",
 

@@ -1,8 +1,15 @@
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
+        <if condition='property("KMS_LOGGING_LOGSTASH").contains("true")'>
+            <then>
+                <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+            </then>
+            <else>
+                <encoder>
+                    <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                </encoder>
+            </else>
+        </if>
     </appender>
 
     <logger name="com.sky.kms" level="${KMS_LOGGING_LEVEL:-INFO}" additivity="false">

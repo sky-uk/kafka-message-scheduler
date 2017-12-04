@@ -1,6 +1,6 @@
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <if condition='property("KMS_LOGGING_LOGSTASH").contains("true")'>
+        <if condition='isDefined("KMS_LOGGING_LOGSTASH")'>
             <then>
                 <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
             </then>

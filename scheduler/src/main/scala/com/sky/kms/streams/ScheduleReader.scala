@@ -14,15 +14,30 @@ import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, Mat, SinkIn, SinkMat}
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.concurrent.ExecutionContextExecutor
+import scala.util.Failure
+import scala.util.control.NonFatal
+
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
-case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) {
+case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) extends LazyLogging {
 
-  def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[Mat] =
-    scheduleSource
+  def stream(sink: Sink[SinkIn, SinkMat])(implicit system: ActorSystem, materializer: Materializer) = {
+    implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+
+    val (control, (result, _)) = scheduleSource
       .map(ScheduleReader.toSchedulingMessage)
-      .to(PartitionedSink.withRight(sink))
+      .toMat(PartitionedSink.withRight(sink))(Keep.both).run()
+
+    result.onComplete {
+      case Failure(NonFatal(e)) =>
+        logger.error("Failure during consumption, killing application", e)
+        control.shutdown() onComplete (_ => System.exit(1))
+    }
+
+    control
+  }
 }
 
 object ScheduleReader extends LazyLogging {
@@ -53,7 +68,7 @@ object ScheduleReader extends LazyLogging {
       queue <- ScheduledMessagePublisher.run
       actorRef = system.actorOf(SchedulingActor.props(queue))
       actorSink = Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)
-      running <- Start(_.scheduleReader.stream(actorSink).run())
+      running <- Start(_.scheduleReader.stream(actorSink))
     } yield running
 
   def stop: Stop[Done] =

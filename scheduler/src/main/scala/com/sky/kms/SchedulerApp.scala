@@ -6,7 +6,6 @@ import cats.implicits.catsStdInstancesForFuture
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
-import org.zalando.grafter.Rewriter._
 
 import scala.concurrent.ExecutionContext
 
@@ -16,20 +15,19 @@ object SchedulerApp {
 
   case class Running(runningReader: ScheduleReader.Mat, runningPublisher: ScheduledMessagePublisher.Mat)
 
-  def configure(implicit system: ActorSystem): Configured[SchedulerApp] = {
+  def configure(implicit system: ActorSystem): Configured[SchedulerApp] =
     for {
       scheduleReader <- ScheduleReader.configure
       publisher <- ScheduledMessagePublisher.configure
     } yield SchedulerApp(scheduleReader, publisher)
-  }.singletons
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
     Kamon.start()
     for {
       runningPublisher <- ScheduledMessagePublisher.run
-      runningReader <- ScheduleReader.run
+      runningReader <- ScheduleReader.run(runningPublisher)
     } yield Running(runningReader, runningPublisher)
-  }.singletons
+  }
 
   def stop(implicit ec: ExecutionContext): Stop[Unit] =
     for {

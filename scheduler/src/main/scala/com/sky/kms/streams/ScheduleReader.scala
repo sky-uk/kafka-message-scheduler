@@ -5,39 +5,26 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.{Done, NotUsed}
+import cats.Eval
 import com.sky.kms.SchedulingActor._
 import com.sky.kms._
 import com.sky.kms.config._
 import com.sky.kms.domain.ApplicationError._
+import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
 import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, Mat, SinkIn, SinkMat}
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.ExecutionContextExecutor
-import scala.util.Failure
-import scala.util.control.NonFatal
-
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
-case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) extends LazyLogging {
+case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) {
 
-  def stream(sink: Sink[SinkIn, SinkMat])(implicit system: ActorSystem, materializer: Materializer) = {
-    implicit val executionContext: ExecutionContextExecutor = system.dispatcher
-
-    val (control, (result, _)) = scheduleSource
+  def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[Mat] =
+    scheduleSource
       .map(ScheduleReader.toSchedulingMessage)
-      .toMat(PartitionedSink.withRight(sink))(Keep.both).run()
-
-    result.onComplete {
-      case Failure(NonFatal(e)) =>
-        logger.error("Failure during consumption, killing application", e)
-        control.shutdown() onComplete (_ => System.exit(1))
-    }
-
-    control
-  }
+      .to(PartitionedSink.withRight(sink))
 }
 
 object ScheduleReader extends LazyLogging {
@@ -63,13 +50,13 @@ object ScheduleReader extends LazyLogging {
   def configure(implicit system: ActorSystem): Configured[ScheduleReader] =
     SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
 
-  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Mat] =
-    for {
-      queue <- ScheduledMessagePublisher.run
-      actorRef = system.actorOf(SchedulingActor.props(queue))
-      actorSink = Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)
-      running <- Start(_.scheduleReader.stream(actorSink))
-    } yield running
+  def run(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem,
+                                                                      mat: ActorMaterializer): Start[Mat] =
+    Start(app => Eval.later {
+      val actorRef = system.actorOf(SchedulingActor.props(queue))
+      val actorSink = Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)
+      app.scheduleReader.stream(actorSink).run()
+    })
 
   def stop: Stop[Done] =
     Stop(_.runningReader.shutdown())

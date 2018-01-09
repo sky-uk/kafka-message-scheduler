@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import akka.stream.QueueOfferResult
-import akka.stream.scaladsl.SourceQueue
+import akka.stream.scaladsl.{SourceQueue, SourceQueueWithComplete}
 import akka.testkit.{ImplicitSender, TestActorRef}
 import cats.syntax.show._
 import com.miguno.akka.testing.VirtualTime
@@ -68,7 +68,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "accept scheduling messages only after it has received an Init" in {
-      val actorRef = TestActorRef(new SchedulingActor(mock[SourceQueue[(ScheduleId, ScheduledMessage)]], system.scheduler))
+      val actorRef = TestActorRef(new SchedulingActor(mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]], system.scheduler))
       val (scheduleId, schedule) = generateSchedule()
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
@@ -120,7 +120,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
   private class SchedulingActorTest {
 
     val mockLogger = mock[LoggingAdapter]
-    val mockSourceQueue = mock[SourceQueue[(ScheduleId, ScheduledMessage)]]
+    val mockSourceQueue = mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]]
 
     val now = System.currentTimeMillis()
 

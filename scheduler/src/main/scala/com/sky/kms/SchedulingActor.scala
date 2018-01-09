@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.stream.QueueOfferResult
-import akka.stream.scaladsl.SourceQueue
+import akka.stream.scaladsl.SourceQueueWithComplete
 import cats.syntax.show._
 import com.sky.kms.SchedulingActor._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaScheduler: Scheduler) extends Actor with ActorLogging {
+class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)], akkaScheduler: Scheduler) extends Actor with ActorLogging {
 
   implicit val ec: ExecutionContextExecutor = context.dispatcher
 
@@ -47,7 +47,7 @@ class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaSchedu
         schedules - scheduleId
     }
 
-    (handleSchedulingMessage andThen updateStateAndAck) orElse handleTrigger
+    (handleSchedulingMessage andThen updateStateAndAck) orElse handleTrigger orElse handleFailure
   }
 
   private def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
@@ -63,6 +63,11 @@ class SchedulingActor(queue: SourceQueue[(String, ScheduledMessage)], akkaSchedu
         case Success(res) => log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
         case Failure(t) => log.warning(s"Failed to enqueue $scheduleId. ${t.getMessage}")
       }
+  }
+
+  private val handleFailure: Receive = {
+    case Status.Failure(t) =>
+      queue.fail(t)
   }
 
   private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =
@@ -91,6 +96,6 @@ object SchedulingActor {
 
   case object Ack
 
-  def props(queue: SourceQueue[(String, ScheduledMessage)])(implicit system: ActorSystem): Props =
+  def props(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem): Props =
     Props(new SchedulingActor(queue, system.scheduler))
 }

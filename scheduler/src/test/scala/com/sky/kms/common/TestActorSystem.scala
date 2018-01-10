@@ -11,6 +11,11 @@ object TestActorSystem {
   def config(kafkaPort: Int) =
     s"""
        |akka {
+       | coordinated-shutdown {
+       |  terminate-actor-system = off
+       |  run-by-jvm-shutdown-hook = off
+       | }
+       |
        | kafka {
        |  consumer {
        |    kafka-clients {

@@ -5,12 +5,12 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import cats.Eval
+import com.sky.kms.Start
 import com.sky.kms.config._
 import com.sky.kms.domain.PublishableMessage._
 import com.sky.kms.domain._
 import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduledMessagePublisher._
-import com.sky.kms.{Start, Stop}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.ProducerRecord
 
@@ -30,13 +30,15 @@ case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sin
       List(scheduledMessage, ScheduleDeletion(scheduleId, config.scheduleTopic))
   }
 
-  val stream: RunnableGraph[Mat] =
+  def stream: RunnableGraph[(Mat, SinkMat)] =
     Source.queue[In](config.queueBufferSize, OverflowStrategy.backpressure)
       .mapConcat(splitToMessageAndDeletion)
-      .to(publisherSink)
+      .toMat(publisherSink)(Keep.both)
 }
 
 object ScheduledMessagePublisher {
+
+  case class Running(materializedSource: Mat, materializedSink: SinkMat)
 
   type In = (ScheduleId, ScheduledMessage)
   type Mat = SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]
@@ -47,12 +49,9 @@ object ScheduledMessagePublisher {
   def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] =
     SchedulerConfig.reader.map(ScheduledMessagePublisher(_, KafkaStream.sink))
 
-  def run(implicit mat: ActorMaterializer): Start[Mat] =
-    Start(app => Eval.later(app.scheduledMessagePublisher.stream.run()))
-
-  def stop: Stop[Done] =
-    Stop { app =>
-      app.runningPublisher.complete()
-      app.runningPublisher.watchCompletion()
-    }
+  def run(implicit mat: ActorMaterializer): Start[Running] =
+    Start(app => Eval.later {
+      val (sourceMat, sinkMat) = app.scheduledMessagePublisher.stream.run()
+      Running(sourceMat, sinkMat)
+    })
 }

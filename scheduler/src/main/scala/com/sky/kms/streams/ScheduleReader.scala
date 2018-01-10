@@ -21,13 +21,15 @@ import com.typesafe.scalalogging.LazyLogging
   */
 case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) {
 
-  def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[Mat] =
+  def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[(Mat, SinkMat)] =
     scheduleSource
       .map(ScheduleReader.toSchedulingMessage)
-      .to(PartitionedSink.withRight(sink))
+      .toMat(PartitionedSink.withRight(sink).mapMaterializedValue(_._2))(Keep.both)
 }
 
 object ScheduleReader extends LazyLogging {
+
+  case class Running(materializedSource: Mat, materializedSink: SinkMat)
 
   type In = Either[ApplicationError, (ScheduleId, Option[Schedule])]
   type Mat = Control
@@ -51,13 +53,11 @@ object ScheduleReader extends LazyLogging {
     SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
 
   def run(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem,
-                                                                      mat: ActorMaterializer): Start[Mat] =
+                                                                      mat: ActorMaterializer): Start[Running] =
     Start(app => Eval.later {
       val actorRef = system.actorOf(SchedulingActor.props(queue))
       val actorSink = Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)
-      app.scheduleReader.stream(actorSink).run()
+      val (srcMat, sinkMat) = app.scheduleReader.stream(actorSink).run()
+      Running(srcMat, sinkMat)
     })
-
-  def stop: Stop[Done] =
-    Stop(_.runningReader.shutdown())
 }

@@ -47,7 +47,7 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
         schedules - scheduleId
     }
 
-    (handleSchedulingMessage andThen updateStateAndAck) orElse handleTrigger orElse handleFailure
+    (handleSchedulingMessage andThen updateStateAndAck) orElse handleTrigger orElse handleUpstreamFailure
   }
 
   private def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
@@ -59,15 +59,21 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
     case Trigger(scheduleId, schedule) =>
       log.info(s"$scheduleId is due. Adding schedule to queue. Scheduled time was ${schedule.time}")
       queue.offer((scheduleId, messageFrom(schedule))) onComplete {
-        case Success(QueueOfferResult.Enqueued) => log.info(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
-        case Success(res) => log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
-        case Failure(t) => log.warning(s"Failed to enqueue $scheduleId. ${t.getMessage}")
+        case Success(QueueOfferResult.Enqueued) =>
+          log.info(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
+        case Success(res) =>
+          log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
+        case Failure(t) =>
+          log.error(s"Failed to enqueue $scheduleId because the publisher stream is dead, terminating reader stream.", t)
+          context stop self
       }
   }
 
-  private val handleFailure: Receive = {
+  private val handleUpstreamFailure: Receive = {
     case Status.Failure(t) =>
-      queue.fail(t)
+      log.error("Reader stream has died", t)
+      queue fail t
+      context stop self
   }
 
   private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =

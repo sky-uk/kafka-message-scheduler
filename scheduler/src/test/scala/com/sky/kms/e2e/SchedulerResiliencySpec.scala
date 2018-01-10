@@ -3,6 +3,7 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import akka.Done
+import akka.actor.CoordinatedShutdown
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.Source
 import com.sky.kms.SchedulerApp
@@ -18,7 +19,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.zalando.grafter.syntax.rewriter._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
 
@@ -29,15 +30,15 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
     "terminate publisher stream when the reader stream fails" in new TestContext {
 
       withRunningScheduler(app.replace[Source[_, Control]](sourceThatWillFail)) { app =>
-        app.runningPublisher.watchCompletion().failed.futureValue shouldBe a[Exception]
+        app.runningPublisher.materializedSource.watchCompletion().failed.futureValue shouldBe a[Exception]
       }
     }
 
     "terminate reader stream when publisher stream fails" in new TestContext {
 
       withRunningScheduler(app) { running =>
-        causePublisherToFail(running.runningPublisher)
-        running.runningReader.isShutdown.futureValue shouldBe Done
+        causePublisherToFail(running.runningPublisher.materializedSource)
+        running.runningReader.materializedSource.isShutdown.futureValue shouldBe Done
       }
     }
   }
@@ -51,7 +52,7 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
 
       scenario(runningApp)
 
-      Await.ready(SchedulerApp.stop apply runningApp, conf.shutdownTimeout)
+      CoordinatedShutdown(system).run()
     }
 
     val sourceThatWillFail = Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))

@@ -2,10 +2,10 @@ package com.sky.kms.unit
 
 import java.util.UUID
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Status}
 import akka.event.LoggingAdapter
 import akka.stream.QueueOfferResult
-import akka.stream.scaladsl.{SourceQueue, SourceQueueWithComplete}
+import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.testkit.{ImplicitSender, TestActorRef}
 import cats.syntax.show._
 import com.miguno.akka.testing.VirtualTime
@@ -80,18 +80,27 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       expectMsg(Ack)
     }
 
-    "warn and do nothing when the downstream queue is in a failed state" in new SchedulingActorTest {
+    "stop when the queue has been terminated" in new SchedulingActorTest {
       val (scheduleId, schedule) = generateSchedule()
       when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
         .thenReturn(Future.failed(new Exception("Test")))
 
       createSchedule(scheduleId, schedule)
+      watch(actorRef)
 
       advanceToTimeFrom(schedule, now)
 
-      eventually {
-        verify(mockLogger).warning(s"Failed to enqueue $scheduleId. Test")
-      }
+      expectTerminated(actorRef)
+    }
+
+    "fail the queue and stop when receiving a failure message" in new SchedulingActorTest {
+      watch(actorRef)
+      val exception = new Exception("Test")
+
+      actorRef ! Status.Failure(exception)
+
+      verify(mockSourceQueue).fail(exception)
+      expectTerminated(actorRef)
     }
 
     val queueOfferResults = List(

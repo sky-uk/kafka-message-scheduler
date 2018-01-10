@@ -11,7 +11,6 @@ import com.sky.kms.kafka.ConsumerRecordDecoder
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
-import scala.concurrent.Future
 import scala.util.Try
 
 package object kms extends LazyLogging {
@@ -40,12 +39,6 @@ package object kms extends LazyLogging {
 
   object Start {
     def apply[T](f: SchedulerApp => Eval[T]): Start[T] = Kleisli(f)
-  }
-
-  type Stop[T] = ReaderT[Future, SchedulerApp.Running, T]
-
-  object Stop {
-    def apply[T](f: SchedulerApp.Running => Future[T]): Stop[T] = Kleisli(f)
   }
 
 }

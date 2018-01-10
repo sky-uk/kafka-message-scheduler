@@ -58,7 +58,7 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
   private def withRunningScheduleReader(scenario: TestProbe => Assertion) {
     val probe = TestProbe()
     val scheduleReader = ScheduleReader.configure apply AppConfig(conf)
-    val running = scheduleReader.stream(Sink.actorRef(probe.ref, "complete")).run()
+    val (running, _) = scheduleReader.stream(Sink.actorRef(probe.ref, "complete")).run()
 
     scenario(probe)
 

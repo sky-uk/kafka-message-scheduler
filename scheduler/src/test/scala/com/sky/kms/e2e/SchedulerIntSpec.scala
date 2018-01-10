@@ -2,6 +2,7 @@ package com.sky.kms.e2e
 
 import java.util.UUID
 
+import akka.actor.CoordinatedShutdown
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntBaseSpec
@@ -11,7 +12,6 @@ import com.sky.kms.domain._
 import org.apache.kafka.common.serialization._
 import org.scalatest.Assertion
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class SchedulerIntSpec extends SchedulerIntBaseSpec {
@@ -39,12 +39,11 @@ class SchedulerIntSpec extends SchedulerIntBaseSpec {
 
   private def withRunningSchedulerStream(scenario: => Assertion) {
     val app = SchedulerApp.configure apply AppConfig(conf)
-    val runningApp = SchedulerApp.run apply app value
+    SchedulerApp.run apply app value
 
     scenario
 
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Await.ready(SchedulerApp.stop apply runningApp, conf.shutdownTimeout)
+    CoordinatedShutdown(system).run()
   }
 
   private def consumeLatestFromScheduleTopic =

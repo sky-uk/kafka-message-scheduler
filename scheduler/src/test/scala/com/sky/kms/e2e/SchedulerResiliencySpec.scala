@@ -1,7 +1,5 @@
 package com.sky.kms.e2e
 
-import java.util.UUID
-
 import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.kafka.scaladsl.Consumer.Control
@@ -9,10 +7,7 @@ import akka.stream.scaladsl.Source
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntBaseSpec
-import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config.AppConfig
-import com.sky.kms.domain.Schedule
-import com.sky.kms.streams.ScheduledMessagePublisher
 import org.scalatest.Assertion
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -27,7 +22,7 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
     PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(500, Millis)))
 
   "KMS" should {
-    "terminate publisher stream when the reader stream fails" in new TestContext {
+    "terminate publisher stream when the reader stream fails" in new TestContext with FailingSource {
 
       withRunningScheduler(app.replace[Source[_, Control]](sourceThatWillFail)) { app =>
         app.runningPublisher.materializedSource.watchCompletion().failed.futureValue shouldBe a[Exception]
@@ -37,7 +32,7 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
     "terminate reader stream when publisher stream fails" in new TestContext {
 
       withRunningScheduler(app) { running =>
-        causePublisherToFail(running.runningPublisher.materializedSource)
+        running.runningPublisher.materializedSource.fail(new Exception("boom!"))
         running.runningReader.materializedSource.isShutdown.futureValue shouldBe Done
       }
     }
@@ -54,7 +49,9 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
 
       CoordinatedShutdown(system).run()
     }
+  }
 
+  private trait FailingSource {
     val sourceThatWillFail = Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
       .mapMaterializedValue(_ =>
         new Control {
@@ -64,13 +61,6 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
 
           override def isShutdown = Future(Done)
         })
-
-    def causePublisherToFail(runningPublisher: ScheduledMessagePublisher.Mat) {
-      val (scheduleId, schedule) =
-        (UUID.randomUUID().toString, random[Schedule].secondsFromNow(2))
-      runningPublisher.fail(new Exception("boom!"))
-      writeToKafka(ScheduleTopic, (scheduleId, schedule.toAvro))
-    }
   }
 
 }

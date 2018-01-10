@@ -5,8 +5,8 @@ import akka.stream.ActorMaterializer
 
 trait AkkaComponents {
 
-  implicit val system = ActorSystem("kafka-message-scheduler")
+  implicit lazy val system = ActorSystem("kafka-message-scheduler")
 
-  implicit val materializer = ActorMaterializer()
+  implicit lazy val materializer = ActorMaterializer()
 
 }

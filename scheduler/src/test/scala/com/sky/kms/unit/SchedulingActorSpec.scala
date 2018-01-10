@@ -2,7 +2,8 @@ package com.sky.kms.unit
 
 import java.util.UUID
 
-import akka.actor.{ActorRef, Status}
+import akka.Done
+import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
@@ -41,7 +42,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       verify(mockLogger).info(s"Cancelled schedule $scheduleId")
 
       advanceToTimeFrom(schedule)
-      verifyZeroInteractions(mockSourceQueue)
+      verify(mockSourceQueue, never()).offer((scheduleId, schedule.toScheduledMessage))
     }
 
     "warn and do nothing when schedule cancelled twice" in new SchedulingActorTest {
@@ -68,7 +69,13 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "accept scheduling messages only after it has received an Init" in {
-      val actorRef = TestActorRef(new SchedulingActor(mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]], system.scheduler))
+      val mockQueue = {
+        val queue = mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]]
+        when(queue.watchCompletion()).thenReturn(Future.successful(Done))
+        queue
+      }
+
+      val actorRef = TestActorRef(new SchedulingActor(mockQueue, system.scheduler))
       val (scheduleId, schedule) = generateSchedule()
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
@@ -97,7 +104,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       watch(actorRef)
       val exception = new Exception("Test")
 
-      actorRef ! Status.Failure(exception)
+      actorRef ! UpstreamFailure(exception)
 
       verify(mockSourceQueue).fail(exception)
       expectTerminated(actorRef)
@@ -129,7 +136,11 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
   private class SchedulingActorTest {
 
     val mockLogger = mock[LoggingAdapter]
-    val mockSourceQueue = mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]]
+    val mockSourceQueue = {
+      val queue = mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]]
+      when(queue.watchCompletion()).thenReturn(Future.successful(Done))
+      queue
+    }
 
     val now = System.currentTimeMillis()
 
@@ -144,12 +155,12 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     def advanceToTimeFrom(schedule: Schedule, startTime: Long = now): Unit =
       time.advance(schedule.timeInMillis - startTime)
 
-    def createSchedule(scheduleId: ScheduleId, schedule: Schedule) = {
+    def createSchedule(scheduleId: ScheduleId, schedule: Schedule) {
       actorRef ! CreateOrUpdate(scheduleId, schedule)
       expectMsg(Ack)
     }
 
-    def cancelSchedule(scheduleId: ScheduleId) = {
+    def cancelSchedule(scheduleId: ScheduleId) {
       actorRef ! Cancel(scheduleId)
       expectMsg(Ack)
     }

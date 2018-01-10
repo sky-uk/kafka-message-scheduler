@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import akka.pattern.pipe
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
 import cats.syntax.show._
@@ -20,13 +21,19 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
 
   implicit val ec: ExecutionContextExecutor = context.dispatcher
 
-  override def receive: Receive = waitForInit
+  override def receive: Receive = {
+    listenForQueueFailure
+    waitForInit orElse handleFailureAndStop
+  }
 
   private val waitForInit: Receive = {
     case Init =>
       context.become(receiveWithSchedules(Map.empty))
       sender ! Ack
   }
+
+  private def listenForQueueFailure =
+    queue.watchCompletion().recover { case t => DownstreamFailure(t) } pipeTo self
 
   private def receiveWithSchedules(schedules: Map[ScheduleId, Cancellable]): Receive = {
 
@@ -47,7 +54,7 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
         schedules - scheduleId
     }
 
-    (handleSchedulingMessage andThen updateStateAndAck) orElse handleTrigger orElse handleUpstreamFailure
+    (handleSchedulingMessage andThen updateStateAndAck) orElse handleTrigger orElse handleFailureAndStop
   }
 
   private def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
@@ -64,16 +71,20 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
         case Success(res) =>
           log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
         case Failure(t) =>
-          log.error(s"Failed to enqueue $scheduleId because the publisher stream is dead, terminating reader stream.", t)
-          context stop self
+          log.error(s"Failed to enqueue $scheduleId because the queue has terminated")
+          self ! DownstreamFailure(t)
       }
   }
 
-  private val handleUpstreamFailure: Receive = {
-    case Status.Failure(t) =>
-      log.error("Reader stream has died", t)
-      queue fail t
-      context stop self
+  private val handleFailureAndStop: Receive = {
+    val handleFailures: Receive = {
+      case UpstreamFailure(t) =>
+        log.error("Reader stream has died", t)
+        queue fail t
+      case DownstreamFailure(t) =>
+        log.error("Publisher stream has died", t)
+    }
+    handleFailures andThen (_ => context stop self)
   }
 
   private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =
@@ -101,6 +112,10 @@ object SchedulingActor {
   case object Init
 
   case object Ack
+
+  case class UpstreamFailure(t: Throwable)
+
+  case class DownstreamFailure(t: Throwable)
 
   def props(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem): Props =
     Props(new SchedulingActor(queue, system.scheduler))

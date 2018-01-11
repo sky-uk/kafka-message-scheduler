@@ -30,7 +30,7 @@ case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sin
       List(scheduledMessage, ScheduleDeletion(scheduleId, config.scheduleTopic))
   }
 
-  def stream: RunnableGraph[(Mat, SinkMat)] =
+  val stream: RunnableGraph[(Mat, SinkMat)] =
     Source.queue[In](config.queueBufferSize, OverflowStrategy.backpressure)
       .mapConcat(splitToMessageAndDeletion)
       .toMat(publisherSink)(Keep.both)

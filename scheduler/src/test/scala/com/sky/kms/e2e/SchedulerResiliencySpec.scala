@@ -38,7 +38,7 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
     }
   }
 
-  private class TestContext {
+  private trait TestContext {
 
     val app = SchedulerApp.configure apply AppConfig(conf)
 

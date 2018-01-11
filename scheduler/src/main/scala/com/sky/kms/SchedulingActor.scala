@@ -5,7 +5,6 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.pattern.pipe
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
 import cats.syntax.show._
@@ -21,19 +20,13 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
 
   implicit val ec: ExecutionContextExecutor = context.dispatcher
 
-  override def receive: Receive = {
-    listenForQueueFailure
-    waitForInit orElse handleFailureAndStop
-  }
+  override def receive: Receive = waitForInit orElse handleFailureAndStop
 
   private val waitForInit: Receive = {
     case Init =>
       context.become(receiveWithSchedules(Map.empty))
       sender ! Ack
   }
-
-  private def listenForQueueFailure =
-    queue.watchCompletion().recover { case t => DownstreamFailure(t) } pipeTo self
 
   private def receiveWithSchedules(schedules: Map[ScheduleId, Cancellable]): Receive = {
 
@@ -101,6 +94,8 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
 
 object SchedulingActor {
 
+  import akka.pattern.pipe
+
   sealed trait SchedulingMessage
 
   case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) extends SchedulingMessage
@@ -117,6 +112,11 @@ object SchedulingActor {
 
   case class DownstreamFailure(t: Throwable)
 
-  def props(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem): Props =
-    Props(new SchedulingActor(queue, system.scheduler))
+  def create(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem): ActorRef = {
+    implicit val ec = system.dispatcher
+    val queueCompletionFuture = queue.watchCompletion().recover { case t => DownstreamFailure(t) }
+    val ref = system.actorOf(Props(new SchedulingActor(queue, system.scheduler)))
+    queueCompletionFuture pipeTo ref
+    ref
+  }
 }

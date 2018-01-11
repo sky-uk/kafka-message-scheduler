@@ -20,7 +20,6 @@ val dependencies = Seq(
   "net.logstash.logback"        % "logstash-logback-encoder"   % "4.11"       % Runtime,
   "org.codehaus.janino"         % "janino"                     % "2.7.8"      % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                 % "0.7.2",
-  "org.zalando"                %% "grafter"                    % "2.1.1",
 
   "io.kamon"                   %% "kamon-jmx"                  % kamonVersion,
   "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,
@@ -34,7 +33,8 @@ val dependencies = Seq(
   "com.danielasfregola"        %% "random-data-generator"      % "2.1"        % Test,
   "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.2"      % Test,
   "com.miguno.akka"            %% "akka-mock-scheduler"        % "0.5.1"      % Test,
-  "org.mockito"                 % "mockito-all"                % "1.10.19"    % Test
+  "org.mockito"                 % "mockito-all"                % "1.10.19"    % Test,
+  "org.zalando"                %% "grafter"                    % "2.1.1"      % Test
 )
 
 val commonSettings = Seq(

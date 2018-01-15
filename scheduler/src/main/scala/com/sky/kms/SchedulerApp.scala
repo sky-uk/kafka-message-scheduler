@@ -1,40 +1,44 @@
 package com.sky.kms
 
-import akka.actor.ActorSystem
+import akka.Done
+import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.stream.ActorMaterializer
-import cats.implicits.catsStdInstancesForFuture
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
-import org.zalando.grafter.Rewriter._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 case class SchedulerApp(scheduleReader: ScheduleReader, scheduledMessagePublisher: ScheduledMessagePublisher)
 
 object SchedulerApp {
 
-  case class Running(runningReader: ScheduleReader.Mat, runningPublisher: ScheduledMessagePublisher.Mat)
+  case class Running(runningReader: ScheduleReader.Running, runningPublisher: ScheduledMessagePublisher.Running)
 
-  def configure(implicit system: ActorSystem): Configured[SchedulerApp] = {
+  def configure(implicit system: ActorSystem): Configured[SchedulerApp] =
     for {
       scheduleReader <- ScheduleReader.configure
       publisher <- ScheduledMessagePublisher.configure
     } yield SchedulerApp(scheduleReader, publisher)
-  }.singletons
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
     Kamon.start()
     for {
       runningPublisher <- ScheduledMessagePublisher.run
-      runningReader <- ScheduleReader.run
-    } yield Running(runningReader, runningPublisher)
-  }.singletons
+      runningReader <- ScheduleReader.run(runningPublisher.materializedSource)
+      running = Running(runningReader, runningPublisher)
+      _ = shutdownAppOnFailure(running)
+      _ = configureKamonShutdown
+    } yield running
+  }
 
-  def stop(implicit ec: ExecutionContext): Stop[Unit] =
-    for {
-      _ <- ScheduleReader.stop
-      _ <- ScheduledMessagePublisher.stop
-      _ <- AkkaComponents.stop
-    } yield Kamon.shutdown()
+  private def shutdownAppOnFailure(runningScheduler: Running)(implicit system: ActorSystem): Unit =
+    runningScheduler.runningPublisher.materializedSink.failed.foreach(_ => CoordinatedShutdown(system).run())(system.dispatcher)
+
+  private def configureKamonShutdown(implicit system: ActorSystem): Unit =
+    CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "shutdown-kamon") { () =>
+      Kamon.shutdown()
+      Future.successful(Done)
+    }
+
 }

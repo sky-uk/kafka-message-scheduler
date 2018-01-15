@@ -5,8 +5,6 @@ import com.sky.kms.config.AppConfig
 import com.typesafe.scalalogging.LazyLogging
 import pureconfig._
 
-import scala.concurrent.Await
-
 object Main extends App with LazyLogging with AkkaComponents {
 
   val conf = loadConfigOrThrow[AppConfig]
@@ -16,13 +14,6 @@ object Main extends App with LazyLogging with AkkaComponents {
   val app = SchedulerApp.configure apply conf
 
   val runningApp = SchedulerApp.run apply app value
-
-  sys.addShutdownHook {
-    logger.info("Kafka Message Scheduler shutting down...")
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Await.ready(SchedulerApp.stop apply runningApp, conf.scheduler.shutdownTimeout)
-  }
 
   logger.info("Kafka Message Scheduler initialisation complete.")
 }

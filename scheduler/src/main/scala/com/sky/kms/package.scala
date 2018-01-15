@@ -1,8 +1,8 @@
 package com.sky
 
+import cats.Eval
 import cats.data.{Kleisli, ReaderT}
 import cats.syntax.either._
-import cats.{Eval, Later}
 import com.sksamuel.avro4s.AvroInputStream
 import com.sky.kms.avro._
 import com.sky.kms.domain.ApplicationError._
@@ -11,7 +11,6 @@ import com.sky.kms.kafka.ConsumerRecordDecoder
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
-import scala.concurrent.Future
 import scala.util.Try
 
 package object kms extends LazyLogging {
@@ -39,13 +38,7 @@ package object kms extends LazyLogging {
   type Start[T] = ReaderT[Eval, SchedulerApp, T]
 
   object Start {
-    def apply[T](f: SchedulerApp => T): Start[T] = Kleisli(f andThen (Eval.later(_)))
-  }
-
-  type Stop[T] = ReaderT[Future, SchedulerApp.Running, T]
-
-  object Stop {
-    def apply[T](f: SchedulerApp.Running => Future[T]): Stop[T] = Kleisli(f)
+    def apply[T](f: SchedulerApp => Eval[T]): Start[T] = Kleisli(f)
   }
 
 }

@@ -5,10 +5,12 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.{Done, NotUsed}
+import cats.Eval
 import com.sky.kms.SchedulingActor._
 import com.sky.kms._
 import com.sky.kms.config._
 import com.sky.kms.domain.ApplicationError._
+import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
 import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, Mat, SinkIn, SinkMat}
@@ -19,13 +21,15 @@ import com.typesafe.scalalogging.LazyLogging
   */
 case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) {
 
-  def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[Mat] =
+  def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[(Mat, SinkMat)] =
     scheduleSource
       .map(ScheduleReader.toSchedulingMessage)
-      .to(PartitionedSink.withRight(sink))
+      .toMat(PartitionedSink.withRight(sink).mapMaterializedValue(_._2))(Keep.both)
 }
 
 object ScheduleReader extends LazyLogging {
+
+  case class Running(materializedSource: Mat, materializedSink: SinkMat)
 
   type In = Either[ApplicationError, (ScheduleId, Option[Schedule])]
   type Mat = Control
@@ -48,14 +52,12 @@ object ScheduleReader extends LazyLogging {
   def configure(implicit system: ActorSystem): Configured[ScheduleReader] =
     SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
 
-  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Mat] =
-    for {
-      queue <- ScheduledMessagePublisher.run
-      actorRef = system.actorOf(SchedulingActor.props(queue))
-      actorSink = Sink.actorRefWithAck(actorRef, SchedulingActor.Init, Ack, Done)
-      running <- Start(_.scheduleReader.stream(actorSink).run())
-    } yield running
-
-  def stop: Stop[Done] =
-    Stop(_.runningReader.shutdown())
+  def run(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem,
+                                                                      mat: ActorMaterializer): Start[Running] =
+    Start(app => Eval.later {
+      val actorSink = Sink.actorRefWithAck(
+        SchedulingActor.create(queue), SchedulingActor.Init, SchedulingActor.Ack, Done, SchedulingActor.UpstreamFailure)
+      val (srcMat, sinkMat) = app.scheduleReader.stream(actorSink).run()
+      Running(srcMat, sinkMat)
+    })
 }

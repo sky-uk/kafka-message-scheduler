@@ -39,7 +39,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       verify(mockLogger).info(s"Cancelled schedule $scheduleId")
 
       advanceToTimeFrom(schedule)
-      verify(mockSourceQueue, never()).offer((scheduleId, schedule.toScheduledMessage))
+      verifyZeroInteractions(mockSourceQueue)
     }
 
     "warn and do nothing when schedule cancelled twice" in new SchedulingActorTest {

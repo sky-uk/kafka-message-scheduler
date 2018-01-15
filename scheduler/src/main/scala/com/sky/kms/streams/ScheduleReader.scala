@@ -55,7 +55,8 @@ object ScheduleReader extends LazyLogging {
   def run(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem,
                                                                       mat: ActorMaterializer): Start[Running] =
     Start(app => Eval.later {
-      val actorSink = Sink.actorRefWithAck(SchedulingActor.create(queue), SchedulingActor.Init, Ack, Done, SchedulingActor.UpstreamFailure)
+      val actorSink = Sink.actorRefWithAck(
+        SchedulingActor.create(queue), SchedulingActor.Init, SchedulingActor.Ack, Done, SchedulingActor.UpstreamFailure)
       val (srcMat, sinkMat) = app.scheduleReader.stream(actorSink).run()
       Running(srcMat, sinkMat)
     })

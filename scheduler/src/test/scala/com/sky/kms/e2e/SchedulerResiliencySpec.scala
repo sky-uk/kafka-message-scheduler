@@ -24,16 +24,16 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
   "KMS" should {
     "terminate publisher stream when the reader stream fails" in new TestContext with FailingSource {
 
-      withRunningScheduler(app.replace[Source[_, Control]](sourceThatWillFail)) { app =>
-        app.runningPublisher.materializedSource.watchCompletion().failed.futureValue shouldBe a[Exception]
+      withRunningScheduler(app.replace[Source[_, Control]](sourceThatWillFail)) { runningApp =>
+        runningApp.runningPublisher.materializedSource.watchCompletion().failed.futureValue shouldBe a[Exception]
       }
     }
 
     "terminate reader stream when publisher stream fails" in new TestContext {
 
-      withRunningScheduler(app) { running =>
-        running.runningPublisher.materializedSource.fail(new Exception("boom!"))
-        running.runningReader.materializedSource.isShutdown.futureValue shouldBe Done
+      withRunningScheduler(app) { runningApp =>
+        runningApp.runningPublisher.materializedSource.fail(new Exception("boom!"))
+        runningApp.runningReader.materializedSource.isShutdown.futureValue shouldBe Done
       }
     }
   }

@@ -24,6 +24,7 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
 
   private val waitForInit: Receive = {
     case Init =>
+      log.info("Initialising new scheduling actor.")
       context.become(receiveWithSchedules(Map.empty))
       sender ! Ack
   }

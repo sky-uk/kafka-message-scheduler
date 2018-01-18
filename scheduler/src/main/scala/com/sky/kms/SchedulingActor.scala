@@ -73,10 +73,10 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
   private val handleFailureAndStop: Receive = {
     val handleFailures: Receive = {
       case UpstreamFailure(t) =>
-        log.error("Reader stream has died", t)
+        log.error(t, "Reader stream has died")
         queue fail t
       case DownstreamFailure(t) =>
-        log.error("Publisher stream has died", t)
+        log.error(t, "Publisher stream has died")
     }
     handleFailures andThen (_ => context stop self)
   }

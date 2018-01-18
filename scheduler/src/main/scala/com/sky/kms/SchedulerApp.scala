@@ -5,13 +5,14 @@ import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.stream.ActorMaterializer
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import com.typesafe.scalalogging.LazyLogging
 import kamon.Kamon
 
 import scala.concurrent.Future
 
 case class SchedulerApp(scheduleReader: ScheduleReader, scheduledMessagePublisher: ScheduledMessagePublisher)
 
-object SchedulerApp {
+object SchedulerApp extends LazyLogging {
 
   case class Running(runningReader: ScheduleReader.Running, runningPublisher: ScheduledMessagePublisher.Running)
 
@@ -33,7 +34,10 @@ object SchedulerApp {
   }
 
   private def shutdownAppOnFailure(runningScheduler: Running)(implicit system: ActorSystem): Unit =
-    runningScheduler.runningPublisher.materializedSink.failed.foreach(_ => CoordinatedShutdown(system).run())(system.dispatcher)
+    runningScheduler.runningPublisher.materializedSink.failed.foreach { t =>
+      logger.error("Publisher sink has failed", t)
+      CoordinatedShutdown(system).run()
+    }(system.dispatcher)
 
   private def configureKamonShutdown(implicit system: ActorSystem): Unit =
     CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "shutdown-kamon") { () =>

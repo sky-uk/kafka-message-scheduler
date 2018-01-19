@@ -64,6 +64,9 @@ class SchedulingActor(queue: SourceQueueWithComplete[(String, ScheduledMessage)]
           log.info(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
         case Success(res) =>
           log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
+        case Failure(_: IllegalStateException) =>
+          log.warning(s"Failed to enqueue $scheduleId because the queue buffer is full. Retrying until enqueued.")
+          self ! Trigger(scheduleId, schedule)
         case Failure(t) =>
           log.error(s"Failed to enqueue $scheduleId because the queue has terminated")
           self ! DownstreamFailure(t)

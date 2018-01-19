@@ -8,7 +8,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 
 object TestActorSystem {
 
-  def config(kafkaPort: Int) =
+  def config(kafkaPort: Int): String =
     s"""
        |akka {
        | coordinated-shutdown {

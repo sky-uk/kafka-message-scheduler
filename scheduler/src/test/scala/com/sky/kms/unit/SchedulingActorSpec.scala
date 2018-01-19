@@ -4,6 +4,7 @@ import java.util.UUID
 
 import akka.actor.ActorRef
 import akka.event.LoggingAdapter
+import akka.stream.QueueOfferResult.Enqueued
 import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.testkit.{ImplicitSender, TestActorRef}
 import com.miguno.akka.testing.VirtualTime
@@ -23,7 +24,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
   "A scheduling actor" must {
     "schedule new messages at the given time" in new SchedulingActorTest {
-      val (scheduleId, schedule) = generateSchedule()
+      val (scheduleId, schedule) = generateSchedule
 
       createSchedule(scheduleId, schedule)
 
@@ -32,7 +33,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "cancel schedules when a cancel message is received" in new SchedulingActorTest {
-      val (scheduleId, schedule) = generateSchedule()
+      val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
 
       cancelSchedule(scheduleId)
@@ -43,7 +44,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "warn and do nothing when schedule cancelled twice" in new SchedulingActorTest {
-      val (scheduleId, schedule) = generateSchedule()
+      val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
       cancelSchedule(scheduleId)
 
@@ -52,7 +53,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "cancel previous schedule when updating an existing schedule" in new SchedulingActorTest {
-      val (scheduleId, schedule) = generateSchedule()
+      val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
 
       val updatedSchedule = schedule.copy(time = schedule.time.plusMinutes(5))
@@ -67,7 +68,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
     "accept scheduling messages only after it has received an Init" in {
       val actorRef = TestActorRef(new SchedulingActor(mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]], system.scheduler))
-      val (scheduleId, schedule) = generateSchedule()
+      val (scheduleId, schedule) = generateSchedule
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
       expectNoMsg()
@@ -79,7 +80,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "stop when offering to the queue fails" in new SchedulingActorTest {
-      val (scheduleId, schedule) = generateSchedule()
+      val (scheduleId, schedule) = generateSchedule
       when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
         .thenReturn(Future.failed(someException))
 
@@ -106,6 +107,17 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
       verify(mockSourceQueue).fail(someException)
       expectTerminated(actorRef)
+    }
+
+    "keep triggering a scheduled message if the queue buffer is full" in new SchedulingActorTest {
+      val (scheduleId, schedule) = generateSchedule
+      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
+        .thenReturn(Future.failed(new IllegalStateException), Future.successful(Enqueued))
+
+      createSchedule(scheduleId, schedule)
+      advanceToTimeFrom(schedule, now)
+
+      verify(mockSourceQueue, times(2)).offer((scheduleId, schedule.toScheduledMessage))
     }
   }
 
@@ -140,7 +152,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
   }
 
-  private def generateSchedule(): (ScheduleId, Schedule) =
+  private def generateSchedule: (ScheduleId, Schedule) =
     (UUID.randomUUID().toString, random[Schedule])
 
   private def init(actorRef: ActorRef) = {

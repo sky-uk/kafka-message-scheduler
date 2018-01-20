@@ -7,7 +7,7 @@ import akka.testkit.TestProbe
 import com.sky.kms.SchedulingActor.CreateOrUpdate
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntBaseSpec
-import com.sky.kms.common.TestDataUtils.{random, _}
+import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{Schedule, ScheduleId}
 import com.sky.kms.streams.ScheduleReader

@@ -6,13 +6,13 @@ import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.Source
-import com.danielasfregola.randomdatagenerator.RandomDataGenerator
-import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
-import com.sky.kms.base.SchedulerIntBaseSpec
+import com.sky.kms.base.BaseSpec
+import com.sky.kms.common.EmbeddedKafka
 import com.sky.kms.common.TestDataUtils._
-import com.sky.kms.config.AppConfig
+import com.sky.kms.config.{AppConfig, SchedulerConfig}
 import com.sky.kms.domain.Schedule
+import com.sky.kms.{AkkaComponents, SchedulerApp}
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.scalatest.Assertion
 import org.scalatest.concurrent.ScalaFutures
@@ -21,46 +21,60 @@ import org.zalando.grafter.syntax.rewriter._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
-class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures with RandomDataGenerator {
-
-  implicit val pc =
-    PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(500, Millis)))
+class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
   "KMS" should {
-    "terminate publisher stream when the reader stream fails" in new TestContext with FailingSource {
+    "terminate when the reader stream fails" in new TestContext with FailingSource {
 
       withRunningScheduler(app.replace(sourceThatWillFail)) { runningApp =>
-        runningApp.runningPublisher.materializedSource.watchCompletion().failed.futureValue shouldBe a[Exception]
+        runningApp.runningPublisher.materializedSource.watchCompletion()
+          .failed.futureValue shouldBe exception
+
+        system.whenTerminated.isCompleted shouldBe true
       }
     }
 
-    "terminate reader stream when publisher stream fails" in new TestContext {
+    "terminate when the publisher stream fails" in new TestContext with EmbeddedKafka {
 
-      withRunningScheduler(app) { runningApp =>
-        runningApp.runningPublisher.materializedSource.fail(new Exception("boom!"))
-        runningApp.runningReader.materializedSource.isShutdown.futureValue shouldBe Done
+      withRunningKafka {
+        withRunningScheduler(app) { runningApp =>
+          runningApp.runningPublisher.materializedSource.fail(exception)
+          runningApp.runningReader.materializedSource.isShutdown.futureValue shouldBe Done
+
+          system.whenTerminated.isCompleted shouldBe true
+        }
       }
     }
 
-    "not terminate the reader stream and keep attempting to publish events until the queue buffer is not full" in new TestContext {
+    "keep attempting to publish events until the queue buffer is not full" in new TestContext with EmbeddedKafka {
 
       val randomSchedule = random[Schedule].secondsFromNow(2)
 
       val sameTimeSchedules = Vector.fill(100)((randomUuid, randomSchedule.toAvro))
 
-      withRunningScheduler(app) { runningApp =>
-        writeToKafka(ScheduleTopic, sameTimeSchedules: _*)
+      withRunningKafka {
+        withRunningScheduler(app) { runningApp =>
+          writeToKafka(ScheduleTopic, sameTimeSchedules: _*)
 
-        consumeFromKafka(ScheduleTopic, sameTimeSchedules.size, new StringDeserializer)
-          .map(_.key()) should contain allElementsOf sameTimeSchedules.map(_._1)
-        runningApp.runningReader.materializedSource.isShutdown.isCompleted shouldBe false
+          val keysInKafka = consumeFromKafka(ScheduleTopic, sameTimeSchedules.size, new StringDeserializer).map(_.key)
+
+          keysInKafka should contain allElementsOf sameTimeSchedules.map(_._1)
+          runningApp.runningReader.materializedSource.isShutdown.isCompleted shouldBe false
+        }
       }
     }
   }
 
-  private trait TestContext {
+  private trait TestContext extends AkkaComponents {
 
+    implicit val patienceConfig = PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(500, Millis)))
+
+    val ScheduleTopic = "schedules"
+
+    val exception = new Exception("boom!")
+    val conf = SchedulerConfig(ScheduleTopic, 10 seconds, 1)
     val app = SchedulerApp.configure apply AppConfig(conf)
 
     def withRunningScheduler(schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => Assertion) {
@@ -85,7 +99,7 @@ class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures wit
       override def isShutdown = Future(Done)
     }
 
-    val sourceThatWillFail = Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
+    val sourceThatWillFail = Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw exception))
       .mapMaterializedValue(_ => stubControl)
   }
 

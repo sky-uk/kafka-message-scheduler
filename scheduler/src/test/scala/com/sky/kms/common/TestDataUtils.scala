@@ -3,16 +3,15 @@ package com.sky.kms.common
 import java.io.ByteArrayOutputStream
 import java.time._
 
-import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, ToRecord}
-import com.sky.kms.domain._
-import org.scalacheck._
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
+import com.sky.kms.domain._
+import org.scalacheck._
 
-object TestDataUtils extends RandomDataGenerator {
+object TestDataUtils {
 
   implicit val arbAlphaString: Arbitrary[String] =
     Arbitrary(Gen.alphaStr.suchThat(_.nonEmpty).retryUntil(_.nonEmpty))

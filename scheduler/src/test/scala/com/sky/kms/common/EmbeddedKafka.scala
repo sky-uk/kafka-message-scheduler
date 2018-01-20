@@ -3,10 +3,41 @@ package com.sky.kms.common
 import cakesolutions.kafka.testkit.KafkaServer
 import cakesolutions.kafka.testkit.KafkaServer.defaultConsumerConfig
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, KafkaConsumer}
-import org.apache.kafka.common.serialization.Deserializer
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer, Deserializer, StringSerializer}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+
+trait EmbeddedKafka {
+
+  import EmbeddedKafka._
+
+  lazy val kafkaServer = new KafkaServer
+
+  val bootstrapServer = s"localhost:${kafkaServer.kafkaPort}"
+
+  val zkServer = s"localhost:${kafkaServer.zookeeperPort}"
+
+  def writeToKafka(topic: String, keyValues: (String, Array[Byte])*) {
+    val producerRecords = keyValues.map { case (key, value) => new ProducerRecord[String, Array[Byte]](topic, key, value) }
+    kafkaServer.produce(topic, producerRecords, new StringSerializer, new ByteArraySerializer)
+  }
+
+  def consumerRecordConverter[T]: ConsumerRecord[T, Array[Byte]] => ConsumerRecord[T, Array[Byte]] = identity
+
+  def consumeFromKafka[T](topic: String, numRecords: Int = 1, keyDeserializer: Deserializer[T]): Seq[ConsumerRecord[T, Array[Byte]]] =
+    kafkaServer.consumeRecord(topic, numRecords, 5000, keyDeserializer, new ByteArrayDeserializer, consumerRecordConverter[T])
+
+  def withRunningKafka[T](f: => T): Unit = {
+    kafkaServer.startup()
+    try {
+      f
+    } finally {
+      kafkaServer.close()
+    }
+  }
+}
 
 object EmbeddedKafka {
 

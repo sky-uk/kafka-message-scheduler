@@ -3,7 +3,7 @@ package com.sky.kms.unit
 import java.util.UUID
 
 import com.sky.kms.base.AkkaStreamBaseSpec
-import com.sky.kms.common.TestDataUtils.{random, _}
+import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain._
 import com.sky.kms.kafka.KafkaStream

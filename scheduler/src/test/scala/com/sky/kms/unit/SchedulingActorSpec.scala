@@ -4,21 +4,17 @@ import java.util.UUID
 
 import akka.actor.ActorRef
 import akka.event.LoggingAdapter
-import akka.stream.QueueOfferResult.Enqueued
-import akka.stream.scaladsl.SourceQueueWithComplete
-import akka.testkit.{ImplicitSender, TestActorRef}
+import akka.testkit.{ImplicitSender, TestActorRef, TestProbe}
 import com.miguno.akka.testing.VirtualTime
-import com.sky.kms.SchedulingActor
-import com.sky.kms.SchedulingActor._
+import com.sky.kms.actors.PublisherActor.Trigger
+import com.sky.kms.actors.SchedulingActor
+import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaBaseSpec
 import com.sky.kms.common.TestDataUtils._
-import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
 import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
-
-import scala.concurrent.Future
 
 class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar with Eventually {
 
@@ -29,7 +25,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       createSchedule(scheduleId, schedule)
 
       advanceToTimeFrom(schedule, now)
-      verify(mockSourceQueue).offer((scheduleId, schedule.toScheduledMessage))
+      probe.expectMsg(Trigger(scheduleId, schedule))
     }
 
     "cancel schedules when a cancel message is received" in new SchedulingActorTest {
@@ -37,10 +33,9 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       createSchedule(scheduleId, schedule)
 
       cancelSchedule(scheduleId)
-      verify(mockLogger).info(s"Cancelled schedule $scheduleId")
 
       advanceToTimeFrom(schedule)
-      verifyZeroInteractions(mockSourceQueue)
+      probe.expectNoMsg
     }
 
     "warn and do nothing when schedule cancelled twice" in new SchedulingActorTest {
@@ -60,14 +55,14 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       createSchedule(scheduleId, updatedSchedule)
 
       advanceToTimeFrom(schedule)
-      verify(mockSourceQueue, never()).offer((scheduleId, schedule.toScheduledMessage))
+      probe.expectNoMsg
 
       advanceToTimeFrom(updatedSchedule, schedule.timeInMillis)
-      verify(mockSourceQueue).offer((scheduleId, updatedSchedule.toScheduledMessage))
+      probe.expectMsg(Trigger(scheduleId, updatedSchedule))
     }
 
     "accept scheduling messages only after it has received an Init" in {
-      val actorRef = TestActorRef(new SchedulingActor(mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]], system.scheduler))
+      val actorRef = TestActorRef(new SchedulingActor(TestProbe().ref, system.scheduler))
       val (scheduleId, schedule) = generateSchedule
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
@@ -79,75 +74,39 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       expectMsg(Ack)
     }
 
-    "stop when offering to the queue fails" in new SchedulingActorTest {
-      val (scheduleId, schedule) = generateSchedule
-      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
-        .thenReturn(Future.failed(someException))
+    "stop when receiving an upstream failure" in new SchedulingActorTest {
+      watch(schedulingActor)
 
-      createSchedule(scheduleId, schedule)
-      watch(actorRef)
+      schedulingActor ! UpstreamFailure(new Exception("boom!"))
 
-      advanceToTimeFrom(schedule, now)
-
-      expectTerminated(actorRef)
-    }
-
-    "stop when receiving a downstream failure" in new SchedulingActorTest {
-      watch(actorRef)
-
-      actorRef ! DownstreamFailure(someException)
-
-      expectTerminated(actorRef)
-    }
-
-    "fail the queue and stop when receiving an upstream failure" in new SchedulingActorTest {
-      watch(actorRef)
-
-      actorRef ! UpstreamFailure(someException)
-
-      verify(mockSourceQueue).fail(someException)
-      expectTerminated(actorRef)
-    }
-
-    "keep triggering a scheduled message if the queue buffer is full" in new SchedulingActorTest {
-      val (scheduleId, schedule) = generateSchedule
-      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
-        .thenReturn(Future.failed(new IllegalStateException), Future.successful(Enqueued))
-
-      createSchedule(scheduleId, schedule)
-      advanceToTimeFrom(schedule, now)
-
-      verify(mockSourceQueue, times(2)).offer((scheduleId, schedule.toScheduledMessage))
+      expectTerminated(schedulingActor)
     }
   }
 
   private class SchedulingActorTest {
 
     val mockLogger = mock[LoggingAdapter]
-    val mockSourceQueue = mock[SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]]
-
     val time = new VirtualTime
+    val probe = TestProbe()
 
-    val actorRef = TestActorRef(new SchedulingActor(mockSourceQueue, time.scheduler) {
+    val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, time.scheduler) {
       override def log: LoggingAdapter = mockLogger
     })
 
     val now = System.currentTimeMillis()
 
-    val someException = new Exception("Test")
-
-    init(actorRef)
+    init(schedulingActor)
 
     def advanceToTimeFrom(schedule: Schedule, startTime: Long = now): Unit =
       time.advance(schedule.timeInMillis - startTime)
 
     def createSchedule(scheduleId: ScheduleId, schedule: Schedule): Unit = {
-      actorRef ! CreateOrUpdate(scheduleId, schedule)
+      schedulingActor ! CreateOrUpdate(scheduleId, schedule)
       expectMsg(Ack)
     }
 
     def cancelSchedule(scheduleId: ScheduleId): Unit = {
-      actorRef ! Cancel(scheduleId)
+      schedulingActor ! Cancel(scheduleId)
       expectMsg(Ack)
     }
   }

@@ -20,36 +20,38 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.zalando.grafter.syntax.rewriter._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource {
-
       withRunningScheduler(app.replace(sourceThatWillFail)) { runningApp =>
-        runningApp.runningPublisher.materializedSource.watchCompletion()
-          .failed.futureValue shouldBe exception
+        val stopped = for {
+          _ <- system.whenTerminated
+          _ <- runningApp.runningPublisher.materializedSource.watchCompletion()
+        } yield ()
 
-        system.whenTerminated.isCompleted shouldBe true
+        Await.ready(stopped, 5 seconds).isCompleted shouldBe true
       }
     }
 
     "terminate when the publisher stream fails" in new TestContext with EmbeddedKafka {
-
       withRunningKafka {
         withRunningScheduler(app) { runningApp =>
           runningApp.runningPublisher.materializedSource.fail(exception)
-          runningApp.runningReader.materializedSource.isShutdown.futureValue shouldBe Done
+          val stopped = for {
+            _ <- runningApp.runningReader.materializedSource.isShutdown
+            _ <- system.whenTerminated
+          } yield ()
 
-          system.whenTerminated.isCompleted shouldBe true
+          Await.ready(stopped, 5 seconds).isCompleted shouldBe true
         }
       }
     }
 
     "keep attempting to publish events until the queue buffer is not full" in new TestContext with EmbeddedKafka {
-
       val randomSchedule = random[Schedule].secondsFromNow(2)
 
       val sameTimeSchedules = Vector.fill(100)((randomUuid, randomSchedule.toAvro))

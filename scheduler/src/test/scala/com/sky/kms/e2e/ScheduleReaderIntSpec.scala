@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestProbe
-import com.sky.kms.SchedulingActor.CreateOrUpdate
+import com.sky.kms.actors.SchedulingActor.CreateOrUpdate
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntBaseSpec
 import com.sky.kms.common.TestDataUtils._

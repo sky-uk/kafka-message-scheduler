@@ -2,16 +2,16 @@ package com.sky.kms
 
 import cats.data.Reader
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 package object config {
 
   case class AppConfig(scheduler: SchedulerConfig)
 
-  case class SchedulerConfig(scheduleTopic: String, shutdownTimeout: Duration, queueBufferSize: Int)
+  case class SchedulerConfig(scheduleTopic: String, retryDelay: FiniteDuration, queueBufferSize: Int)
 
   object SchedulerConfig {
-    def reader: Reader[AppConfig, SchedulerConfig] = Reader(_.scheduler)
+    def configure: Configured[SchedulerConfig] = Reader(_.scheduler)
   }
 
   type Configured[T] = Reader[AppConfig, T]

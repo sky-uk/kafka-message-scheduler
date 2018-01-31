@@ -4,6 +4,7 @@ import java.util.UUID
 
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.base.AkkaStreamBaseSpec
+import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 

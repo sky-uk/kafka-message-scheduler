@@ -19,12 +19,15 @@ import com.typesafe.scalalogging.LazyLogging
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
-case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) {
+case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat], schedulingActor: ActorRef) {
 
-  def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[(Mat, SinkMat)] =
+  def stream: RunnableGraph[(Mat, SinkMat)] =
     scheduleSource
       .map(ScheduleReader.toSchedulingMessage)
       .toMat(PartitionedSink.withRight(sink).mapMaterializedValue(_._2))(Keep.both)
+
+  private def sink: Sink[SinkIn, SinkMat] =
+    Sink.actorRefWithAck(schedulingActor, SchedulingActor.Init, SchedulingActor.Ack, Done, SchedulingActor.UpstreamFailure)
 }
 
 object ScheduleReader extends LazyLogging {
@@ -49,15 +52,15 @@ object ScheduleReader extends LazyLogging {
       }
     }
 
-  def configure(implicit system: ActorSystem): Configured[ScheduleReader] =
-    SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
+  def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader] =
+    for {
+      config <- SchedulerConfig.configure
+      source = KafkaStream.source(config)
+    } yield ScheduleReader(config, source, actorRef)
 
-  def run(schedulingActor: ActorRef)(implicit system: ActorSystem,
-                                     mat: ActorMaterializer): Start[Running] =
-    Start(app => Eval.later {
-      val actorSink = Sink.actorRefWithAck(
-        schedulingActor, SchedulingActor.Init, SchedulingActor.Ack, Done, SchedulingActor.UpstreamFailure)
-      val (srcMat, sinkMat) = app.scheduleReader.stream(actorSink).run()
+  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] =
+    Start { app =>
+      val (srcMat, sinkMat) = app.scheduleReader.stream.run()
       Running(srcMat, sinkMat)
-    })
+    }
 }

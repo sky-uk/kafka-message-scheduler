@@ -4,8 +4,8 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, OverflowStrategy}
-import cats.Eval
 import com.sky.kms.Start
+import com.sky.kms.actors.PublisherActor.ScheduleQueue
 import com.sky.kms.config._
 import com.sky.kms.domain.PublishableMessage._
 import com.sky.kms.domain._
@@ -41,17 +41,17 @@ object ScheduledMessagePublisher {
   case class Running(materializedSource: Mat, materializedSink: SinkMat)
 
   type In = (ScheduleId, ScheduledMessage)
-  type Mat = SourceQueueWithComplete[(ScheduleId, ScheduledMessage)]
+  type Mat = ScheduleQueue
 
   type SinkIn = ProducerRecord[Array[Byte], Array[Byte]]
   type SinkMat = Future[Done]
 
   def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] =
-    SchedulerConfig.reader.map(ScheduledMessagePublisher(_, KafkaStream.sink))
+    SchedulerConfig.configure.map(ScheduledMessagePublisher(_, KafkaStream.sink))
 
   def run(implicit mat: ActorMaterializer): Start[Running] =
-    Start(app => Eval.later {
+    Start { app =>
       val (sourceMat, sinkMat) = app.scheduledMessagePublisher.stream.run()
       Running(sourceMat, sinkMat)
-    })
+    }
 }

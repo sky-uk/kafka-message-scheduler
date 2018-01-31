@@ -80,7 +80,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     val app = SchedulerApp.configure apply AppConfig(conf)
 
     def withRunningScheduler(schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => Assertion) {
-      val runningApp = SchedulerApp.run apply schedulerApp value
+      val runningApp = SchedulerApp.run apply schedulerApp
 
       scenario(runningApp)
 

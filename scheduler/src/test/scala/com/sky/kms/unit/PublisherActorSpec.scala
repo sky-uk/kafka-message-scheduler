@@ -4,9 +4,9 @@ import java.util.UUID
 
 import akka.stream.QueueOfferResult.Enqueued
 import akka.testkit.TestActorRef
+import com.miguno.akka.testing.VirtualTime
 import com.sky.kms.actors.PublisherActor
 import com.sky.kms.actors.PublisherActor._
-import com.sky.kms.actors.SchedulingActor.DownstreamFailure
 import com.sky.kms.base.AkkaBaseSpec
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain.{Schedule, ScheduleId}
@@ -14,6 +14,7 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
 
@@ -44,12 +45,14 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
       expectTerminated(publisherActor)
     }
 
-    "keep triggering a scheduled message if the queue buffer is full" in new PublisherActorTest {
+    "re-trigger a scheduled message after a delay if the queue buffer is full" in new PublisherActorTest {
       val (scheduleId, schedule) = generateSchedule
       when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
         .thenReturn(Future.failed(new IllegalStateException), Future.successful(Enqueued))
 
       publisherActor ! Trigger(scheduleId, schedule)
+
+      time.advance(retryDelay)
 
       verify(mockSourceQueue, times(2)).offer((scheduleId, schedule.toScheduledMessage))
     }
@@ -58,8 +61,12 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
 
   private class PublisherActorTest {
     val mockSourceQueue = mock[ScheduleQueue]
+    val time = new VirtualTime
+    val retryDelay = 5 seconds
+    val publisherActor = TestActorRef(new PublisherActor(time.scheduler, retryDelay))
 
-    val publisherActor = TestActorRef(new PublisherActor(mockSourceQueue))
+    when(mockSourceQueue.watchCompletion()).thenReturn(Future.never)
+    publisherActor ! Init(mockSourceQueue)
 
     def generateSchedule: (ScheduleId, Schedule) =
       (UUID.randomUUID().toString, random[Schedule])

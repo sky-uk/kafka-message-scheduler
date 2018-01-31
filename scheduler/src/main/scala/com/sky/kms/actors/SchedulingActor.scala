@@ -80,8 +80,6 @@ object SchedulingActor {
 
   case class UpstreamFailure(t: Throwable)
 
-  case class DownstreamFailure(t: Throwable)
-
   def create(publisherActor: ActorRef)(implicit system: ActorSystem): ActorRef =
     system.actorOf(Props(new SchedulingActor(publisherActor, system.scheduler)))
 }

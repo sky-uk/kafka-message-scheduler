@@ -15,8 +15,6 @@ trait EmbeddedKafka {
 
   lazy val kafkaServer = new KafkaServer
 
-  val bootstrapServer = s"localhost:${kafkaServer.kafkaPort}"
-
   val zkServer = s"localhost:${kafkaServer.zookeeperPort}"
 
   def writeToKafka(topic: String, keyValues: (String, Array[Byte])*) {
@@ -28,15 +26,6 @@ trait EmbeddedKafka {
 
   def consumeFromKafka[T](topic: String, numRecords: Int = 1, keyDeserializer: Deserializer[T]): Seq[ConsumerRecord[T, Array[Byte]]] =
     kafkaServer.consumeRecord(topic, numRecords, 5000, keyDeserializer, new ByteArrayDeserializer, consumerRecordConverter[T])
-
-  def withRunningKafka[T](f: => T): Unit = {
-    kafkaServer.startup()
-    try {
-      f
-    } finally {
-      kafkaServer.close()
-    }
-  }
 }
 
 object EmbeddedKafka {

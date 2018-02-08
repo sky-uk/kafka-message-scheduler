@@ -8,7 +8,7 @@ package object config {
 
   case class AppConfig(scheduler: SchedulerConfig)
 
-  case class SchedulerConfig(scheduleTopic: String, retryDelay: FiniteDuration, queueBufferSize: Int)
+  case class SchedulerConfig(scheduleTopic: String, queueBufferSize: Int)
 
   object SchedulerConfig {
     def configure: Configured[SchedulerConfig] = Reader(_.scheduler)

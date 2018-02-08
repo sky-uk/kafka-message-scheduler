@@ -47,7 +47,6 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
         val receivedScheduleIds = List.fill(NumSchedules)(probe.expectMsgType[CreateOrUpdate].scheduleId)
 
         receivedScheduleIds should contain theSameElementsAs allScheduleIds
-
       }
     }
   }

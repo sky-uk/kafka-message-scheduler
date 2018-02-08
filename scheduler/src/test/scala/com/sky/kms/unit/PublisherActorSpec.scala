@@ -2,7 +2,6 @@ package com.sky.kms.unit
 
 import java.util.UUID
 
-import akka.stream.QueueOfferResult.Enqueued
 import akka.testkit.TestActorRef
 import com.miguno.akka.testing.VirtualTime
 import com.sky.kms.actors.PublisherActor
@@ -26,6 +25,17 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
       verify(mockSourceQueue).offer((scheduleId, schedule.toScheduledMessage))
     }
 
+    "stop when offering to the queue fails because the buffer is full" in new PublisherActorTest {
+      watch(publisherActor)
+      val (scheduleId, schedule) = generateSchedule
+      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
+        .thenReturn(Future.failed(new IllegalStateException("buffer full!")))
+
+      publisherActor ! Trigger(scheduleId, schedule)
+
+      expectTerminated(publisherActor)
+    }
+
     "stop when offering to the queue fails" in new PublisherActorTest {
       watch(publisherActor)
       val (scheduleId, schedule) = generateSchedule
@@ -45,25 +55,12 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
       expectTerminated(publisherActor)
     }
 
-    "re-trigger a scheduled message after a delay if the queue buffer is full" in new PublisherActorTest {
-      val (scheduleId, schedule) = generateSchedule
-      when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
-        .thenReturn(Future.failed(new IllegalStateException), Future.successful(Enqueued))
-
-      publisherActor ! Trigger(scheduleId, schedule)
-
-      time.advance(retryDelay)
-
-      verify(mockSourceQueue, times(2)).offer((scheduleId, schedule.toScheduledMessage))
-    }
-
   }
 
   private class PublisherActorTest {
     val mockSourceQueue = mock[ScheduleQueue]
     val time = new VirtualTime
-    val retryDelay = 5 seconds
-    val publisherActor = TestActorRef(new PublisherActor(time.scheduler, retryDelay))
+    val publisherActor = TestActorRef(new PublisherActor(time.scheduler))
 
     when(mockSourceQueue.watchCompletion()).thenReturn(Future.never)
     publisherActor ! Init(mockSourceQueue)

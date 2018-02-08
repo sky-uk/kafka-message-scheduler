@@ -4,6 +4,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, OverflowStrategy}
+import cats.Eval
 import com.sky.kms.Start
 import com.sky.kms.actors.PublisherActor.ScheduleQueue
 import com.sky.kms.config._
@@ -21,19 +22,18 @@ import scala.concurrent.Future
   * writes the scheduled messages to the specified Kafka topics and then deletes the schedules
   * from the scheduling Kafka topic to mark completion
   */
-case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Sink[SinkIn, SinkMat])
-                                    (implicit system: ActorSystem) extends LazyLogging {
+case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Eval[Sink[SinkIn, SinkMat]]) extends LazyLogging {
 
-  val splitToMessageAndDeletion: (In) => List[SinkIn] = {
+  lazy val splitToMessageAndDeletion: (In) => List[SinkIn] = {
     case (scheduleId, scheduledMessage) =>
       logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.topic} and deleting it from ${config.scheduleTopic}")
       List(scheduledMessage, ScheduleDeletion(scheduleId, config.scheduleTopic))
   }
 
-  val stream: RunnableGraph[(Mat, SinkMat)] =
+  def stream: RunnableGraph[(Mat, SinkMat)] =
     Source.queue[In](config.queueBufferSize, OverflowStrategy.backpressure)
       .mapConcat(splitToMessageAndDeletion)
-      .toMat(publisherSink)(Keep.both)
+      .toMat(publisherSink.value)(Keep.both)
 }
 
 object ScheduledMessagePublisher {
@@ -47,11 +47,11 @@ object ScheduledMessagePublisher {
   type SinkMat = Future[Done]
 
   def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] =
-    SchedulerConfig.configure.map(ScheduledMessagePublisher(_, KafkaStream.sink))
+    SchedulerConfig.configure.map(ScheduledMessagePublisher(_, Eval.later(KafkaStream.sink)))
 
   def run(implicit mat: ActorMaterializer): Start[Running] =
     Start { app =>
-      val (sourceMat, sinkMat) = app.scheduledMessagePublisher.stream.run()
+      val (sourceMat, sinkMat) = app.publisher.stream.run()
       Running(sourceMat, sinkMat)
     }
 }

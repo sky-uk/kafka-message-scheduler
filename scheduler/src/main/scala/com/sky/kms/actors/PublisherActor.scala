@@ -6,14 +6,12 @@ import akka.stream.scaladsl.SourceQueueWithComplete
 import cats.syntax.show._
 import com.sky.kms.Start
 import com.sky.kms.actors.PublisherActor.{DownstreamFailure, Init, ScheduleQueue, Trigger}
-import com.sky.kms.config.{Configured, SchedulerConfig}
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain.{Schedule, ScheduleId, ScheduleQueueOfferResult}
 
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class PublisherActor(akkaScheduler: Scheduler, retryDelay: FiniteDuration) extends Actor with ActorLogging {
+class PublisherActor(akkaScheduler: Scheduler) extends Actor with ActorLogging {
 
   implicit val ec = context.dispatcher
 
@@ -33,11 +31,8 @@ class PublisherActor(akkaScheduler: Scheduler, retryDelay: FiniteDuration) exten
           log.info(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
         case Success(res) =>
           log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
-        case Failure(_: IllegalStateException) =>
-          log.warning(s"Failed to enqueue $scheduleId because the queue buffer is full. Retrying in 5 seconds.")
-          akkaScheduler.scheduleOnce(retryDelay)(self ! Trigger(scheduleId, schedule))
         case Failure(t) =>
-          log.error(t, s"Failed to enqueue $scheduleId because the queue has terminated. Shutting down.")
+          log.error(t, s"Failed to enqueue $scheduleId")
           self ! DownstreamFailure(t)
       }
   }
@@ -62,8 +57,8 @@ object PublisherActor {
 
   case class DownstreamFailure(t: Throwable)
 
-  def configure(implicit system: ActorSystem): Configured[ActorRef] =
-    SchedulerConfig.configure.map(config => system.actorOf(Props(new PublisherActor(system.scheduler, config.retryDelay))))
+  def create(implicit system: ActorSystem): ActorRef =
+    system.actorOf(Props(new PublisherActor(system.scheduler)))
 
   def init(queue: ScheduleQueue): Start[Unit] =
     Start(_.publisherActor ! Init(queue))

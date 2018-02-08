@@ -10,8 +10,9 @@ object ShutdownTasks {
 
   def forScheduler(running: SchedulerApp.Running)(implicit system: ActorSystem): Unit =
     CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "shutdown-scheduler") { () =>
-      running.runningPublisher.materializedSource.complete()
-      running.runningReader.materializedSource.shutdown()
+      running.publisher.materializedSource.complete()
+      running.reader.materializedSource.shutdown()
+      Future.successful(Done)
     }
 
   def forKamon(implicit system: ActorSystem): Unit =

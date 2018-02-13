@@ -1,16 +1,16 @@
 package com.sky.kms.streams
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.{Done, NotUsed}
 import cats.Eval
-import com.sky.kms.SchedulingActor._
 import com.sky.kms._
+import com.sky.kms.actors.SchedulingActor
+import com.sky.kms.actors.SchedulingActor.{Cancel, CreateOrUpdate, SchedulingMessage}
 import com.sky.kms.config._
 import com.sky.kms.domain.ApplicationError._
-import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
 import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, Mat, SinkIn, SinkMat}
@@ -19,12 +19,15 @@ import com.typesafe.scalalogging.LazyLogging
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
-case class ScheduleReader(config: SchedulerConfig, scheduleSource: Source[In, Mat]) {
+case class ScheduleReader(config: SchedulerConfig, scheduleSource: Eval[Source[In, Mat]], schedulingActor: ActorRef) {
 
-  def stream(sink: Sink[SinkIn, SinkMat]): RunnableGraph[(Mat, SinkMat)] =
-    scheduleSource
+  def stream: RunnableGraph[(Mat, SinkMat)] =
+    scheduleSource.value
       .map(ScheduleReader.toSchedulingMessage)
       .toMat(PartitionedSink.withRight(sink).mapMaterializedValue(_._2))(Keep.both)
+
+  private def sink: Sink[SinkIn, SinkMat] =
+    Sink.actorRefWithAck(schedulingActor, SchedulingActor.Init, SchedulingActor.Ack, Done, SchedulingActor.UpstreamFailure)
 }
 
 object ScheduleReader extends LazyLogging {
@@ -37,7 +40,7 @@ object ScheduleReader extends LazyLogging {
   type SinkIn = Any
   type SinkMat = NotUsed
 
-  def toSchedulingMessage[T](readResult: In): Either[ApplicationError, SchedulingMessage] =
+  def toSchedulingMessage(readResult: In): Either[ApplicationError, SchedulingMessage] =
     readResult.map { case (scheduleId, scheduleOpt) =>
       scheduleOpt match {
         case Some(schedule) =>
@@ -49,15 +52,14 @@ object ScheduleReader extends LazyLogging {
       }
     }
 
-  def configure(implicit system: ActorSystem): Configured[ScheduleReader] =
-    SchedulerConfig.reader.map(config => ScheduleReader(config, KafkaStream.source(config)))
+  def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader] =
+    for {
+      config <- SchedulerConfig.configure
+    } yield ScheduleReader(config, Eval.later(KafkaStream.source(config)), actorRef)
 
-  def run(queue: SourceQueueWithComplete[(String, ScheduledMessage)])(implicit system: ActorSystem,
-                                                                      mat: ActorMaterializer): Start[Running] =
-    Start(app => Eval.later {
-      val actorSink = Sink.actorRefWithAck(
-        SchedulingActor.create(queue), SchedulingActor.Init, SchedulingActor.Ack, Done, SchedulingActor.UpstreamFailure)
-      val (srcMat, sinkMat) = app.scheduleReader.stream(actorSink).run()
+  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] =
+    Start { app =>
+      val (srcMat, sinkMat) = app.reader.stream.run()
       Running(srcMat, sinkMat)
-    })
+    }
 }

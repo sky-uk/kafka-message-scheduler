@@ -11,6 +11,6 @@ abstract class SchedulerIntBaseSpec extends AkkaStreamBaseSpec with KafkaIntSpec
 
   val ScheduleTopic = "scheduleTopic"
 
-  val conf = SchedulerConfig(ScheduleTopic, 10 seconds, 100)
+  val conf = SchedulerConfig(ScheduleTopic, 100)
 
 }

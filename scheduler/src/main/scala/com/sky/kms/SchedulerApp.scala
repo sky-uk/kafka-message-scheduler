@@ -1,44 +1,40 @@
 package com.sky.kms
 
-import akka.Done
-import akka.actor.{ActorSystem, CoordinatedShutdown}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.ActorMaterializer
+import com.sky.kms.actors.{PublisherActor, SchedulingActor, TerminatorActor}
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
 
-import scala.concurrent.Future
-
-case class SchedulerApp(scheduleReader: ScheduleReader, scheduledMessagePublisher: ScheduledMessagePublisher)
+case class SchedulerApp(reader: ScheduleReader, publisher: ScheduledMessagePublisher, publisherActor: ActorRef)
 
 object SchedulerApp {
 
-  case class Running(runningReader: ScheduleReader.Running, runningPublisher: ScheduledMessagePublisher.Running)
+  case class Running(reader: ScheduleReader.Running, publisher: ScheduledMessagePublisher.Running)
 
-  def configure(implicit system: ActorSystem): Configured[SchedulerApp] =
+  def configure(implicit system: ActorSystem): Configured[SchedulerApp] = {
+    val publisherActor = PublisherActor.create
+    val schedulingActor = SchedulingActor.create(publisherActor)
+    TerminatorActor.create(schedulingActor, publisherActor)
+
     for {
-      scheduleReader <- ScheduleReader.configure
+      scheduleReader <- ScheduleReader.configure(schedulingActor)
       publisher <- ScheduledMessagePublisher.configure
-    } yield SchedulerApp(scheduleReader, publisher)
+    } yield SchedulerApp(scheduleReader, publisher, publisherActor)
+  }
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
     Kamon.start()
+    ShutdownTasks.forKamon
+
     for {
-      runningPublisher <- ScheduledMessagePublisher.run
-      runningReader <- ScheduleReader.run(runningPublisher.materializedSource)
-      running = Running(runningReader, runningPublisher)
-      _ = shutdownAppOnFailure(running)
-      _ = configureKamonShutdown
+      publisher <- ScheduledMessagePublisher.run
+      _ <- PublisherActor.init(publisher.materializedSource)
+      runningReader <- ScheduleReader.run
+      running = Running(runningReader, publisher)
+      _ = ShutdownTasks.forScheduler(running)
     } yield running
   }
-
-  private def shutdownAppOnFailure(runningScheduler: Running)(implicit system: ActorSystem): Unit =
-    runningScheduler.runningPublisher.materializedSink.failed.foreach(_ => CoordinatedShutdown(system).run())(system.dispatcher)
-
-  private def configureKamonShutdown(implicit system: ActorSystem): Unit =
-    CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "shutdown-kamon") { () =>
-      Kamon.shutdown()
-      Future.successful(Done)
-    }
 
 }

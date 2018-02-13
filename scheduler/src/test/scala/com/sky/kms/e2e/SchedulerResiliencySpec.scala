@@ -1,66 +1,118 @@
 package com.sky.kms.e2e
 
+import java.util.UUID
+
 import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.kafka.scaladsl.Consumer.Control
-import akka.stream.scaladsl.Source
-import com.sky.kms.SchedulerApp
+import akka.stream.scaladsl.{Sink, Source}
+import akka.testkit.TestProbe
+import cats.syntax.either._
+import cats.syntax.option._
 import com.sky.kms.avro._
-import com.sky.kms.base.SchedulerIntBaseSpec
-import com.sky.kms.config.AppConfig
+import com.sky.kms.base.BaseSpec
+import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.config.{AppConfig, SchedulerConfig}
+import com.sky.kms.domain.Schedule
+import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import com.sky.kms.{AkkaComponents, SchedulerApp}
 import org.scalatest.Assertion
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
-import org.zalando.grafter.syntax.rewriter._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
-class SchedulerResiliencySpec extends SchedulerIntBaseSpec with ScalaFutures {
-
-  implicit val pc =
-    PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(500, Millis)))
+class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
   "KMS" should {
-    "terminate publisher stream when the reader stream fails" in new TestContext with FailingSource {
+    "terminate when the reader stream fails" in new TestContext with FailingSource {
+      val app = createAppFrom(config)
+        .withReaderSource(sourceThatWillFail)
 
-      withRunningScheduler(app.replace[Source[_, Control]](sourceThatWillFail)) { runningApp =>
-        runningApp.runningPublisher.materializedSource.watchCompletion().failed.futureValue shouldBe a[Exception]
+      withRunningScheduler(app) { _ =>
+        hasActorSystemTerminated shouldBe true
       }
     }
 
-    "terminate reader stream when publisher stream fails" in new TestContext {
+    "terminate when the publisher stream fails" in new TestContext with IteratingSource {
+      val app =
+        createAppFrom(config)
+          .withReaderSource(sourceWith(random[Schedule](n = 10).map(_.secondsFromNow(2))))
+          .withPublisherSink(Sink.ignore)
 
       withRunningScheduler(app) { runningApp =>
-        runningApp.runningPublisher.materializedSource.fail(new Exception("boom!"))
-        runningApp.runningReader.materializedSource.isShutdown.futureValue shouldBe Done
+        runningApp.publisher.materializedSource.fail(new Exception("boom!"))
+
+        hasActorSystemTerminated shouldBe true
+      }
+    }
+
+    "terminate when the queue buffer becomes full" in new TestContext with IteratingSource {
+      val sameTimeSchedules = random[Schedule](n = 20).map(_.secondsFromNow(2))
+      val probe = TestProbe()
+      val sinkThatWillNotSignalDemand = Sink.actorRefWithAck[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "")
+        .mapMaterializedValue(_ => Future.never)
+
+      val app =
+        createAppFrom(config.copy(queueBufferSize = 1))
+          .withReaderSource(sourceWith(sameTimeSchedules))
+          .withPublisherSink(sinkThatWillNotSignalDemand)
+
+      withRunningScheduler(app) { _ =>
+        hasActorSystemTerminated shouldBe true
       }
     }
   }
 
-  private trait TestContext {
+  private trait TestContext extends AkkaComponents {
 
-    val app = SchedulerApp.configure apply AppConfig(conf)
+    implicit val patienceConfig = PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(500, Millis)))
+
+    val config = SchedulerConfig("some-topic", 100)
+
+    def createAppFrom(config: SchedulerConfig): SchedulerApp =
+      SchedulerApp.configure apply AppConfig(config)
 
     def withRunningScheduler(schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => Assertion) {
-      val runningApp = SchedulerApp.run apply schedulerApp value
+      val runningApp = SchedulerApp.run apply schedulerApp
 
       scenario(runningApp)
 
       CoordinatedShutdown(system).run()
     }
+
+    def hasActorSystemTerminated: Boolean =
+      Await.ready(system.whenTerminated, 10 seconds).isCompleted
+  }
+
+  private val stubControl = new Control {
+    override def stop() = Future(Done)
+
+    override def shutdown() = Future(Done)
+
+    override def isShutdown = Future(Done)
   }
 
   private trait FailingSource {
-    val sourceThatWillFail = Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
-      .mapMaterializedValue(_ =>
-        new Control {
-          override def stop() = Future(Done)
+    this: TestContext =>
 
-          override def shutdown() = Future(Done)
+    val sourceThatWillFail =
+      Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
+        .mapMaterializedValue(_ => stubControl)
+  }
 
-          override def isShutdown = Future(Done)
-        })
+  private trait IteratingSource {
+    this: TestContext =>
+
+    def sourceWith(schedules: Seq[Schedule]): Source[ScheduleReader.In, ScheduleReader.Mat] = {
+      val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
+
+      val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight)
+
+      Source.fromIterator(() => elements).mapMaterializedValue(_ => stubControl)
+    }
   }
 
 }

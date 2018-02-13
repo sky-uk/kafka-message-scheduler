@@ -2,12 +2,11 @@ package com.sky.kms.e2e
 
 import java.util.UUID
 
-import akka.stream.scaladsl.Sink
-import akka.testkit.TestProbe
-import com.sky.kms.SchedulingActor.CreateOrUpdate
+import akka.testkit.{TestActor, TestProbe}
+import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Init}
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntBaseSpec
-import com.sky.kms.common.TestDataUtils.{random, _}
+import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{Schedule, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
@@ -16,6 +15,7 @@ import kafka.utils.ZkUtils
 import org.scalatest.Assertion
 
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
 
@@ -47,7 +47,6 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
         val receivedScheduleIds = List.fill(NumSchedules)(probe.expectMsgType[CreateOrUpdate].scheduleId)
 
         receivedScheduleIds should contain theSameElementsAs allScheduleIds
-
       }
     }
   }
@@ -57,13 +56,21 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
 
   private def withRunningScheduleReader(scenario: TestProbe => Assertion) {
     val probe = TestProbe()
-    val scheduleReader = ScheduleReader.configure apply AppConfig(conf)
-    val (running, _) = scheduleReader.stream(Sink.actorRef(probe.ref, "complete")).run()
+
+    probe.setAutoPilot((sender, msg) => msg match {
+      case _ =>
+        sender ! Ack
+        TestActor.KeepRunning
+    })
+
+    val scheduleReader = ScheduleReader.configure(probe.testActor).apply(AppConfig(conf))
+    val (running, _) = scheduleReader.stream.run()
+
+    probe.expectMsg(Init)
 
     scenario(probe)
 
-    Await.ready(running.shutdown(), conf.shutdownTimeout)
-    probe.expectMsg("complete")
+    Await.ready(running.shutdown(), 5 seconds)
   }
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, Schedule)*) {

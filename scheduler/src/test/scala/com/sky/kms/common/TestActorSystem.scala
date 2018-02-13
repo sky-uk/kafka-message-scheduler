@@ -8,11 +8,11 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 
 object TestActorSystem {
 
-  def config(kafkaPort: Int) =
+  private def config(kafkaPort: Int, terminateActorSystem: Boolean): String =
     s"""
        |akka {
        | coordinated-shutdown {
-       |  terminate-actor-system = off
+       |  terminate-actor-system = $terminateActorSystem
        |  run-by-jvm-shutdown-hook = off
        | }
        |
@@ -30,9 +30,9 @@ object TestActorSystem {
     """.stripMargin
 
 
-  def apply(kafkaPort: Int = 9092): ActorSystem =
+  def apply(kafkaPort: Int = 9092, terminateActorSystem: Boolean = false): ActorSystem =
     ActorSystem(
       name = s"test-actor-system-${UUID.randomUUID().toString}",
-      config = ConfigFactory.parseString(config(kafkaPort)).withFallback(ConfigFactory.load())
+      config = ConfigFactory.parseString(config(kafkaPort, terminateActorSystem)).withFallback(ConfigFactory.load())
     )
 }

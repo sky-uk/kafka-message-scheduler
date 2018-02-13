@@ -2,10 +2,8 @@ package com.sky.kms.base
 
 import akka.testkit.{TestKit, TestKitBase}
 import com.sky.kms.common.TestActorSystem
-import org.scalatest.BeforeAndAfterAll
 
-abstract class AkkaBaseSpec extends TestKitBase
-  with BaseSpec with BeforeAndAfterAll {
+abstract class AkkaBaseSpec extends TestKitBase with BaseSpec {
 
   override implicit lazy val system = TestActorSystem()
 

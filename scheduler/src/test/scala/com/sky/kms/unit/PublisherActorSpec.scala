@@ -19,13 +19,13 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
 
   "A publisher actor" must {
 
-    "add scheduled messages to the queue" in new PublisherActorTest {
+    "add scheduled messages to the queue" in new TestContext {
       val (scheduleId, schedule) = generateSchedule
       publisherActor ! Trigger(scheduleId, schedule)
       verify(mockSourceQueue).offer((scheduleId, schedule.toScheduledMessage))
     }
 
-    "stop when offering to the queue fails because the buffer is full" in new PublisherActorTest {
+    "stop when offering to the queue fails because the buffer is full" in new TestContext {
       watch(publisherActor)
       val (scheduleId, schedule) = generateSchedule
       when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
@@ -36,7 +36,7 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
       expectTerminated(publisherActor)
     }
 
-    "stop when offering to the queue fails" in new PublisherActorTest {
+    "stop when offering to the queue fails" in new TestContext {
       watch(publisherActor)
       val (scheduleId, schedule) = generateSchedule
       when(mockSourceQueue.offer((scheduleId, schedule.toScheduledMessage)))
@@ -47,7 +47,7 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
       expectTerminated(publisherActor)
     }
 
-    "stop when queue fails" in new PublisherActorTest {
+    "stop when queue fails" in new TestContext {
       watch(publisherActor)
 
       publisherActor ! DownstreamFailure(new Exception("boom!"))
@@ -57,7 +57,7 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
 
   }
 
-  private class PublisherActorTest {
+  private class TestContext {
     val mockSourceQueue = mock[ScheduleQueue]
     val time = new VirtualTime
     val publisherActor = TestActorRef(new PublisherActor(time.scheduler))

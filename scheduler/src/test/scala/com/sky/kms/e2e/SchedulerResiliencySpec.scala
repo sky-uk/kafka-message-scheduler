@@ -7,7 +7,6 @@ import akka.actor.CoordinatedShutdown
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
-import cats.Eval
 import cats.syntax.either._
 import cats.syntax.option._
 import com.sky.kms.avro._
@@ -20,7 +19,6 @@ import com.sky.kms.{AkkaComponents, SchedulerApp}
 import org.scalatest.Assertion
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
-import org.zalando.grafter.syntax.rewriter._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -31,10 +29,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource {
       val app = createAppFrom(config)
-        .modifyWith[Any] {
-        case reader: ScheduleReader =>
-          reader.replace(Eval.later(sourceThatWillFail))
-      }
+        .withReaderSource(sourceThatWillFail)
 
       withRunningScheduler(app) { _ =>
         hasActorSystemTerminated shouldBe true
@@ -44,12 +39,8 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     "terminate when the publisher stream fails" in new TestContext with IteratingSource {
       val app =
         createAppFrom(config)
-          .modifyWith[Any] {
-          case reader: ScheduleReader =>
-            reader.replace(Eval.later(iteratingSource(createReaderElementsFrom(random[Schedule](n = 10).map(_.secondsFromNow(2))))))
-          case publisher: ScheduledMessagePublisher =>
-            publisher.replace(Eval.later(Sink.ignore))
-        }
+          .withReaderSource(sourceWith(random[Schedule](n = 10).map(_.secondsFromNow(2))))
+          .withPublisherSink(Sink.ignore)
 
       withRunningScheduler(app) { runningApp =>
         runningApp.publisher.materializedSource.fail(new Exception("boom!"))
@@ -61,18 +52,13 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     "terminate when the queue buffer becomes full" in new TestContext with IteratingSource {
       val sameTimeSchedules = random[Schedule](n = 20).map(_.secondsFromNow(2))
       val probe = TestProbe()
-
       val sinkThatWillNotSignalDemand = Sink.actorRefWithAck[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "")
         .mapMaterializedValue(_ => Future.never)
 
       val app =
         createAppFrom(config.copy(queueBufferSize = 1))
-          .modifyWith[Any] {
-          case reader: ScheduleReader =>
-            reader.replace(Eval.later(iteratingSource(createReaderElementsFrom(sameTimeSchedules))))
-          case publisher: ScheduledMessagePublisher =>
-            publisher.replace(Eval.later(sinkThatWillNotSignalDemand))
-        }
+          .withReaderSource(sourceWith(sameTimeSchedules))
+          .withPublisherSink(sinkThatWillNotSignalDemand)
 
       withRunningScheduler(app) { _ =>
         hasActorSystemTerminated shouldBe true
@@ -112,22 +98,21 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
   private trait FailingSource {
     this: TestContext =>
 
-    val sourceThatWillFail = Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
-      .mapMaterializedValue(_ => stubControl)
+    val sourceThatWillFail =
+      Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
+        .mapMaterializedValue(_ => stubControl)
   }
 
   private trait IteratingSource {
     this: TestContext =>
 
-    def createReaderElementsFrom(schedules: Seq[Schedule]): Iterator[ScheduleReader.In] = {
+    def sourceWith(schedules: Seq[Schedule]): Source[ScheduleReader.In, ScheduleReader.Mat] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
-      (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight)
-    }
+      val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight)
 
-
-    def iteratingSource(elements: Iterator[ScheduleReader.In]) =
       Source.fromIterator(() => elements).mapMaterializedValue(_ => stubControl)
+    }
   }
 
 }

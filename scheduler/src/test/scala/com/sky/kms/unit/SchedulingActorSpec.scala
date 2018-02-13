@@ -19,7 +19,7 @@ import org.scalatest.mockito.MockitoSugar
 class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar with Eventually {
 
   "A scheduling actor" must {
-    "schedule new messages at the given time" in new SchedulingActorTest {
+    "schedule new messages at the given time" in new TestContext {
       val (scheduleId, schedule) = generateSchedule
 
       createSchedule(scheduleId, schedule)
@@ -28,7 +28,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       probe.expectMsg(Trigger(scheduleId, schedule))
     }
 
-    "cancel schedules when a cancel message is received" in new SchedulingActorTest {
+    "cancel schedules when a cancel message is received" in new TestContext {
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
 
@@ -38,7 +38,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       probe.expectNoMsg
     }
 
-    "warn and do nothing when schedule cancelled twice" in new SchedulingActorTest {
+    "warn and do nothing when schedule cancelled twice" in new TestContext {
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
       cancelSchedule(scheduleId)
@@ -47,7 +47,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       verify(mockLogger).warning(s"Couldn't cancel $scheduleId")
     }
 
-    "cancel previous schedule when updating an existing schedule" in new SchedulingActorTest {
+    "cancel previous schedule when updating an existing schedule" in new TestContext {
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
 
@@ -74,7 +74,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       expectMsg(Ack)
     }
 
-    "stop when receiving an upstream failure" in new SchedulingActorTest {
+    "stop when receiving an upstream failure" in new TestContext {
       watch(schedulingActor)
 
       schedulingActor ! UpstreamFailure(new Exception("boom!"))
@@ -83,7 +83,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
   }
 
-  private class SchedulingActorTest {
+  private class TestContext {
 
     val mockLogger = mock[LoggingAdapter]
     val time = new VirtualTime

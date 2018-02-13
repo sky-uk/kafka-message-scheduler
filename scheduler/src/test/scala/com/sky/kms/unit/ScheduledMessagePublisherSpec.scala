@@ -15,7 +15,7 @@ class ScheduledMessagePublisherSpec extends AkkaStreamBaseSpec {
 
   val testTopic = UUID.randomUUID().toString
   val publisher = ScheduledMessagePublisher(
-    SchedulerConfig(testTopic, 100),
+    SchedulerConfig(testTopic, queueBufferSize = 100),
     Eval.now(KafkaStream.sink)
   )
 

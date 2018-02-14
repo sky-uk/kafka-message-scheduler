@@ -55,7 +55,6 @@ lazy val dockerSettings = Seq(
     Cmd("USER", "root"),
     Cmd("RUN", "apk update && apk add bash")
   ),
-  dockerBuildOptions += "--no-cache",
   dockerExposedPorts in Docker := Seq(jmxPort)
 )
 

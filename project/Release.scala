@@ -18,6 +18,7 @@ object Release {
     releaseTagComment := s"Releasing ${version.value} of module: ${name.value}",
     releasePublishArtifactsAction:= (publish in Universal).value,
     releaseProcess := Seq[ReleaseStep](
+      runClean,
       checkSnapshotDependencies,
       releaseStepCommand(ExtraReleaseCommands.initialVcsChecksCommand),
       inquireVersions,

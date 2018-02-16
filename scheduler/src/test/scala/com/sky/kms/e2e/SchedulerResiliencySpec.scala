@@ -3,8 +3,9 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import akka.Done
-import akka.actor.CoordinatedShutdown
+import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.kafka.scaladsl.Consumer.Control
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
 import cats.syntax.either._
@@ -12,6 +13,7 @@ import cats.syntax.option._
 import com.sky.kms.avro._
 import com.sky.kms.base.BaseSpec
 import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.common.{EmbeddedKafka, TestActorSystem}
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
 import com.sky.kms.domain.Schedule
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
@@ -27,7 +29,7 @@ import scala.concurrent.{Await, Future}
 class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
   "KMS" should {
-    "terminate when the reader stream fails" in new TestContext with FailingSource {
+    "terminate when the reader stream fails" in new TestContext with FailingSource with AkkaComponents {
       val app = createAppFrom(config)
         .withReaderSource(sourceThatWillFail)
 
@@ -36,7 +38,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
       }
     }
 
-    "terminate when the publisher stream fails" in new TestContext with IteratingSource {
+    "terminate when the publisher stream fails" in new TestContext with IteratingSource with AkkaComponents {
       val app =
         createAppFrom(config)
           .withReaderSource(sourceWith(random[Schedule](n = 10).map(_.secondsFromNow(2))))
@@ -49,7 +51,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
       }
     }
 
-    "terminate when the queue buffer becomes full" in new TestContext with IteratingSource {
+    "terminate when the queue buffer becomes full" in new TestContext with IteratingSource with AkkaComponents {
       val sameTimeSchedules = random[Schedule](n = 20).map(_.secondsFromNow(2))
       val probe = TestProbe()
       val sinkThatWillNotSignalDemand = Sink.actorRefWithAck[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "")
@@ -64,18 +66,55 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
         hasActorSystemTerminated shouldBe true
       }
     }
+
+    "terminate when Kafka goes down during processing" in new TestContext with EmbeddedKafka {
+
+      implicit val system = TestActorSystem(kafkaPort = kafkaServer.kafkaPort, terminateActorSystem = true)
+      implicit val materializer = ActorMaterializer()
+
+      val distantSchedules = random[Schedule](n = 100).map(_.secondsFromNow(60))
+      val scheduleIds = List.fill(distantSchedules.size)(UUID.randomUUID().toString)
+
+      val app =
+        createAppFrom(config)
+          .withPublisherSink(Sink.ignore)
+
+      kafkaServer.startup()
+      withRunningScheduler(app) { _ =>
+        writeToKafka(topic = config.scheduleTopic,
+          keyValues = (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq: _*)
+        kafkaServer.close()
+        hasActorSystemTerminated shouldBe true
+      }
+    }
+
+    "terminate when Kafka is unavailable at startup" in new TestContext {
+
+      implicit val system = TestActorSystem(terminateActorSystem = true)
+      implicit val materializer = ActorMaterializer()
+
+      val schedules = random[Schedule](n = 100)
+      val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
+
+      val app =
+        createAppFrom(config)
+
+      withRunningScheduler(app) { _ =>
+        hasActorSystemTerminated shouldBe true
+      }
+    }
   }
 
-  private trait TestContext extends AkkaComponents {
+  private trait TestContext {
 
     implicit val patienceConfig = PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(500, Millis)))
 
     val config = SchedulerConfig("some-topic", 100)
 
-    def createAppFrom(config: SchedulerConfig): SchedulerApp =
+    def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
       SchedulerApp.configure apply AppConfig(config)
 
-    def withRunningScheduler(schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => Assertion) {
+    def withRunningScheduler(schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => Assertion)(implicit system: ActorSystem, mat: ActorMaterializer) {
       val runningApp = SchedulerApp.run apply schedulerApp
 
       scenario(runningApp)
@@ -83,7 +122,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
       CoordinatedShutdown(system).run()
     }
 
-    def hasActorSystemTerminated: Boolean =
+    def hasActorSystemTerminated(implicit system: ActorSystem): Boolean =
       Await.ready(system.whenTerminated, 10 seconds).isCompleted
   }
 

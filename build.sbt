@@ -42,7 +42,7 @@ val commonSettings = Seq(
   libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.3"
 )
 
-val jmxPort = 9186
+val PrometheusReporterPort = 9095
 
 lazy val dockerSettings = Seq(
   packageName in Docker := "kafka-message-scheduler",
@@ -54,7 +54,7 @@ lazy val dockerSettings = Seq(
     Cmd("USER", "root"),
     Cmd("RUN", "apk update && apk add bash")
   ),
-  dockerExposedPorts in Docker := Seq(jmxPort)
+  dockerExposedPorts in Docker += PrometheusReporterPort
 )
 
 def updateLatest = Def.setting {
@@ -66,16 +66,6 @@ val buildInfoSettings = Seq(
   buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
   buildInfoPackage := "com.sky"
 )
-
-val jmxSettings = Seq(
-  "-Djava.rmi.server.hostname=127.0.0.1",
-  s"-Dcom.sun.management.jmxremote.port=$jmxPort",
-  s"-Dcom.sun.management.jmxremote.rmi.port=$jmxPort",
-  "-Dcom.sun.management.jmxremote.ssl=false",
-  "-Dcom.sun.management.jmxremote.local.only=false",
-  "-Dcom.sun.management.jmxremote.authenticate=false",
-  "-Dorg.aspectj.tracing.factory=default"
-).mkString(" ")
 
 lazy val scheduler = (project in file("scheduler"))
   .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
@@ -95,7 +85,7 @@ lazy val scheduler = (project in file("scheduler"))
     ),
     fork in run := true,
     javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.10",
-    javaOptions in Universal += jmxSettings,
+    javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
     buildInfoSettings,
     dockerSettings,
     releaseSettings,

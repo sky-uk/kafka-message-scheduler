@@ -70,15 +70,13 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
     "terminate when Kafka goes down during processing" in new TestContext with EmbeddedKafka {
 
-      implicit val system = TestActorSystem(kafkaPort = kafkaServer.kafkaPort, terminateActorSystem = true)
+      implicit val system = TestActorSystem(kafkaServer.kafkaPort, terminateActorSystem = true)
       implicit val materializer = ActorMaterializer()
 
       val distantSchedules = random[Schedule](n = 100).map(_.secondsFromNow(60))
       val scheduleIds = List.fill(distantSchedules.size)(UUID.randomUUID().toString)
 
-      val app =
-        createAppFrom(config)
-          .withPublisherSink(Sink.ignore)
+      val app = createAppFrom(config)
 
       kafkaServer.startup()
       withRunningScheduler(app) { _ =>
@@ -97,8 +95,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
       val schedules = random[Schedule](n = 100)
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
-      val app =
-        createAppFrom(config)
+      val app = createAppFrom(config)
 
       withRunningScheduler(app) { _ =>
         hasActorSystemTerminated shouldBe true
@@ -108,7 +105,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
   private trait TestContext {
 
-    implicit val patienceConfig = PatienceConfig(scaled(Span(10, Seconds)), scaled(Span(500, Millis)))
+    implicit val patienceConfig = PatienceConfig(scaled(10 seconds), scaled(500 millis))
 
     val config = SchedulerConfig("some-topic", 100)
 

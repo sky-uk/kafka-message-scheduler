@@ -31,7 +31,7 @@ services:
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8082
 
   kms:
-    image: skyuk/kafka-message-scheduler:0.9.0-SNAPSHOT
+    image: skyuk/kafka-message-scheduler
     depends_on:
       - kafka
     environment:

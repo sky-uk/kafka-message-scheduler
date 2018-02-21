@@ -48,8 +48,8 @@ above). See the [Schema](#schema) section for details of generating the Avro sch
 ### Monitoring
 
 Metrics are exposed and reported using Kamon. By default the [Kamon Prometheus reporter](http://kamon.io/documentation/1.x/reporters/prometheus/)
-is used for reporting, the scraping endpoint for Prometheus is exposed on port 9095. A different reporter can be configured
-by overriding the `kamon.reporters` config value.
+is used for reporting, the scraping endpoint for Prometheus is exposed on port 9095 (this is configurable by setting
+the PROMETHEUS_SCRAPING_ENDPOINT_PORT environment variable).
 
 ### Topic configuration
 

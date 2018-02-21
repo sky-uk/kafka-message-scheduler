@@ -42,8 +42,6 @@ val commonSettings = Seq(
   libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.3"
 )
 
-val PrometheusReporterPort = 9095
-
 lazy val dockerSettings = Seq(
   packageName in Docker := "kafka-message-scheduler",
   dockerBaseImage := "openjdk:8u131-jre-alpine",
@@ -53,8 +51,7 @@ lazy val dockerSettings = Seq(
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
     Cmd("RUN", "apk update && apk add bash")
-  ),
-  dockerExposedPorts in Docker += PrometheusReporterPort
+  )
 )
 
 def updateLatest = Def.setting {

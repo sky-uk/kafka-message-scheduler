@@ -2,30 +2,29 @@ import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
 import Release._
 
-val kafkaVersion = "0.10.2.1" // TODO: move to 0.11.0.0 when akka-stream-kafka upgrades
-val akkaVersion = "2.5.3"
+val kafkaVersion = "0.11.0.1"
+val akkaVersion = "2.5.9"
 val kamonVersion = "1.0.1"
 
 val dependencies = Seq(
   "com.typesafe.akka"          %% "akka-actor"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream"                % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                 % akkaVersion,
-  "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.16",
+  "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.19",
   "com.typesafe.akka"          %% "akka-stream-contrib"        % "0.8",
 
   "com.typesafe.scala-logging" %% "scala-logging"              % "3.5.0",
-  "com.sksamuel.avro4s"        %% "avro4s-core"                % "1.7.0",
-  "org.typelevel"              %% "cats"                       % "0.9.0",
+  "org.typelevel"              %% "cats-core"                  % "1.0.1",
   "ch.qos.logback"              % "logback-classic"            % "1.2.3"      % Runtime,
   "net.logstash.logback"        % "logstash-logback-encoder"   % "4.11"       % Runtime,
   "org.codehaus.janino"         % "janino"                     % "2.7.8"      % Runtime,
-  "com.github.pureconfig"      %% "pureconfig"                 % "0.7.2",
+  "com.github.pureconfig"      %% "pureconfig"                 % "0.9.0",
 
   "io.kamon"                   %% "kamon-prometheus"           % "1.0.0",
   "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,
   "io.kamon"                   %% "kamon-core"                 % kamonVersion,
 
-  "org.scalatest"              %% "scalatest"                  % "3.0.1"      % Test,
+  "org.scalatest"              %% "scalatest"                  % "3.0.4"      % Test,
   "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion  % Test,
   "com.typesafe.akka"          %% "akka-stream-testkit"        % akkaVersion  % Test,
   "net.cakesolutions"          %% "scala-kafka-client-testkit" % kafkaVersion % Test,
@@ -40,7 +39,7 @@ val dependencies = Seq(
 val commonSettings = Seq(
   organization := "com.sky",
   scalaVersion := "2.12.2",
-  libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.7.0"
+  libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.3"
 )
 
 val jmxPort = 9186

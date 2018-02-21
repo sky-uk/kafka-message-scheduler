@@ -3,6 +3,7 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import akka.Done
+import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.ActorMaterializer
@@ -119,7 +120,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
       scenario(runningApp)
 
-      CoordinatedShutdown(system).run()
+      CoordinatedShutdown(system).run(UnknownReason)
     }
 
     def hasActorSystemTerminated(implicit system: ActorSystem): Boolean =

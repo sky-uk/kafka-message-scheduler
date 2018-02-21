@@ -6,6 +6,7 @@ import com.sky.kms.actors.{PublisherActor, SchedulingActor, TerminatorActor}
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
+import kamon.prometheus.PrometheusReporter
 
 case class SchedulerApp(reader: ScheduleReader, publisher: ScheduledMessagePublisher, publisherActor: ActorRef)
 
@@ -25,7 +26,7 @@ object SchedulerApp {
   }
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
-    Kamon.start()
+    Kamon.addReporter(new PrometheusReporter)
     ShutdownTasks.forKamon
 
     for {

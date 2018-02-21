@@ -4,7 +4,7 @@ import Release._
 
 val kafkaVersion = "0.10.2.1" // TODO: move to 0.11.0.0 when akka-stream-kafka upgrades
 val akkaVersion = "2.5.3"
-val kamonVersion = "0.6.7"
+val kamonVersion = "1.0.1"
 
 val dependencies = Seq(
   "com.typesafe.akka"          %% "akka-actor"                 % akkaVersion,
@@ -21,7 +21,7 @@ val dependencies = Seq(
   "org.codehaus.janino"         % "janino"                     % "2.7.8"      % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                 % "0.7.2",
 
-  "io.kamon"                   %% "kamon-jmx"                  % kamonVersion,
+  "io.kamon"                   %% "kamon-prometheus"           % "1.0.0",
   "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,
   "io.kamon"                   %% "kamon-core"                 % kamonVersion,
 
@@ -74,7 +74,8 @@ val jmxSettings = Seq(
   s"-Dcom.sun.management.jmxremote.rmi.port=$jmxPort",
   "-Dcom.sun.management.jmxremote.ssl=false",
   "-Dcom.sun.management.jmxremote.local.only=false",
-  "-Dcom.sun.management.jmxremote.authenticate=false"
+  "-Dcom.sun.management.jmxremote.authenticate=false",
+  "-Dorg.aspectj.tracing.factory=default"
 ).mkString(" ")
 
 lazy val scheduler = (project in file("scheduler"))
@@ -90,6 +91,7 @@ lazy val scheduler = (project in file("scheduler"))
       "-language:postfixOps",
       "-Xfatal-warnings",
       "-Ywarn-dead-code",
+      "-deprecation",
       "-encoding", "utf-8"
     ),
     fork in run := true,

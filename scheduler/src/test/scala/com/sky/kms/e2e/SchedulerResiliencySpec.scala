@@ -68,36 +68,22 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
       }
     }
 
-    "terminate when Kafka goes down during processing" in new TestContext with EmbeddedKafka {
-
-      implicit val system = TestActorSystem(kafkaServer.kafkaPort, terminateActorSystem = true)
-      implicit val materializer = ActorMaterializer()
-
+    "terminate when Kafka goes down during processing" in new KafkaTestContext {
       val distantSchedules = random[Schedule](n = 100).map(_.secondsFromNow(60))
       val scheduleIds = List.fill(distantSchedules.size)(UUID.randomUUID().toString)
 
-      val app = createAppFrom(config)
-
       kafkaServer.startup()
-      withRunningScheduler(app) { _ =>
+      withRunningScheduler(createAppFrom(config)) { _ =>
         writeToKafka(topic = config.scheduleTopic,
           keyValues = (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq: _*)
         kafkaServer.close()
+
         hasActorSystemTerminated shouldBe true
       }
     }
 
-    "terminate when Kafka is unavailable at startup" in new TestContext {
-
-      implicit val system = TestActorSystem(terminateActorSystem = true)
-      implicit val materializer = ActorMaterializer()
-
-      val schedules = random[Schedule](n = 100)
-      val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
-
-      val app = createAppFrom(config)
-
-      withRunningScheduler(app) { _ =>
+    "terminate when Kafka is unavailable at startup" in new KafkaTestContext {
+      withRunningScheduler(createAppFrom(config)) { _ =>
         hasActorSystemTerminated shouldBe true
       }
     }
@@ -150,6 +136,11 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
       Source.fromIterator(() => elements).mapMaterializedValue(_ => stubControl)
     }
+  }
+
+  private class KafkaTestContext extends TestContext with EmbeddedKafka {
+    implicit val system: ActorSystem = TestActorSystem(kafkaServer.kafkaPort, terminateActorSystem = true)
+    implicit val materializer: ActorMaterializer = ActorMaterializer()
   }
 
 }

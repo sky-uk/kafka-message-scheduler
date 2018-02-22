@@ -20,7 +20,7 @@ val dependencies = Seq(
   "org.codehaus.janino"         % "janino"                     % "2.7.8"      % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                 % "0.9.0",
 
-  "io.kamon"                   %% "kamon-prometheus"           % "1.0.0",
+  "io.kamon"                   %% "kamon-prometheus"           % "1.0.0", // TODO: update to 1.0.1 when its available
   "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,
   "io.kamon"                   %% "kamon-core"                 % kamonVersion,
 

@@ -2,7 +2,7 @@ package com.sky.kms
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.ActorMaterializer
-import com.sky.kms.actors.{PublisherActor, SchedulingActor, TerminatorActor}
+import com.sky.kms.actors._
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon

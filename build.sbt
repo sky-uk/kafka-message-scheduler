@@ -23,6 +23,7 @@ val dependencies = Seq(
   "io.kamon"                   %% "kamon-prometheus"           % "1.0.0", // TODO: update to 1.0.1 when its available
   "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,
   "io.kamon"                   %% "kamon-core"                 % kamonVersion,
+  "io.kamon"                   %% "kamon-system-metrics"       % "1.0.0",
 
   "org.scalatest"              %% "scalatest"                  % "3.0.4"      % Test,
   "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion  % Test,

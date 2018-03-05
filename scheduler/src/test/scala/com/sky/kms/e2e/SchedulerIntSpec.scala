@@ -3,6 +3,7 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import akka.actor.CoordinatedShutdown
+import akka.actor.CoordinatedShutdown.UnknownReason
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntBaseSpec
@@ -16,7 +17,7 @@ import scala.concurrent.duration._
 
 class SchedulerIntSpec extends SchedulerIntBaseSpec {
 
-  val tolerance = 200 millis
+  val Tolerance = 200 millis
 
   "Scheduler stream" should {
     "schedule a message to be sent to Kafka and delete it after it has been emitted" in withRunningSchedulerStream {
@@ -28,7 +29,7 @@ class SchedulerIntSpec extends SchedulerIntBaseSpec {
 
       cr.key() should contain theSameElementsInOrderAs schedule.key
       cr.value() should contain theSameElementsInOrderAs schedule.value
-      cr.timestamp() shouldBe schedule.timeInMillis +- tolerance.toMillis
+      cr.timestamp() shouldBe schedule.timeInMillis +- Tolerance.toMillis
 
       val latestMessageOnScheduleTopic = consumeLatestFromScheduleTopic
 
@@ -43,7 +44,7 @@ class SchedulerIntSpec extends SchedulerIntBaseSpec {
 
     scenario
 
-    CoordinatedShutdown(system).run()
+    CoordinatedShutdown(system).run(UnknownReason)
   }
 
   private def consumeLatestFromScheduleTopic =

@@ -16,7 +16,11 @@ import org.mockito.Mockito._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 
+import scala.concurrent.duration._
+
 class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar with Eventually {
+
+  val NoMsgTimeout = 2 seconds
 
   "A scheduling actor" must {
     "schedule new messages at the given time" in new TestContext {
@@ -35,7 +39,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       cancelSchedule(scheduleId)
 
       advanceToTimeFrom(schedule)
-      probe.expectNoMsg
+      probe.expectNoMessage(NoMsgTimeout)
     }
 
     "warn and do nothing when schedule cancelled twice" in new TestContext {
@@ -55,7 +59,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       createSchedule(scheduleId, updatedSchedule)
 
       advanceToTimeFrom(schedule)
-      probe.expectNoMsg
+      probe.expectNoMessage(NoMsgTimeout)
 
       advanceToTimeFrom(updatedSchedule, schedule.timeInMillis)
       probe.expectMsg(Trigger(scheduleId, updatedSchedule))
@@ -66,7 +70,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       val (scheduleId, schedule) = generateSchedule
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
-      expectNoMsg()
+      expectNoMessage(NoMsgTimeout)
 
       init(actorRef)
 

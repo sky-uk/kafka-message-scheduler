@@ -1,6 +1,7 @@
 package com.sky.kms.actors
 
 import akka.Done
+import akka.actor.CoordinatedShutdown.Reason
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, CoordinatedShutdown, Props, Terminated}
 import cats.Eval
 
@@ -21,6 +22,9 @@ class TerminatorActor(terminate: Eval[Future[Done]], actorsToWatch: ActorRef*) e
 }
 
 object TerminatorActor {
+
+  case object StreamActorsTerminated extends Reason
+
   def create(actors: ActorRef*)(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props(new TerminatorActor(Eval.later(CoordinatedShutdown(system).run), actors: _*)))
+    system.actorOf(Props(new TerminatorActor(Eval.later(CoordinatedShutdown(system).run(StreamActorsTerminated)), actors: _*)))
 }

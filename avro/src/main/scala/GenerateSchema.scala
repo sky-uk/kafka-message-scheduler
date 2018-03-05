@@ -3,6 +3,7 @@ import java.nio.file.{Files, Paths}
 
 import com.sksamuel.avro4s._
 import com.sky.kms.domain.Schedule
+import com.sky.kms.avro._
 
 object GenerateSchema extends App {
 

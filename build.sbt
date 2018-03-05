@@ -2,33 +2,33 @@ import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
 import Release._
 
-val kafkaVersion = "0.10.2.1" // TODO: move to 0.11.0.0 when akka-stream-kafka upgrades
-val akkaVersion = "2.5.3"
-val kamonVersion = "0.6.7"
+val kafkaVersion = "0.11.0.1"
+val akkaVersion = "2.5.9"
+val kamonVersion = "1.0.1"
 
 val dependencies = Seq(
   "com.typesafe.akka"          %% "akka-actor"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream"                % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                 % akkaVersion,
-  "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.16",
+  "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.19",
   "com.typesafe.akka"          %% "akka-stream-contrib"        % "0.8",
 
   "com.typesafe.scala-logging" %% "scala-logging"              % "3.5.0",
-  "com.sksamuel.avro4s"        %% "avro4s-core"                % "1.7.0",
-  "org.typelevel"              %% "cats"                       % "0.9.0",
+  "org.typelevel"              %% "cats-core"                  % "1.0.1",
   "ch.qos.logback"              % "logback-classic"            % "1.2.3"      % Runtime,
   "net.logstash.logback"        % "logstash-logback-encoder"   % "4.11"       % Runtime,
   "org.codehaus.janino"         % "janino"                     % "2.7.8"      % Runtime,
-  "com.github.pureconfig"      %% "pureconfig"                 % "0.7.2",
+  "com.github.pureconfig"      %% "pureconfig"                 % "0.9.0",
 
-  "io.kamon"                   %% "kamon-jmx"                  % kamonVersion,
+  "io.kamon"                   %% "kamon-prometheus"           % "1.0.0", // TODO: update to 1.0.1 when its available
   "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,
   "io.kamon"                   %% "kamon-core"                 % kamonVersion,
+  "io.kamon"                   %% "kamon-system-metrics"       % "1.0.0",
 
-  "org.scalatest"              %% "scalatest"                  % "3.0.1"      % Test,
+  "org.scalatest"              %% "scalatest"                  % "3.0.4"      % Test,
   "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion  % Test,
   "com.typesafe.akka"          %% "akka-stream-testkit"        % akkaVersion  % Test,
-  "net.cakesolutions"          %% "scala-kafka-client-testkit" % kafkaVersion % Test,
+  "net.cakesolutions"          %% "scala-kafka-client-testkit" % "0.10.2.1"   % Test,
   "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.25"     % Test,
   "com.danielasfregola"        %% "random-data-generator"      % "2.1"        % Test,
   "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.2"      % Test,
@@ -40,10 +40,8 @@ val dependencies = Seq(
 val commonSettings = Seq(
   organization := "com.sky",
   scalaVersion := "2.12.2",
-  libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.7.0"
+  libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "1.8.3"
 )
-
-val jmxPort = 9186
 
 lazy val dockerSettings = Seq(
   packageName in Docker := "kafka-message-scheduler",
@@ -54,8 +52,7 @@ lazy val dockerSettings = Seq(
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
     Cmd("RUN", "apk update && apk add bash")
-  ),
-  dockerExposedPorts in Docker := Seq(jmxPort)
+  )
 )
 
 def updateLatest = Def.setting {
@@ -67,15 +64,6 @@ val buildInfoSettings = Seq(
   buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
   buildInfoPackage := "com.sky"
 )
-
-val jmxSettings = Seq(
-  "-Djava.rmi.server.hostname=127.0.0.1",
-  s"-Dcom.sun.management.jmxremote.port=$jmxPort",
-  s"-Dcom.sun.management.jmxremote.rmi.port=$jmxPort",
-  "-Dcom.sun.management.jmxremote.ssl=false",
-  "-Dcom.sun.management.jmxremote.local.only=false",
-  "-Dcom.sun.management.jmxremote.authenticate=false"
-).mkString(" ")
 
 lazy val scheduler = (project in file("scheduler"))
   .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
@@ -90,11 +78,12 @@ lazy val scheduler = (project in file("scheduler"))
       "-language:postfixOps",
       "-Xfatal-warnings",
       "-Ywarn-dead-code",
+      "-deprecation",
       "-encoding", "utf-8"
     ),
     fork in run := true,
     javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.10",
-    javaOptions in Universal += jmxSettings,
+    javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
     buildInfoSettings,
     dockerSettings,
     releaseSettings,

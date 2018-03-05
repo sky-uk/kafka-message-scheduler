@@ -38,13 +38,7 @@ To generate the avro schema from the Schedule case class, run `sbt schema`. The 
 
 ### Start services
 
-Start Kafka:
-
-`docker run -p 2181:2181 -p 9092:9092 -e ADVERTISED_HOST=127.0.0.1 -e ADVERTISED_PORT=9092 spotify/kafka`
-
-Start KMS:
-
-`docker run --net=host --add-host moby:127.0.0.1 -e SCHEDULE_TOPIC=scheduler skyuk/kafka-message-scheduler`
+`docker-compose pull && docker-compose up -d`
 
 ### Send messages
 
@@ -53,7 +47,9 @@ above). See the [Schema](#schema) section for details of generating the Avro sch
 
 ### Monitoring
 
-JMX metrics are exposed using Kamon. Port 9186 has to be exposed to obtain them.
+Metrics are exposed and reported using Kamon. By default the [Kamon Prometheus reporter](http://kamon.io/documentation/1.x/reporters/prometheus/)
+is used for reporting, the scraping endpoint for Prometheus is exposed on port 9095 (this is configurable by setting
+the PROMETHEUS_SCRAPING_ENDPOINT_PORT environment variable).
 
 ### Topic configuration
 

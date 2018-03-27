@@ -13,7 +13,6 @@ val dependencies = Seq(
   "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.19",
   "com.typesafe.akka"          %% "akka-stream-contrib"        % "0.8",
 
-  "org.apache.kafka"            % "kafka-clients"              % kafkaVersion,
   "com.typesafe.scala-logging" %% "scala-logging"              % "3.5.0",
   "org.typelevel"              %% "cats-core"                  % "1.0.1",
   "ch.qos.logback"              % "logback-classic"            % "1.2.3"      % Runtime,

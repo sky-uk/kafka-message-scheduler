@@ -25,6 +25,7 @@ val dependencies = Seq(
   "io.kamon"                   %% "kamon-core"                 % kamonVersion,
   "io.kamon"                   %% "kamon-system-metrics"       % "1.0.0",
 
+  "org.apache.kafka"           %% "kafka"                      % kafkaVersion % Test,
   "org.scalatest"              %% "scalatest"                  % "3.0.4"      % Test,
   "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion  % Test,
   "com.typesafe.akka"          %% "akka-stream-testkit"        % akkaVersion  % Test,

@@ -21,7 +21,6 @@ import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
 import org.scalatest.Assertion
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -138,9 +137,8 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     }
   }
 
-  private class KafkaTestContext extends TestContext with EmbeddedKafka {
-    implicit val system: ActorSystem = TestActorSystem(kafkaServer.kafkaPort, terminateActorSystem = true)
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
+  private class KafkaTestContext extends TestContext with EmbeddedKafka with AkkaComponents {
+    override implicit lazy val system: ActorSystem = TestActorSystem(kafkaServer.kafkaPort, terminateActorSystem = true)
   }
 
 }

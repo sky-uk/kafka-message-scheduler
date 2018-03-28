@@ -21,7 +21,7 @@ class SchedulerIntSpec extends SchedulerIntBaseSpec {
 
   "Scheduler stream" should {
     "schedule a message to be sent to Kafka and delete it after it has been emitted" in withRunningSchedulerStream {
-      val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule].secondsFromNow(2))
+      val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule].secondsFromNow(4))
 
       writeToKafka(ScheduleTopic, (scheduleId, schedule.toAvro))
 

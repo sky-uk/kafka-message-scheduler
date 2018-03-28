@@ -37,14 +37,14 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
       withRunningScheduleReader { probe =>
         writeSchedulesToKafka(firstSchedule)
 
-        probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe firstSchedule._1
+        probe.expectMsgType[CreateOrUpdate](5 seconds).scheduleId shouldBe firstSchedule._1
       }
 
       withRunningScheduleReader { probe =>
         writeSchedulesToKafka(newSchedules: _*)
 
         val allScheduleIds = (firstSchedule :: newSchedules).map { case (scheduleId, _) => scheduleId }
-        val receivedScheduleIds = List.fill(NumSchedules)(probe.expectMsgType[CreateOrUpdate].scheduleId)
+        val receivedScheduleIds = List.fill(NumSchedules)(probe.expectMsgType[CreateOrUpdate](5 seconds).scheduleId)
 
         receivedScheduleIds should contain theSameElementsAs allScheduleIds
       }

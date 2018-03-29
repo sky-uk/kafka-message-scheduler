@@ -20,6 +20,7 @@ object TestActorSystem {
        |  consumer {
        |    max-wakeups = 2
        |    kafka-clients {
+       |      enable.auto.commit = false
        |      bootstrap.servers = "localhost:$kafkaPort"
        |      ${ConsumerConfig.AUTO_OFFSET_RESET_CONFIG} = "earliest"
        |    }

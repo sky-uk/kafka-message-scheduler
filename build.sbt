@@ -2,7 +2,7 @@ import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
 import Release._
 
-val kafkaVersion = "0.11.0.1"
+val kafkaVersion = "1.0.0"
 val akkaVersion = "2.5.9"
 val kamonVersion = "1.0.1"
 
@@ -29,7 +29,7 @@ val dependencies = Seq(
   "org.scalatest"              %% "scalatest"                  % "3.0.4"      % Test,
   "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion  % Test,
   "com.typesafe.akka"          %% "akka-stream-testkit"        % akkaVersion  % Test,
-  "net.cakesolutions"          %% "scala-kafka-client-testkit" % "0.10.2.1"   % Test,
+  "net.cakesolutions"          %% "scala-kafka-client-testkit" % kafkaVersion % Test,
   "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.25"     % Test,
   "com.danielasfregola"        %% "random-data-generator"      % "2.1"        % Test,
   "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.2"      % Test,

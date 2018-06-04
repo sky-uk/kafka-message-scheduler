@@ -2,6 +2,7 @@ package com.sky.kms.unit
 
 import java.time.OffsetDateTime
 
+import cats.syntax.option._
 import com.sky.kms.avro._
 import com.sky.kms.base.BaseSpec
 import com.sky.kms.common.TestDataUtils._
@@ -18,11 +19,23 @@ class SchedulerSpec extends BaseSpec {
 
   "consumerRecordDecoder" should {
     "decode id and schedule if present" in {
-      val cr = artificialConsumerRecord(ScheduleId, TestSchedule.toAvro)
+      val someBytes = random[Array[Byte]]
+      val schedule = TestSchedule.copy(value = someBytes.some)
+      val cr = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
       consumerRecordDecoder(cr) should matchPattern {
-        case Right((ScheduleId, Some(Schedule(TestSchedule.time, TestSchedule.topic, k, v))))
-          if k === TestSchedule.key && v === TestSchedule.value =>
+        case Right((ScheduleId, Some(Schedule(schedule.time, schedule.topic, k, Some(v)))))
+          if k === schedule.key && v === schedule.value.get =>
+      }
+    }
+
+    "decode id and schedule handling a schedule with null body" in {
+      val schedule = TestSchedule.copy(value = None)
+      val cr = artificialConsumerRecord(ScheduleId, schedule.toAvro)
+
+      consumerRecordDecoder(cr) should matchPattern {
+        case Right((ScheduleId, Some(Schedule(schedule.time, schedule.topic, k, None))))
+          if k === schedule.key && schedule.value === None =>
       }
     }
 

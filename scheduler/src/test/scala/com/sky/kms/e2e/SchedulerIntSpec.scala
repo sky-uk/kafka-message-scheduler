@@ -45,7 +45,6 @@ class SchedulerIntSpec extends SchedulerIntBaseSpec {
       val cr = consumeFromKafka(schedule.topic, keyDeserializer = new ByteArrayDeserializer).head
 
       cr.key() should contain theSameElementsInOrderAs schedule.key
-      println("cr:"+cr)
       cr.value() shouldBe null
       cr.timestamp() shouldBe schedule.timeInMillis +- Tolerance.toMillis
     }

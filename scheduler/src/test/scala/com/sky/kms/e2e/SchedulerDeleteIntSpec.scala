@@ -6,7 +6,6 @@ import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntBaseSpec
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
-import com.sky.kms.e2e.RunningSchedulerStream._
 import org.apache.kafka.common.serialization._
 
 import scala.concurrent.duration._

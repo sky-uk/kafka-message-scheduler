@@ -12,7 +12,7 @@ object TestActorSystem {
     s"""
        |akka {
        | coordinated-shutdown {
-       |  terminate-actor-system = ${if(terminateActorSystem) "on" else "off"}
+       |  terminate-actor-system = $terminateActorSystem
        |  run-by-jvm-shutdown-hook = off
        | }
        |

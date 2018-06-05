@@ -28,5 +28,14 @@ class ScheduledMessagePublisherSpec extends AkkaStreamBaseSpec {
         new ProducerRecord(testTopic, scheduleId.getBytes, null)
       )
     }
+
+    "be able to write a delete to a topic" in {
+      val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule].copy(value = None))
+
+      publisher.splitToMessageAndDeletion((scheduleId, schedule.toScheduledMessage)) === List(
+        new ProducerRecord(schedule.topic, schedule.key, null),
+        new ProducerRecord(testTopic, scheduleId.getBytes, null)
+      )
+    }
   }
 }

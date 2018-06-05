@@ -7,12 +7,12 @@ sealed trait PublishableMessage
 
 object PublishableMessage {
 
-  case class ScheduledMessage(topic: String, key: Array[Byte], value: Array[Byte]) extends PublishableMessage
+  case class ScheduledMessage(topic: String, key: Array[Byte], value: Option[Array[Byte]]) extends PublishableMessage
 
   case class ScheduleDeletion(scheduleId: ScheduleId, scheduleTopic: String) extends PublishableMessage
 
   implicit val scheduledMessageProducerRecordEnc: ProducerRecordEncoder[ScheduledMessage] =
-    ProducerRecordEncoder.instance(message => new ProducerRecord(message.topic, message.key, message.value))
+    ProducerRecordEncoder.instance(message => new ProducerRecord(message.topic, message.key, message.value.orNull))
 
   implicit val scheduleDeletionProducerRecordEnc: ProducerRecordEncoder[ScheduleDeletion] =
     ProducerRecordEncoder.instance(deletion => new ProducerRecord(deletion.scheduleTopic, deletion.scheduleId.getBytes, null))

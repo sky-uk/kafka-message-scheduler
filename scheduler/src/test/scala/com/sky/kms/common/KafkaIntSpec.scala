@@ -1,17 +1,17 @@
 package com.sky.kms.common
 
-import org.scalatest.{BeforeAndAfterAll, Suite}
+import org.scalatest.{BeforeAndAfterEach, Suite}
 
-trait KafkaIntSpec extends EmbeddedKafka with BeforeAndAfterAll {
+trait KafkaIntSpec extends EmbeddedKafka with BeforeAndAfterEach {
   this: Suite =>
 
-  override def beforeAll() {
+  override def beforeEach() {
     kafkaServer.startup()
-    super.beforeAll()
+    super.beforeEach()
   }
 
-  override def afterAll() {
-    super.afterAll()
+  override def afterEach() {
+    super.afterEach()
     kafkaServer.close()
   }
 

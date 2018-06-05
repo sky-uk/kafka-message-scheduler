@@ -8,11 +8,7 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import org.apache.kafka.common.serialization._
 
-import scala.concurrent.duration._
-
 class SchedulerDeleteIntSpec extends SchedulerIntBaseSpec {
-
-  val Tolerance = 200 millis
 
   "Scheduler stream" should {
 

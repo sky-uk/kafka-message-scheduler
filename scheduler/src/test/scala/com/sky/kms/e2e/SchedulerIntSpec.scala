@@ -8,11 +8,7 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import org.apache.kafka.common.serialization._
 
-import scala.concurrent.duration._
-
 class SchedulerIntSpec extends SchedulerIntBaseSpec {
-
-  val Tolerance = 200 millis
 
   "Scheduler stream" should {
     "schedule a message to be sent to Kafka and delete it after it has been emitted" in withRunningSchedulerStream {

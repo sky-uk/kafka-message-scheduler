@@ -1,6 +1,6 @@
 package com.sky.kms.common
 
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
+import org.scalatest.{BeforeAndAfterEach, Suite}
 
 trait KafkaIntSpec extends EmbeddedKafka with BeforeAndAfterEach {
   this: Suite =>

@@ -4,14 +4,15 @@ import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
-import akka.actor._
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.domain._
+import monix.execution.{Cancelable, Scheduler => MonixScheduler}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
-class SchedulingActor(publisher: ActorRef, akkaScheduler: Scheduler) extends Actor with ActorLogging {
+class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler) extends Actor with ActorLogging {
 
   implicit val ec: ExecutionContextExecutor = context.dispatcher
 
@@ -24,29 +25,30 @@ class SchedulingActor(publisher: ActorRef, akkaScheduler: Scheduler) extends Act
       sender ! Ack
   }
 
-  private def receiveWithSchedules(schedules: Map[ScheduleId, Cancellable]): Receive = {
+  private def receiveWithSchedules(schedules: Map[ScheduleId, Cancelable]): Receive = {
 
-    val handleSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancellable]] = {
+    val handleSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancelable]] = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) =>
-        if (cancel(scheduleId, schedules))
+        if (schedules.exists(_._1 == scheduleId)) {
           log.info(s"Updating schedule $scheduleId")
-        else
+          cancel(scheduleId, schedules)
+        }
+        else {
           log.info(s"Creating schedule $scheduleId")
-        val cancellable = akkaScheduler.scheduleOnce(timeFromNow(schedule.time))(publisher ! PublisherActor.Trigger(scheduleId, schedule))
+        }
+        val cancellable = monixScheduler.scheduleOnce(timeFromNow(schedule.time))(publisher ! PublisherActor.Trigger(scheduleId, schedule))
         schedules + (scheduleId -> cancellable)
 
       case Cancel(scheduleId: String) =>
-        if (cancel(scheduleId, schedules))
-          log.info(s"Cancelled schedule $scheduleId")
-        else
-          log.warning(s"Couldn't cancel $scheduleId")
+        cancel(scheduleId, schedules)
+        log.info(s"Cancelled schedule $scheduleId")
         schedules - scheduleId
     }
 
     (handleSchedulingMessage andThen updateStateAndAck) orElse stop
   }
 
-  private def updateStateAndAck(schedules: Map[ScheduleId, Cancellable]): Unit = {
+  private def updateStateAndAck(schedules: Map[ScheduleId, Cancelable]): Unit = {
     context.become(receiveWithSchedules(schedules))
     sender ! Ack
   }
@@ -57,8 +59,8 @@ class SchedulingActor(publisher: ActorRef, akkaScheduler: Scheduler) extends Act
       context stop self
   }
 
-  private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancellable]): Boolean =
-    schedules.get(scheduleId).exists(_.cancel())
+  private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancelable]): Unit =
+    schedules.get(scheduleId).foreach(_.cancel())
 
   private def timeFromNow(time: OffsetDateTime): FiniteDuration = {
     val offset = ChronoUnit.MILLIS.between(OffsetDateTime.now, time)
@@ -81,5 +83,5 @@ object SchedulingActor {
   case class UpstreamFailure(t: Throwable)
 
   def create(publisherActor: ActorRef)(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props(new SchedulingActor(publisherActor, system.scheduler)))
+    system.actorOf(Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher))))
 }

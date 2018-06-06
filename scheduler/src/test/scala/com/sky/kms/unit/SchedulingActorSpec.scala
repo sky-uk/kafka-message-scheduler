@@ -1,18 +1,17 @@
 package com.sky.kms.unit
 
+import java.time.OffsetDateTime
 import java.util.UUID
 
 import akka.actor.ActorRef
-import akka.event.LoggingAdapter
 import akka.testkit.{ImplicitSender, TestActorRef, TestProbe}
-import com.miguno.akka.testing.VirtualTime
 import com.sky.kms.actors.PublisherActor.Trigger
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaBaseSpec
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
-import org.mockito.Mockito._
+import monix.execution.schedulers.TestScheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 
@@ -32,6 +31,17 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       probe.expectMsg(Trigger(scheduleId, schedule))
     }
 
+    "schedule new messages far in the future" in {
+      val schedulingActor = SchedulingActor.create(self)
+      init(schedulingActor)
+      val (scheduleId, schedule) = generateSchedule
+
+      val distantFutureSchedule = schedule.copy(time = OffsetDateTime.now.plusYears(10))
+
+      schedulingActor ! CreateOrUpdate(scheduleId, distantFutureSchedule)
+      expectMsg(Ack)
+    }
+
     "cancel schedules when a cancel message is received" in new TestContext {
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
@@ -40,15 +50,6 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
       advanceToTimeFrom(schedule)
       probe.expectNoMessage(NoMsgTimeout)
-    }
-
-    "warn and do nothing when schedule cancelled twice" in new TestContext {
-      val (scheduleId, schedule) = generateSchedule
-      createSchedule(scheduleId, schedule)
-      cancelSchedule(scheduleId)
-
-      cancelSchedule(scheduleId)
-      verify(mockLogger).warning(s"Couldn't cancel $scheduleId")
     }
 
     "cancel previous schedule when updating an existing schedule" in new TestContext {
@@ -66,7 +67,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "accept scheduling messages only after it has received an Init" in {
-      val actorRef = TestActorRef(new SchedulingActor(TestProbe().ref, system.scheduler))
+      val actorRef = TestActorRef(new SchedulingActor(TestProbe().ref, TestScheduler()))
       val (scheduleId, schedule) = generateSchedule
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
@@ -89,20 +90,15 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
   private class TestContext {
 
-    val mockLogger = mock[LoggingAdapter]
-    val time = new VirtualTime
+    val testScheduler = TestScheduler()
     val probe = TestProbe()
-
-    val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, time.scheduler) {
-      override def log: LoggingAdapter = mockLogger
-    })
-
+    val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, testScheduler))
     val now = System.currentTimeMillis()
 
     init(schedulingActor)
 
     def advanceToTimeFrom(schedule: Schedule, startTime: Long = now): Unit =
-      time.advance(schedule.timeInMillis - startTime)
+      testScheduler.tick((schedule.timeInMillis - startTime).millis)
 
     def createSchedule(scheduleId: ScheduleId, schedule: Schedule): Unit = {
       schedulingActor ! CreateOrUpdate(scheduleId, schedule)

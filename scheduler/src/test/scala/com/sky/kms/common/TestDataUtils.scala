@@ -16,8 +16,6 @@ import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import org.zalando.grafter.syntax.rewriter._
 import org.scalacheck._
 
-import scala.reflect.ClassTag
-
 object TestDataUtils {
 
   implicit val arbAlphaString: Arbitrary[String] =
@@ -26,7 +24,7 @@ object TestDataUtils {
   implicit val arbNextMonthOffsetDateTime: Arbitrary[OffsetDateTime] = {
     val from = ZonedDateTime.now()
     val range = Duration.ofDays(20)
-    Arbitrary(genDateTimeWithinRange(from, range).map(_.toOffsetDateTime))
+    Arbitrary(genDateTimeWithinRange(from, range).map(_.withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime))
   }
 
   implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {

@@ -1,6 +1,6 @@
 package com.sky.kms.unit
 
-import java.time.OffsetDateTime
+import java.time.{Instant, OffsetDateTime, ZoneOffset}
 
 import cats.syntax.option._
 import com.sky.kms.avro._
@@ -51,23 +51,10 @@ class SchedulerSpec extends BaseSpec {
       consumerRecordDecoder(cr) shouldBe Left(InvalidSchemaError(ScheduleId))
     }
 
-    "error if it fails to decode" in {
-      val cr = artificialConsumerRecord(ScheduleId, wrongAvro)
-
-      consumerRecordDecoder(cr) should matchPattern {
-        case Left(AvroMessageFormatError(ScheduleId, t)) if t.getMessage.contains("love") =>
-      }
-    }
   }
 
   private def artificialConsumerRecord(scheduleId: ScheduleId, avroBytes: Array[Byte]) = {
     new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1l, scheduleId, avroBytes)
   }
 
-  private lazy val wrongAvro: Array[Byte] = {
-    implicit val offsetDateTimeToValue = new com.sksamuel.avro4s.ToValue[OffsetDateTime] {
-      override def apply(value: OffsetDateTime): String = "we love avro"
-    }
-    TestSchedule.toAvro
-  }
 }

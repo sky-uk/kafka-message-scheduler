@@ -22,15 +22,6 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
   val NoMsgTimeout = 2 seconds
 
   "A scheduling actor" must {
-    "schedule new messages at the given time" in new TestContext {
-      val (scheduleId, schedule) = generateSchedule
-
-      createSchedule(scheduleId, schedule)
-
-      advanceToTimeFrom(schedule, now)
-      probe.expectMsg(Trigger(scheduleId, schedule))
-    }
-
     "schedule new messages far in the future" in {
       val schedulingActor = SchedulingActor.create(self)
       init(schedulingActor)
@@ -86,6 +77,16 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
       expectTerminated(schedulingActor)
     }
+
+    "schedule new messages at the given time" in new TestContext {
+      val (scheduleId, schedule) = generateSchedule
+
+      createSchedule(scheduleId, schedule)
+
+      advanceToTimeFrom(schedule, now)
+      probe.expectMsg(Trigger(scheduleId, schedule))
+    }
+
   }
 
   private class TestContext {

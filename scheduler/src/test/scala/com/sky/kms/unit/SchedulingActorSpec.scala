@@ -1,6 +1,5 @@
 package com.sky.kms.unit
 
-import java.time.OffsetDateTime
 import java.util.UUID
 
 import akka.actor.ActorRef
@@ -22,15 +21,13 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
   val NoMsgTimeout = 2 seconds
 
   "A scheduling actor" must {
-    "schedule new messages far in the future" in {
-      val schedulingActor = SchedulingActor.create(self)
-      init(schedulingActor)
+    "schedule new messages at the given time" in new TestContext {
       val (scheduleId, schedule) = generateSchedule
 
-      val distantFutureSchedule = schedule.copy(time = OffsetDateTime.now.plusYears(10))
+      createSchedule(scheduleId, schedule)
 
-      schedulingActor ! CreateOrUpdate(scheduleId, distantFutureSchedule)
-      expectMsg(Ack)
+      advanceToTimeFrom(schedule, now)
+      probe.expectMsg(Trigger(scheduleId, schedule))
     }
 
     "cancel schedules when a cancel message is received" in new TestContext {
@@ -77,16 +74,6 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
       expectTerminated(schedulingActor)
     }
-
-    "schedule new messages at the given time" in new TestContext {
-      val (scheduleId, schedule) = generateSchedule
-
-      createSchedule(scheduleId, schedule)
-
-      advanceToTimeFrom(schedule, now)
-      probe.expectMsg(Trigger(scheduleId, schedule))
-    }
-
   }
 
   private class TestContext {

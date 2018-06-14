@@ -29,19 +29,19 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler) exten
 
     val handleSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancelable]] = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) =>
-        if (schedules.exists(_._1 == scheduleId)) {
+        schedules.get(scheduleId).fold(log.info(s"Creating schedule $scheduleId")) { schedule =>
           log.info(s"Updating schedule $scheduleId")
-          cancel(scheduleId, schedules)
+          schedule.cancel()
         }
-        else {
-          log.info(s"Creating schedule $scheduleId")
-        }
+
         val cancellable = monixScheduler.scheduleOnce(timeFromNow(schedule.time))(publisher ! PublisherActor.Trigger(scheduleId, schedule))
         schedules + (scheduleId -> cancellable)
 
       case Cancel(scheduleId: String) =>
-        cancel(scheduleId, schedules)
-        log.info(s"Cancelled schedule $scheduleId")
+        schedules.get(scheduleId).fold(log.warning(s"Unable to cancel $scheduleId as it does not exist.")) { schedule =>
+          schedule.cancel()
+          log.info(s"Cancelled schedule $scheduleId")
+        }
         schedules - scheduleId
     }
 
@@ -58,9 +58,6 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler) exten
       log.error(t, "Reader stream has died")
       context stop self
   }
-
-  private def cancel(scheduleId: ScheduleId, schedules: Map[ScheduleId, Cancelable]): Unit =
-    schedules.get(scheduleId).foreach(_.cancel())
 
   private def timeFromNow(time: OffsetDateTime): FiniteDuration = {
     val offset = ChronoUnit.MILLIS.between(OffsetDateTime.now, time)

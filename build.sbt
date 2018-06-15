@@ -12,6 +12,7 @@ val dependencies = Seq(
   "com.typesafe.akka"          %% "akka-slf4j"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.19",
   "com.typesafe.akka"          %% "akka-stream-contrib"        % "0.8",
+  "io.monix"                   %% "monix-execution"            % "3.0.0-RC1",
 
   "com.typesafe.scala-logging" %% "scala-logging"              % "3.5.0",
   "org.typelevel"              %% "cats-core"                  % "1.0.1",
@@ -33,7 +34,6 @@ val dependencies = Seq(
   "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.25"     % Test,
   "com.danielasfregola"        %% "random-data-generator"      % "2.1"        % Test,
   "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.2"      % Test,
-  "com.miguno.akka"            %% "akka-mock-scheduler"        % "0.5.1"      % Test,
   "org.mockito"                 % "mockito-all"                % "1.10.19"    % Test,
   "org.zalando"                %% "grafter"                    % "2.1.1"      % Test
 )

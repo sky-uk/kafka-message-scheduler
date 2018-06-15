@@ -12,7 +12,7 @@ import com.sky.kms.domain.{Schedule, ScheduleId, ScheduleQueueOfferResult}
 
 import scala.util.{Failure, Success}
 
-class PublisherActor(akkaScheduler: Scheduler) extends Actor with ActorLogging {
+class PublisherActor extends Actor with ActorLogging {
 
   implicit val ec = context.dispatcher
 
@@ -59,7 +59,7 @@ object PublisherActor {
   case class DownstreamFailure(t: Throwable)
 
   def create(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props(new PublisherActor(system.scheduler)))
+    system.actorOf(Props[PublisherActor])
 
   def init(queue: ScheduleQueue): Start[Unit] =
     Start(_.publisherActor ! Init(queue))

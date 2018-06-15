@@ -3,7 +3,6 @@ package com.sky.kms.unit
 import java.util.UUID
 
 import akka.testkit.TestActorRef
-import com.miguno.akka.testing.VirtualTime
 import com.sky.kms.actors.PublisherActor
 import com.sky.kms.actors.PublisherActor._
 import com.sky.kms.base.AkkaBaseSpec
@@ -13,7 +12,6 @@ import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
 
@@ -59,8 +57,7 @@ class PublisherActorSpec extends AkkaBaseSpec with MockitoSugar {
 
   private class TestContext {
     val mockSourceQueue = mock[ScheduleQueue]
-    val time = new VirtualTime
-    val publisherActor = TestActorRef(new PublisherActor(time.scheduler))
+    val publisherActor = TestActorRef(new PublisherActor)
 
     when(mockSourceQueue.watchCompletion()).thenReturn(Future.never)
     publisherActor ! Init(mockSourceQueue)

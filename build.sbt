@@ -25,6 +25,7 @@ val dependencies = Seq(
   "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,
   "io.kamon"                   %% "kamon-core"                 % kamonVersion,
   "io.kamon"                   %% "kamon-system-metrics"       % "1.0.0",
+  "io.kamon"                   %% "kamon-jmx-collector"        % "0.1.4",
 
   "org.apache.kafka"           %% "kafka"                      % kafkaVersion % Test,
   "org.scalatest"              %% "scalatest"                  % "3.0.4"      % Test,
@@ -72,7 +73,9 @@ lazy val scheduler = (project in file("scheduler"))
   .settings(
     libraryDependencies ++= dependencies,
     dependencyOverrides += "org.scalacheck" %% "scalacheck" % "1.13.5",
-    resolvers += Resolver.bintrayRepo("cakesolutions", "maven"),
+    resolvers ++= Seq (
+      "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",
+      Resolver.bintrayRepo("cakesolutions", "maven")),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
     scalacOptions ++= Seq(
       "-language:implicitConversions",

@@ -21,8 +21,6 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler) exten
   val scheduledMessages = messages.refine("status" -> "scheduled")
   val cancelledMessages = messages.refine("status" -> "cancelled")
 
-  val messagesWaitingGauge = Kamon.gauge("scheduler-messages-waiting")
-
   override def receive: Receive = waitForInit orElse stop
 
   private val waitForInit: Receive = {
@@ -43,7 +41,6 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler) exten
 
         val cancellable = monixScheduler.scheduleOnce(timeFromNow(schedule.time))(publisher ! PublisherActor.Trigger(scheduleId, schedule))
         scheduledMessages.increment()
-        messagesWaitingGauge.increment()
         schedules + (scheduleId -> cancellable)
 
       case Cancel(scheduleId: String) =>
@@ -52,7 +49,6 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler) exten
           schedule.cancel()
           log.info(s"Cancelled schedule $scheduleId")
         }
-        messagesWaitingGauge.decrement()
         schedules - scheduleId
     }
 

@@ -7,7 +7,7 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestProbe}
 import com.sky.kms.actors.PublisherActor.Trigger
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
-import com.sky.kms.base.AkkaBaseSpec
+import com.sky.kms.base.{AkkaBaseSpec, SimpleCounterMonitoring}
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import monix.execution.schedulers.TestScheduler
@@ -55,7 +55,7 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     }
 
     "accept scheduling messages only after it has received an Init" in {
-      val actorRef = TestActorRef(new SchedulingActor(TestProbe().ref, TestScheduler()))
+      val actorRef = TestActorRef(new SchedulingActor(TestProbe().ref, TestScheduler(), new SimpleCounterMonitoring()))
       val (scheduleId, schedule) = generateSchedule
 
       actorRef ! CreateOrUpdate(scheduleId, schedule)
@@ -74,13 +74,37 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
       expectTerminated(schedulingActor)
     }
+
+    "update monitoring when new schedule is received" in new TestContext {
+      val (scheduleId, schedule) = generateSchedule
+
+      createSchedule(scheduleId, schedule)
+
+      advanceToTimeFrom(schedule, now)
+      eventually {
+        scheduleReceivedCounter shouldBe 1L
+      }
+    }
+
+    "update monitoring when a cancel message is received" in new TestContext {
+      val (scheduleId, schedule) = generateSchedule
+      createSchedule(scheduleId, schedule)
+
+      cancelSchedule(scheduleId)
+
+      advanceToTimeFrom(schedule)
+      eventually {
+        scheduleDoneCounter shouldBe 1L
+      }
+    }
   }
 
   private class TestContext {
 
+    val monitoring = new SimpleCounterMonitoring()
     val testScheduler = TestScheduler()
     val probe = TestProbe()
-    val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, testScheduler))
+    val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, testScheduler, monitoring))
     val now = System.currentTimeMillis()
 
     init(schedulingActor)
@@ -97,6 +121,10 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
       schedulingActor ! Cancel(scheduleId)
       expectMsg(Ack)
     }
+
+    def scheduleReceivedCounter: Long = monitoring.scheduleReceivedCounter.get()
+
+    def scheduleDoneCounter: Long = monitoring.scheduleDoneCounter.get()
   }
 
   private def generateSchedule: (ScheduleId, Schedule) =

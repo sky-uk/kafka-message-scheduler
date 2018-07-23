@@ -80,7 +80,6 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
       createSchedule(scheduleId, schedule)
 
-      advanceToTimeFrom(schedule, now)
       eventually {
         scheduleReceivedCounter shouldBe 1L
       }
@@ -92,7 +91,6 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
       cancelSchedule(scheduleId)
 
-      advanceToTimeFrom(schedule)
       eventually {
         scheduleDoneCounter shouldBe 1L
       }

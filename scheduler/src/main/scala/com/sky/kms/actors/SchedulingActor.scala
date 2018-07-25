@@ -7,12 +7,13 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.domain._
+import com.sky.kms.monitoring._
 import monix.execution.{Cancelable, Scheduler => MonixScheduler}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
-class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler) extends Actor with ActorLogging {
+class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monitoring: Monitoring) extends Actor with ActorLogging {
 
   implicit val ec: ExecutionContextExecutor = context.dispatcher
 
@@ -35,11 +36,13 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler) exten
         }
 
         val cancellable = monixScheduler.scheduleOnce(timeFromNow(schedule.time))(publisher ! PublisherActor.Trigger(scheduleId, schedule))
+        monitoring.scheduleReceived()
         schedules + (scheduleId -> cancellable)
 
       case Cancel(scheduleId: String) =>
         schedules.get(scheduleId).fold(log.warning(s"Unable to cancel $scheduleId as it does not exist.")) { schedule =>
           schedule.cancel()
+          monitoring.scheduleDone()
           log.info(s"Cancelled schedule $scheduleId")
         }
         schedules - scheduleId
@@ -80,5 +83,5 @@ object SchedulingActor {
   case class UpstreamFailure(t: Throwable)
 
   def create(publisherActor: ActorRef)(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher))))
+    system.actorOf(Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher), new KamonMonitoring())))
 }

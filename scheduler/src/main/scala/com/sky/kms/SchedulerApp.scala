@@ -6,6 +6,7 @@ import com.sky.kms.actors._
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
+import kamon.jmx.collector.KamonJmxMetricCollector
 import kamon.system.SystemMetrics
 
 case class SchedulerApp(reader: ScheduleReader, publisher: ScheduledMessagePublisher, publisherActor: ActorRef)
@@ -28,6 +29,7 @@ object SchedulerApp {
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
     Kamon.loadReportersFromConfig()
     SystemMetrics.startCollecting()
+    KamonJmxMetricCollector()
     ShutdownTasks.forKamon
 
     for {

@@ -44,10 +44,8 @@ object ScheduleReader extends LazyLogging {
     readResult.map { case (scheduleId, scheduleOpt) =>
       scheduleOpt match {
         case Some(schedule) =>
-          logger.info(s"Publishing scheduled message with ID: $scheduleId to topic: ${schedule.topic}")
           CreateOrUpdate(scheduleId, schedule)
         case None =>
-          logger.info(s"Cancelling schedule $scheduleId")
           Cancel(scheduleId)
       }
     }

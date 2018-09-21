@@ -28,10 +28,10 @@ object TestDataUtils {
   }
 
   implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {
-    def toAvro(implicit toRecord: ToRecord[Schedule]): Array[Byte] = {
+    def toAvro(implicit toRecord: ToRecord[AvroSchedule]): Array[Byte] = {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[Schedule](baos)
-      output.write(schedule)
+      val output = AvroOutputStream.binary[AvroSchedule](baos)
+      output.write(AvroSchedule(schedule.time, schedule.outputTopic, schedule.key, schedule.value))
       output.close()
       baos.toByteArray
     }
@@ -42,7 +42,7 @@ object TestDataUtils {
       schedule.copy(time = OffsetDateTime.now().plusSeconds(seconds))
 
     def toScheduledMessage: ScheduledMessage =
-      ScheduledMessage(schedule.topic, schedule.key, schedule.value)
+      ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value)
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {

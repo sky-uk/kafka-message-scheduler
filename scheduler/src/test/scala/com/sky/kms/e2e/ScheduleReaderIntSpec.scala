@@ -30,7 +30,7 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
 
   "stream" should {
     "consume from the beginning of the topic on restart" in {
-      AdminUtils.createTopic(zkUtils, conf.scheduleTopic, partitions = 20, replicationFactor = 1)
+      AdminUtils.createTopic(zkUtils, conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
 
       val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
 
@@ -74,7 +74,7 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
   }
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, Schedule)*) {
-    writeToKafka(ScheduleTopic, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) }: _*)
+    writeToKafka(ScheduleTopic.head, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) }: _*)
   }
 
 }

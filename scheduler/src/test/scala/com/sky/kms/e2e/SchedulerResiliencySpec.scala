@@ -73,7 +73,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
       kafkaServer.startup()
       withRunningScheduler(createAppFrom(config)) { _ =>
-        writeToKafka(topic = config.scheduleTopic,
+        writeToKafka(topic = config.scheduleTopic.head,
           keyValues = (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq: _*)
         kafkaServer.close()
 
@@ -92,7 +92,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
     implicit val patienceConfig = PatienceConfig(scaled(10 seconds), scaled(500 millis))
 
-    val config = SchedulerConfig("some-topic", 100)
+    val config = SchedulerConfig(Set("some-topic"), 100)
 
     def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
       SchedulerApp.configure apply AppConfig(config)

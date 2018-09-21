@@ -16,7 +16,7 @@ class PublishableMessageSpec extends BaseSpec {
          random[Schedule].copy(value = Some("cupcat".getBytes)))
 
       PublishableMessage.scheduledMessageProducerRecordEnc(
-        schedule.toScheduledMessage) shouldBe new ProducerRecord(schedule.topic,
+        schedule.toScheduledMessage) shouldBe new ProducerRecord(schedule.outputTopic,
                                                                  schedule.key,
                                                                  schedule.value.get)
     }
@@ -25,7 +25,7 @@ class PublishableMessageSpec extends BaseSpec {
       val (_, schedule) = (UUID.randomUUID().toString, random[Schedule].copy(value = None))
 
       PublishableMessage.scheduledMessageProducerRecordEnc(
-        schedule.toScheduledMessage) shouldBe new ProducerRecord(schedule.topic,
+        schedule.toScheduledMessage) shouldBe new ProducerRecord(schedule.outputTopic,
         schedule.key,
         null)
     }

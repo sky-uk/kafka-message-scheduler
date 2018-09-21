@@ -26,8 +26,8 @@ case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Eva
 
   lazy val splitToMessageAndDeletion: (In) => List[SinkIn] = {
     case (scheduleId, scheduledMessage) =>
-      logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.topic} and deleting it from ${config.scheduleTopic}")
-      List(scheduledMessage, ScheduleDeletion(scheduleId, config.scheduleTopic))
+      logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.outputTopic} and deleting it from ${scheduledMessage.inputTopic}")
+      List(scheduledMessage, ScheduleDeletion(scheduleId, scheduledMessage.inputTopic))
   }
 
   def stream: RunnableGraph[(Mat, SinkMat)] =

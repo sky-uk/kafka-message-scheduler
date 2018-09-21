@@ -17,9 +17,9 @@ class SchedulerDeleteIntSpec extends SchedulerIntBaseSpec {
         (UUID.randomUUID().toString,
          random[Schedule].copy(value = None).secondsFromNow(4))
 
-      writeToKafka(ScheduleTopic, (scheduleId, schedule.toAvro))
+      writeToKafka(ScheduleTopic.head, (scheduleId, schedule.toAvro))
 
-      val cr = consumeFromKafka(schedule.topic, keyDeserializer = new ByteArrayDeserializer).head
+      val cr = consumeFromKafka(schedule.outputTopic, keyDeserializer = new ByteArrayDeserializer).head
 
       cr.key() should contain theSameElementsInOrderAs schedule.key
       cr.value() shouldBe null

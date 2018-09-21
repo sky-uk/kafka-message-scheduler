@@ -15,10 +15,10 @@ class SchedulerIntSpec extends SchedulerIntBaseSpec {
       val (scheduleId, schedule) =
         (UUID.randomUUID().toString, random[Schedule].secondsFromNow(4))
 
-      writeToKafka(ScheduleTopic, (scheduleId, schedule.toAvro))
+      writeToKafka(ScheduleTopic.head, (scheduleId, schedule.toAvro))
 
       val cr =
-        consumeFromKafka(schedule.topic,
+        consumeFromKafka(schedule.outputTopic,
           keyDeserializer = new ByteArrayDeserializer).head
 
       cr.key() should contain theSameElementsInOrderAs schedule.key
@@ -33,5 +33,5 @@ class SchedulerIntSpec extends SchedulerIntBaseSpec {
   }
 
   private def consumeLatestFromScheduleTopic =
-    consumeFromKafka(ScheduleTopic, 2, new StringDeserializer).last
+    consumeFromKafka(ScheduleTopic.head, 2, new StringDeserializer).last
 }

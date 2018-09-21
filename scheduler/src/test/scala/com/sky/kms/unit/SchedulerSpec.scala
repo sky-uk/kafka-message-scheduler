@@ -20,21 +20,21 @@ class SchedulerSpec extends BaseSpec {
   "consumerRecordDecoder" should {
     "decode id and schedule if present" in {
       val someBytes = random[Array[Byte]]
-      val schedule = TestSchedule.copy(value = someBytes.some)
+      val schedule = TestSchedule.copy(value = someBytes.some, inputTopic = "scheduleTopic")
       val cr = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
       consumerRecordDecoder(cr) should matchPattern {
-        case Right((ScheduleId, Some(Schedule(schedule.time, schedule.topic, k, Some(v)))))
+        case Right((ScheduleId, Some(Schedule(schedule.time, schedule.inputTopic, schedule.outputTopic, k, Some(v)))))
           if k === schedule.key && v === schedule.value.get =>
       }
     }
 
     "decode id and schedule handling a schedule with null body" in {
-      val schedule = TestSchedule.copy(value = None)
+      val schedule = TestSchedule.copy(value = None, inputTopic = "scheduleTopic")
       val cr = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
       consumerRecordDecoder(cr) should matchPattern {
-        case Right((ScheduleId, Some(Schedule(schedule.time, schedule.topic, k, None))))
+        case Right((ScheduleId, Some(Schedule(schedule.time, schedule.inputTopic, schedule.outputTopic, k, None))))
           if k === schedule.key && schedule.value === None =>
       }
     }

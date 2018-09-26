@@ -15,7 +15,7 @@ class SchedulerDeleteIntSpec extends SchedulerIntBaseSpec {
     "schedule a delete message if the body of the scheduled message is None" in withRunningSchedulerStream {
       val (scheduleId, schedule) =
         (UUID.randomUUID().toString,
-         random[Schedule].copy(value = None).secondsFromNow(4))
+         random[ScheduleEvent].copy(value = None).secondsFromNow(4))
 
       writeToKafka(ScheduleTopic.head, (scheduleId, schedule.toAvro))
 

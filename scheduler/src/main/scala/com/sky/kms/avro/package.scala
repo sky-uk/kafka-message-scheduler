@@ -23,5 +23,3 @@ package object avro {
     override def apply(time: OffsetDateTime): Long = time.toInstant.toEpochMilli
   }
 }
-
-

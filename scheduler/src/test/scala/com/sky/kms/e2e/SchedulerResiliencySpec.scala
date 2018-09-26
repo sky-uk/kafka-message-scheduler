@@ -16,7 +16,7 @@ import com.sky.kms.base.BaseSpec
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.common.{EmbeddedKafka, TestActorSystem}
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
-import com.sky.kms.domain.Schedule
+import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
 import org.scalatest.Assertion
@@ -41,7 +41,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     "terminate when the publisher stream fails" in new TestContext with IteratingSource with AkkaComponents {
       val app =
         createAppFrom(config)
-          .withReaderSource(sourceWith(random[Schedule](n = 10).map(_.secondsFromNow(2))))
+          .withReaderSource(sourceWith(random[ScheduleEvent](n = 10).map(_.secondsFromNow(2))))
           .withPublisherSink(Sink.ignore)
 
       withRunningScheduler(app) { runningApp =>
@@ -52,7 +52,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     }
 
     "terminate when the queue buffer becomes full" in new TestContext with IteratingSource with AkkaComponents {
-      val sameTimeSchedules = random[Schedule](n = 20).map(_.secondsFromNow(2))
+      val sameTimeSchedules = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
       val probe = TestProbe()
       val sinkThatWillNotSignalDemand = Sink.actorRefWithAck[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "")
         .mapMaterializedValue(_ => Future.never)
@@ -68,7 +68,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     }
 
     "terminate when Kafka goes down during processing" in new KafkaTestContext {
-      val distantSchedules = random[Schedule](n = 100).map(_.secondsFromNow(60))
+      val distantSchedules = random[ScheduleEvent](n = 100).map(_.secondsFromNow(60))
       val scheduleIds = List.fill(distantSchedules.size)(UUID.randomUUID().toString)
 
       kafkaServer.startup()
@@ -128,7 +128,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
   private trait IteratingSource {
     this: TestContext =>
 
-    def sourceWith(schedules: Seq[Schedule]): Source[ScheduleReader.In, ScheduleReader.Mat] = {
+    def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, ScheduleReader.Mat] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
       val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight)

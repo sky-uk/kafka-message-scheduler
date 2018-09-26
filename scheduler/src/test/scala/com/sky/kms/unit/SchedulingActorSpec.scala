@@ -107,10 +107,10 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
 
     init(schedulingActor)
 
-    def advanceToTimeFrom(schedule: Schedule, startTime: Long = now): Unit =
+    def advanceToTimeFrom(schedule: ScheduleEvent, startTime: Long = now): Unit =
       testScheduler.tick((schedule.timeInMillis - startTime).millis)
 
-    def createSchedule(scheduleId: ScheduleId, schedule: Schedule): Unit = {
+    def createSchedule(scheduleId: ScheduleId, schedule: ScheduleEvent): Unit = {
       schedulingActor ! CreateOrUpdate(scheduleId, schedule)
       expectMsg(Ack)
     }
@@ -125,8 +125,8 @@ class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoS
     def scheduleDoneCounter: Long = monitoring.scheduleDoneCounter.get()
   }
 
-  private def generateSchedule: (ScheduleId, Schedule) =
-    (UUID.randomUUID().toString, random[Schedule])
+  private def generateSchedule: (ScheduleId, ScheduleEvent) =
+    (UUID.randomUUID().toString, random[ScheduleEvent])
 
   private def init(actorRef: ActorRef) = {
     actorRef ! Init

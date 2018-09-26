@@ -15,7 +15,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 class SchedulerSpec extends BaseSpec {
 
   val ScheduleId = "scheduleId"
-  val TestSchedule = random[Schedule]
+  val TestSchedule = random[ScheduleEvent]
 
   "consumerRecordDecoder" should {
     "decode id and schedule if present" in {
@@ -24,7 +24,7 @@ class SchedulerSpec extends BaseSpec {
       val cr = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
       consumerRecordDecoder(cr) should matchPattern {
-        case Right((ScheduleId, Some(Schedule(schedule.time, schedule.inputTopic, schedule.outputTopic, k, Some(v)))))
+        case Right((ScheduleId, Some(ScheduleEvent(schedule.time, schedule.inputTopic, schedule.outputTopic, k, Some(v)))))
           if k === schedule.key && v === schedule.value.get =>
       }
     }
@@ -34,7 +34,7 @@ class SchedulerSpec extends BaseSpec {
       val cr = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
       consumerRecordDecoder(cr) should matchPattern {
-        case Right((ScheduleId, Some(Schedule(schedule.time, schedule.inputTopic, schedule.outputTopic, k, None))))
+        case Right((ScheduleId, Some(ScheduleEvent(schedule.time, schedule.inputTopic, schedule.outputTopic, k, None))))
           if k === schedule.key && schedule.value === None =>
       }
     }

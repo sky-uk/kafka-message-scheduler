@@ -8,7 +8,7 @@ import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntBaseSpec
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
-import com.sky.kms.domain.{Schedule, ScheduleId}
+import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
 import kafka.admin.AdminUtils
 import kafka.utils.ZkUtils
@@ -17,7 +17,7 @@ import org.scalatest.Assertion
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
+class ScheduleEventReaderIntSpec extends SchedulerIntBaseSpec {
 
   val NumSchedules = 10
 
@@ -30,7 +30,7 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
 
   "stream" should {
     "consume from the beginning of the topic on restart" in {
-      AdminUtils.createTopic(zkUtils, conf.scheduleTopic, partitions = 20, replicationFactor = 1)
+      AdminUtils.createTopic(zkUtils, conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
 
       val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
 
@@ -51,8 +51,8 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
     }
   }
 
-  private def generateSchedules: (ScheduleId, Schedule) =
-    (UUID.randomUUID().toString, random[Schedule])
+  private def generateSchedules: (ScheduleId, ScheduleEvent) =
+    (UUID.randomUUID().toString, random[ScheduleEvent])
 
   private def withRunningScheduleReader(scenario: TestProbe => Assertion) {
     val probe = TestProbe()
@@ -73,8 +73,8 @@ class ScheduleReaderIntSpec extends SchedulerIntBaseSpec {
     Await.ready(running.shutdown(), 5 seconds)
   }
 
-  private def writeSchedulesToKafka(schedules: (ScheduleId, Schedule)*) {
-    writeToKafka(ScheduleTopic, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) }: _*)
+  private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*) {
+    writeToKafka(ScheduleTopic.head, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) }: _*)
   }
 
 }

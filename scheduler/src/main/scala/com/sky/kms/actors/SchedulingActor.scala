@@ -29,7 +29,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
   private def receiveWithSchedules(schedules: Map[ScheduleId, Cancelable]): Receive = {
 
     val handleSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancelable]] = {
-      case CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) =>
+      case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
         schedules.get(scheduleId).fold(log.info(s"Creating schedule $scheduleId")) { schedule =>
           log.info(s"Updating schedule $scheduleId")
           schedule.cancel()
@@ -72,7 +72,7 @@ object SchedulingActor {
 
   sealed trait SchedulingMessage
 
-  case class CreateOrUpdate(scheduleId: ScheduleId, schedule: Schedule) extends SchedulingMessage
+  case class CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) extends SchedulingMessage
 
   case class Cancel(scheduleId: ScheduleId) extends SchedulingMessage
 

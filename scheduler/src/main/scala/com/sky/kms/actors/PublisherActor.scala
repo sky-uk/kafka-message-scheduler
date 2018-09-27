@@ -8,7 +8,7 @@ import cats.syntax.show._
 import com.sky.kms.Start
 import com.sky.kms.actors.PublisherActor.{DownstreamFailure, Init, ScheduleQueue, Trigger}
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
-import com.sky.kms.domain.{Schedule, ScheduleId, ScheduleQueueOfferResult}
+import com.sky.kms.domain.{ScheduleEvent, ScheduleId, ScheduleQueueOfferResult}
 
 import scala.util.{Failure, Success}
 
@@ -44,8 +44,8 @@ class PublisherActor extends Actor with ActorLogging {
       context stop self
   }
 
-  private def messageFrom(schedule: Schedule) =
-    ScheduledMessage(schedule.topic, schedule.key, schedule.value)
+  private def messageFrom(schedule: ScheduleEvent) =
+    ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value)
 }
 
 object PublisherActor {
@@ -54,7 +54,7 @@ object PublisherActor {
 
   case class Init(queue: ScheduleQueue)
 
-  case class Trigger(scheduleId: ScheduleId, schedule: Schedule)
+  case class Trigger(scheduleId: ScheduleId, schedule: ScheduleEvent)
 
   case class DownstreamFailure(t: Throwable)
 

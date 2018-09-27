@@ -8,12 +8,12 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 
-class ScheduleReaderSpec extends AkkaStreamBaseSpec {
+class ScheduleEventReaderSpec extends AkkaStreamBaseSpec {
 
   "toSchedulingMessage" should {
 
     "generate a CreateOrUpdate message if there is a schedule" in {
-      val (scheduleId, schedule) = (UUID.randomUUID().toString, random[Schedule])
+      val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent])
       ScheduleReader.toSchedulingMessage(Right((scheduleId, Some(schedule)))) shouldBe
         Right(SchedulingActor.CreateOrUpdate(scheduleId, schedule))
     }

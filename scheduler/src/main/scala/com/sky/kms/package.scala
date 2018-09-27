@@ -14,17 +14,18 @@ import scala.util.Try
 
 package object kms extends LazyLogging {
 
-  implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[Either[ApplicationError, (ScheduleId, Option[Schedule])]] =
+  implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])]] =
     ConsumerRecordDecoder.instance(consumerRecordDecoder)
 
-  def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): Either[ApplicationError, (ScheduleId, Option[Schedule])] =
+  def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])] =
     Option(cr.value) match {
       case Some(bytes) =>
         for {
           scheduleTry <- Either.fromOption(valueDecoder(bytes), InvalidSchemaError(cr.key))
-          schedule <- scheduleTry.toEither.leftMap(t => AvroMessageFormatError(cr.key, t))
+          avroSchedule <- scheduleTry.toEither.leftMap(t => AvroMessageFormatError(cr.key, t))
         } yield {
-          logger.info(s"Received schedule with ID: ${cr.key} to be sent to topic: ${schedule.topic} at time: ${schedule.time}")
+          val schedule = ScheduleEvent(avroSchedule.time, cr.topic(), avroSchedule.topic, avroSchedule.key, avroSchedule.value)
+          logger.info(s"Received schedule from topic: ${schedule.inputTopic} with ID: ${cr.key} to be sent to topic: ${schedule.outputTopic} at time: ${schedule.time}")
           (cr.key, Some(schedule))
         }
       case None =>

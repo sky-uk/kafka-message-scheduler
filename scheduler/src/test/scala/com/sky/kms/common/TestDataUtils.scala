@@ -27,22 +27,22 @@ object TestDataUtils {
     Arbitrary(genDateTimeWithinRange(from, range).map(_.withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime))
   }
 
-  implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {
+  implicit class ScheduleOps(val schedule: ScheduleEvent) extends AnyVal {
     def toAvro(implicit toRecord: ToRecord[Schedule]): Array[Byte] = {
       val baos = new ByteArrayOutputStream()
       val output = AvroOutputStream.binary[Schedule](baos)
-      output.write(schedule)
+      output.write(Schedule(schedule.time, schedule.outputTopic, schedule.key, schedule.value))
       output.close()
       baos.toByteArray
     }
 
     def timeInMillis: Long = schedule.time.toInstant.toEpochMilli
 
-    def secondsFromNow(seconds: Long): Schedule =
+    def secondsFromNow(seconds: Long): ScheduleEvent =
       schedule.copy(time = OffsetDateTime.now().plusSeconds(seconds))
 
     def toScheduledMessage: ScheduledMessage =
-      ScheduledMessage(schedule.topic, schedule.key, schedule.value)
+      ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value)
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {

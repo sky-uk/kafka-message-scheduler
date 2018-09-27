@@ -34,7 +34,7 @@ object ScheduleReader extends LazyLogging {
 
   case class Running(materializedSource: Mat, materializedSink: SinkMat)
 
-  type In = Either[ApplicationError, (ScheduleId, Option[Schedule])]
+  type In = Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])]
   type Mat = Control
 
   type SinkIn = Any

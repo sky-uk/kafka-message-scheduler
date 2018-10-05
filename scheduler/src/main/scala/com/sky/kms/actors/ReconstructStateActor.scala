@@ -3,7 +3,7 @@ package com.sky.kms.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.sky.kms.actors.PublisherActor.DownstreamFailure
 import com.sky.kms.actors.ReconstructStateActor._
-import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
+import com.sky.kms.domain.{Schedule, ScheduleId}
 
 class ReconstructStateActor extends Actor with ActorLogging {
 
@@ -11,7 +11,7 @@ class ReconstructStateActor extends Actor with ActorLogging {
     receiveWithSchedules(Map.empty) orElse stopOnError
 
   private def receiveWithSchedules(
-      schedules: Map[ScheduleId, ScheduleEvent]): Receive = {
+      schedules: Map[ScheduleId, Schedule]): Receive = {
 
     case ProcessSchedule(id, schedule) =>
       context become receiveWithSchedules(schedules + (id -> schedule))
@@ -40,7 +40,7 @@ object ReconstructStateActor {
 
   sealed trait ReconstructingMessage
 
-  case class ProcessSchedule(id: ScheduleId, schedule: ScheduleEvent)
+  case class ProcessSchedule(id: ScheduleId, schedule: Schedule)
       extends ReconstructingMessage
 
   case object SchedulesToBeProcessed extends ReconstructingMessage

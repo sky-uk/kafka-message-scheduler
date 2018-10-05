@@ -24,5 +24,4 @@ class ScheduleEventReaderSpec extends AkkaStreamBaseSpec {
         Right(SchedulingActor.Cancel(scheduleId))
     }
   }
-
 }

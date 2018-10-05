@@ -29,7 +29,7 @@ class ScheduleEventReaderIntSpec extends SchedulerIntBaseSpec {
   }
 
   "stream" should {
-    "consume from the beginning of the topic on restart" in {
+    "consume all committed schedules from topic on restart" in {
       AdminUtils.createTopic(zkUtils, conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
 
       val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
@@ -43,10 +43,10 @@ class ScheduleEventReaderIntSpec extends SchedulerIntBaseSpec {
       withRunningScheduleReader { probe =>
         writeSchedulesToKafka(newSchedules: _*)
 
-        val allScheduleIds = (firstSchedule :: newSchedules).map { case (scheduleId, _) => scheduleId }
-        val receivedScheduleIds = List.fill(NumSchedules)(probe.expectMsgType[CreateOrUpdate](5 seconds).scheduleId)
+        val newScheduleIds = newSchedules.map { case (scheduleId, _) => scheduleId }
+        val receivedScheduleIds = List.fill(newScheduleIds.size)(probe.expectMsgType[CreateOrUpdate](5 seconds).scheduleId)
 
-        receivedScheduleIds should contain theSameElementsAs allScheduleIds
+        receivedScheduleIds should contain theSameElementsAs newScheduleIds
       }
     }
   }

@@ -27,12 +27,14 @@ val dependencies = Seq(
   "io.kamon"                   %% "kamon-system-metrics"       % "1.0.0",
   "io.kamon"                   %% "kamon-jmx-collector"        % "0.1.7",
 
+  "com.sky"                     %% "kafka-topic-loader"        % "1.0.0",
+
   "org.apache.kafka"           %% "kafka"                      % kafkaVersion % Test,
   "org.scalatest"              %% "scalatest"                  % "3.0.4"      % Test,
   "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion  % Test,
   "com.typesafe.akka"          %% "akka-stream-testkit"        % akkaVersion  % Test,
   "net.cakesolutions"          %% "scala-kafka-client-testkit" % kafkaVersion % Test,
-  "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.25"     % Test,
+//  "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.25"     % Test, // TODO clashing import
   "com.danielasfregola"        %% "random-data-generator"      % "2.1"        % Test,
   "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.2"      % Test,
   "org.mockito"                 % "mockito-all"                % "1.10.19"    % Test,

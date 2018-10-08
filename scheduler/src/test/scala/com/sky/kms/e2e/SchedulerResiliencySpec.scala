@@ -19,6 +19,7 @@ import com.sky.kms.config.{AppConfig, SchedulerConfig}
 import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
+import org.apache.kafka.common.{Metric, MetricName}
 import org.scalatest.Assertion
 import org.scalatest.concurrent.ScalaFutures
 
@@ -115,6 +116,8 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     override def shutdown() = Future(Done)
 
     override def isShutdown = Future(Done)
+
+    override def metrics: Future[Map[MetricName, Metric]] = Future(Map.empty)
   }
 
   private trait FailingSource {

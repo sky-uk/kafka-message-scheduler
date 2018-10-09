@@ -10,7 +10,7 @@ val dependencies = Seq(
   "com.typesafe.akka"          %% "akka-actor"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream"                % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                 % akkaVersion,
-  "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.19",
+  "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.22",
   "com.typesafe.akka"          %% "akka-stream-contrib"        % "0.8",
   "io.monix"                   %% "monix-execution"            % "3.0.0-RC1",
 

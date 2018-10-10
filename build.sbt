@@ -2,7 +2,7 @@ import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
 import Release._
 
-val kafkaVersion = "1.0.0"
+val kafkaVersion = "1.1.1"
 val akkaVersion = "2.5.17"
 val kamonVersion = "1.1.1"
 
@@ -102,7 +102,7 @@ lazy val avro = (project in file("avro"))
   .dependsOn(scheduler % "compile->compile")
   .disablePlugins(ReleasePlugin)
 
-lazy val root = (project in file("."))
+lazy val root = (project in file(".")).withId("kafka-message-scheduler")
   .settings(commonSettings)
   .settings(defineCommandAliases)
   .aggregate(scheduler, avro)

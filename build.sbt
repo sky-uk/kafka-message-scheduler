@@ -5,38 +5,41 @@ import Release._
 val kafkaVersion = "1.1.1"
 val akkaVersion = "2.5.17"
 val kamonVersion = "1.1.1"
+val refinedVersion = "0.9.2"
 
 val dependencies = Seq(
-  "com.typesafe.akka"          %% "akka-actor"                 % akkaVersion,
-  "com.typesafe.akka"          %% "akka-stream"                % akkaVersion,
-  "com.typesafe.akka"          %% "akka-slf4j"                 % akkaVersion,
-  "com.typesafe.akka"          %% "akka-stream-kafka"          % "0.22",
-  "com.typesafe.akka"          %% "akka-stream-contrib"        % "0.9",
-  "io.monix"                   %% "monix-execution"            % "3.0.0-RC1",
+  "com.typesafe.akka"           %% "akka-actor"                 % akkaVersion,
+  "com.typesafe.akka"           %% "akka-stream"                % akkaVersion,
+  "com.typesafe.akka"           %% "akka-slf4j"                 % akkaVersion,
+  "com.typesafe.akka"           %% "akka-stream-kafka"          % "0.22",
+  "com.typesafe.akka"           %% "akka-stream-contrib"        % "0.9",
+  "io.monix"                    %% "monix-execution"            % "3.0.0-RC1",
 
-  "com.typesafe.scala-logging" %% "scala-logging"              % "3.9.0",
-  "org.typelevel"              %% "cats-core"                  % "1.4.0",
-  "ch.qos.logback"              % "logback-classic"            % "1.2.3"                % Runtime,
-  "net.logstash.logback"        % "logstash-logback-encoder"   % "5.2"                  % Runtime,
-  "org.codehaus.janino"         % "janino"                     % "3.0.10"               % Runtime,
-  "com.github.pureconfig"      %% "pureconfig"                 % "0.9.2",
+  "com.typesafe.scala-logging"  %% "scala-logging"              % "3.9.0",
+  "org.typelevel"               %% "cats-core"                  % "1.4.0",
+  "ch.qos.logback"               % "logback-classic"            % "1.2.3"                % Runtime,
+  "net.logstash.logback"         % "logstash-logback-encoder"   % "5.2"                  % Runtime,
+  "org.codehaus.janino"          % "janino"                     % "3.0.10"               % Runtime,
+  "com.github.pureconfig"       %% "pureconfig"                 % "0.9.2",
 
-  "io.kamon"                   %% "kamon-prometheus"           % kamonVersion,
-  "io.kamon"                   %% "kamon-akka-2.5"             % kamonVersion,
-  "io.kamon"                   %% "kamon-core"                 % kamonVersion,
-  "io.kamon"                   %% "kamon-system-metrics"       % "1.0.0",
-  "io.kamon"                   %% "kamon-jmx-collector"        % "0.1.7",
+  "io.kamon"                    %% "kamon-prometheus"           % kamonVersion,
+  "io.kamon"                    %% "kamon-akka-2.5"             % kamonVersion,
+  "io.kamon"                    %% "kamon-core"                 % kamonVersion,
+  "io.kamon"                    %% "kamon-system-metrics"       % "1.0.0",
+  "io.kamon"                    %% "kamon-jmx-collector"        % "0.1.7",
+  "eu.timepit"                  %% "refined"                    % refinedVersion,
+  "eu.timepit"                  %% "refined-pureconfig"         % refinedVersion,
 
-  "org.apache.kafka"           %% "kafka"                      % kafkaVersion           % Test,
-  "org.scalatest"              %% "scalatest"                  % "3.0.5"                % Test,
-  "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion            % Test,
-  "com.typesafe.akka"          %% "akka-stream-testkit"        % akkaVersion            % Test,
-  "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.25"               % Test,
-  "com.danielasfregola"        %% "random-data-generator"      % "2.6"                  % Test,
-  "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.5"                % Test,
-  "org.mockito"                 % "mockito-all"                % "1.10.19"              % Test,
-  "org.zalando"                %% "grafter"                    % "2.6.1"                % Test,
-  "net.manub"                  %% "scalatest-embedded-kafka"   % "1.1.0-kafka1.1-nosr"  % Test
+  "org.apache.kafka"            %% "kafka"                      % kafkaVersion           % Test,
+  "org.scalatest"               %% "scalatest"                  % "3.0.5"                % Test,
+  "com.typesafe.akka"           %% "akka-testkit"               % akkaVersion            % Test,
+  "com.typesafe.akka"           %% "akka-stream-testkit"        % akkaVersion            % Test,
+  "org.slf4j"                    % "log4j-over-slf4j"           % "1.7.25"               % Test,
+  "com.danielasfregola"         %% "random-data-generator"      % "2.6"                  % Test,
+  "com.47deg"                   %% "scalacheck-toolbox-datetime"% "0.2.5"                % Test,
+  "org.mockito"                  % "mockito-all"                % "1.10.19"              % Test,
+  "org.zalando"                 %% "grafter"                    % "2.6.1"                % Test,
+  "net.manub"                   %% "scalatest-embedded-kafka"   % "1.1.0-kafka1.1-nosr"  % Test
 )
 
 val commonSettings = Seq(

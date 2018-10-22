@@ -3,6 +3,7 @@ package com.sky.kms
 import com.sky.BuildInfo
 import com.sky.kms.config.AppConfig
 import com.typesafe.scalalogging.LazyLogging
+import eu.timepit.refined.pureconfig._
 import pureconfig._
 
 object Main extends App with LazyLogging with AkkaComponents {

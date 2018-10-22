@@ -2,11 +2,7 @@ package com.sky.kms.e2e
 
 import java.util.UUID
 
-import akka.Done
-import akka.actor.CoordinatedShutdown.UnknownReason
-import akka.actor.{ActorSystem, CoordinatedShutdown}
-import akka.kafka.scaladsl.Consumer.Control
-import akka.stream.ActorMaterializer
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
 import cats.syntax.either._
@@ -20,15 +16,15 @@ import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.utils.StubControl
 import com.sky.kms.{AkkaComponents, SchedulerApp}
+import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{nullSerializer, stringSerializer}
-import org.apache.kafka.common.{Metric, MetricName}
-import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
+class SchedulerResiliencySpec extends SpecBase {
+
+  override implicit val patienceConfig = PatienceConfig(scaled(10 seconds), scaled(500 millis))
 
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource with AkkaComponents {
@@ -75,7 +71,7 @@ class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
 
       withRunningKafka {
         withRunningScheduler(createAppFrom(config)) { _ =>
-          publishToKafka(config.scheduleTopic.head, (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq)
+          publishToKafka(config.scheduleTopics.head, (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq)
         }
       }
       hasActorSystemTerminated shouldBe true
@@ -89,9 +85,6 @@ class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
   }
 
   private trait TestContext {
-
-    implicit val patienceConfig = PatienceConfig(scaled(10 seconds), scaled(500 millis))
-
     val config = SchedulerConfig(Set("some-topic"), 100)
 
     def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
@@ -121,7 +114,7 @@ class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
     }
   }
 
-  private class KafkaTestContext extends TestContext with KafkaIntSpecBase with AkkaComponents {
+  private class KafkaTestContext extends KafkaIntSpecBase with TestContext {
     override implicit lazy val system: ActorSystem = TestActorSystem(kafkaConfig.kafkaPort, terminateActorSystem = true)
   }
 

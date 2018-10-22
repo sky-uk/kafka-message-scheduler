@@ -8,7 +8,7 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 
-class ScheduleEventReaderSpec extends AkkaStreamSpecBase {
+class ScheduleReaderSpec extends AkkaStreamSpecBase {
 
   "toSchedulingMessage" should {
 

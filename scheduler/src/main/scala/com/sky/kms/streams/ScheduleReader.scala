@@ -53,7 +53,7 @@ object ScheduleReader extends LazyLogging {
   def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader] =
     for {
       config <- SchedulerConfig.configure
-    } yield ScheduleReader(config, Eval.later(KafkaStream.source(config)), actorRef)
+    } yield ScheduleReader(config, Eval.later(KafkaStream.source(config.scheduleTopics)), actorRef)
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] =
     Start { app =>

@@ -19,6 +19,7 @@ object TestActorSystem {
        | kafka {
        |  consumer {
        |    max-wakeups = 2
+       |    wakeup-timeout = 2 seconds
        |    kafka-clients {
        |      enable.auto.commit = false
        |      bootstrap.servers = "localhost:$kafkaPort"

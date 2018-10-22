@@ -15,7 +15,7 @@ import scala.util.Try
 package object kms extends LazyLogging {
 
   implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])]] =
-    ConsumerRecordDecoder.instance(consumerRecordDecoder)
+    consumerRecordDecoder(_)
 
   def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])] =
     Option(cr.value) match {

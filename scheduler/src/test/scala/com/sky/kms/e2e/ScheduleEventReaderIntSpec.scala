@@ -10,8 +10,8 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
-import kafka.admin.AdminUtils
-import kafka.utils.ZkUtils
+import kafka.zk.{AdminZkClient, KafkaZkClient}
+import org.apache.kafka.common.utils.Time
 import org.scalatest.Assertion
 
 import scala.concurrent.Await
@@ -21,16 +21,18 @@ class ScheduleEventReaderIntSpec extends SchedulerIntBaseSpec {
 
   val NumSchedules = 10
 
-  lazy val zkUtils = ZkUtils(zkServer, 3000, 3000, isZkSecurityEnabled = false)
+  private lazy val zkClient = KafkaZkClient(zkServer, isSecure = false, sessionTimeoutMs = 3000,
+    connectionTimeoutMs = 3000, maxInFlightRequests = 10, time = Time.SYSTEM)
+  lazy val adminZkClient = new AdminZkClient(zkClient)
 
   override def afterAll() {
-    zkUtils.close()
+    zkClient.close()
     super.afterAll()
   }
 
   "stream" should {
     "consume from the beginning of the topic on restart" in {
-      AdminUtils.createTopic(zkUtils, conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
+      adminZkClient.createTopic(conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
 
       val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
 

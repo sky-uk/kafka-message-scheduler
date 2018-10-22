@@ -7,7 +7,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
-import com.sksamuel.avro4s.{AvroOutputStream, ToRecord}
+import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
@@ -27,10 +27,12 @@ object TestDataUtils {
     Arbitrary(genDateTimeWithinRange(from, range).map(_.withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime))
   }
 
+  private val scheduleSchema = AvroSchema[Schedule]
+
   implicit class ScheduleOps(val schedule: ScheduleEvent) extends AnyVal {
-    def toAvro(implicit toRecord: ToRecord[Schedule]): Array[Byte] = {
+    def toAvro(implicit toRecord: Encoder[Schedule]): Array[Byte] = {
       val baos = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[Schedule](baos)
+      val output = AvroOutputStream.binary[Schedule].to(baos).build(scheduleSchema)
       output.write(Schedule(schedule.time, schedule.outputTopic, schedule.key, schedule.value))
       output.close()
       baos.toByteArray

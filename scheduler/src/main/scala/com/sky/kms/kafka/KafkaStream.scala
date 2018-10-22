@@ -1,6 +1,6 @@
 package com.sky.kms.kafka
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.kafka.ConsumerMessage.CommittableOffset
 import akka.kafka.scaladsl.Consumer.Control
@@ -14,13 +14,15 @@ import scala.concurrent.Future
 
 object KafkaStream {
 
-  def source[T](topics: Set[Topic])(implicit system: ActorSystem, crDecoder: ConsumerRecordDecoder[T]): Source[T, Control] =
-    Consumer.plainSource(
+  def source[T](topics: Set[Topic])(implicit system: ActorSystem, crDecoder: ConsumerRecordDecoder[T]): Source[KafkaMessage[T], Control] =
+    Consumer.committableSource(
       ConsumerSettings(system, new StringDeserializer, new ByteArrayDeserializer),
       Subscriptions.topics(topics.map(_.value))
-    ).map(crDecoder(_))
+    ).map(cm => KafkaMessage(cm.committableOffset, crDecoder(cm.record)))
 
-  def commitOffset: Flow[KafkaMessage[_], Done, Future[Done]] = ???
+  def commitOffset: Flow[KafkaMessage[_], Done, NotUsed] =
+    Flow[KafkaMessage[_]]
+      .mapAsync(5)(_.offset.commitScaladsl())
 
   def sink(implicit system: ActorSystem): Sink[ProducerRecord[Array[Byte], Array[Byte]], Future[Done]] =
     Producer.plainSink(ProducerSettings(system, new ByteArraySerializer, new ByteArraySerializer))

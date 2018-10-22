@@ -1,19 +1,17 @@
 package com.sky.kms.integration
 
-import akka.Done
 import akka.kafka.ConsumerFailed
 import akka.stream.scaladsl.{Keep, Sink}
 import com.sky.kms.base.KafkaIntSpecBase
 import com.sky.kms.kafka.KafkaStream._
-import com.sky.kms.kafka.{KafkaStream, Topic}
+import com.sky.kms.kafka.Topic
 import eu.timepit.refined.auto._
-import monix.execution.atomic.AtomicBoolean
 import org.scalatest.concurrent.Eventually
 
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class KafkaStreamIntSpec extends KafkaIntSpecBase {
+class KafkaStreamIntSpec extends KafkaIntSpecBase with Eventually {
 
   override implicit val patienceConfig = PatienceConfig(5 seconds, 250 millis)
 
@@ -24,9 +22,11 @@ class KafkaStreamIntSpec extends KafkaIntSpecBase {
 
         val suffix = "-decoded"
 
-        source(Set(testTopic))(system, cr => new String(cr.value) + suffix)
+        source[String](Set(testTopic))(system,
+          cr => new String(cr.value) + suffix)
           .runWith(Sink.head)
-          .futureValue shouldBe testMessage + suffix
+          .futureValue
+          .value shouldBe testMessage + suffix
       }
     }
 
@@ -38,36 +38,52 @@ class KafkaStreamIntSpec extends KafkaIntSpecBase {
     }
   }
 
-  "stream" should {
-    "consume from the last committed offset on restart when committing" in new TestContext
-    with Eventually {
+  "source composed with commitOffset" should {
+    "consume from the last committed offset on restart" in new TestContext {
       withRunningKafka {
-        publishStringMessageToKafka(testTopic, "some-msg"))
-        val p = Promise[Done]()
+        publishStringMessageToKafka(testTopic, "some-msg")
 
         val ctrl = source(Set(testTopic))(system, _.value)
           .via(commitOffset)
-          .map(p.trySuccess)
           .toMat(Sink.head)(Keep.left)
           .run
 
         eventually {
-          b.get shouldBe true
-          Await.ready(ctrl.shutdown(), 5 seconds)
+          Await.ready(ctrl.isShutdown, 5 seconds)
         }
 
         publishStringMessageToKafka(testTopic, testMessage)
 
-        val ctrl2 = source(Set(testTopic))(system, _.value)
-          .runWith(Sink.head) shouldBe testMessage
+        source[Array[Byte]](Set(testTopic))(system, _.value)
+          .runWith(Sink.head)
+          .futureValue
+          .value shouldBe testMessage.getBytes
       }
     }
 
-    "replay messages in flight when a failure occurs" in {}
+    "replay messages in flight when a failure occurs" in new TestContext {
+      withRunningKafka {
+        publishStringMessageToKafka(testTopic, testMessage)
+
+        val ctrl = source[Array[Byte]](Set(testTopic))(
+          system, _ =>
+            throw new RuntimeException("error occurred processing messagge."))
+          .toMat(Sink.head)(Keep.left)
+          .run
+
+        eventually {
+          Await.ready(ctrl.isShutdown, 5 seconds)
+        }
+
+        source[Array[Byte]](Set(testTopic))(system, _.value)
+          .runWith(Sink.head).futureValue.value shouldBe testMessage.getBytes
+      }
+    }
   }
 
   private class TestContext {
     val testTopic: Topic = "test-topic"
     val testMessage = "testMessage"
   }
+
 }

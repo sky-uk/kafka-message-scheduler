@@ -5,13 +5,13 @@ import akka.actor.PoisonPill
 import akka.testkit.{TestActorRef, TestProbe}
 import cats.Eval
 import com.sky.kms.actors.TerminatorActor
-import com.sky.kms.base.AkkaBaseSpec
+import com.sky.kms.base.AkkaSpecBase
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.Future
 
-class TerminatorActorSpec extends AkkaBaseSpec with MockitoSugar {
+class TerminatorActorSpec extends AkkaSpecBase with MockitoSugar {
 
   "A terminator actor" must {
     "trigger terminate and stop when any of the actors it is monitoring dies" in {

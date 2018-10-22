@@ -3,7 +3,7 @@ package com.sky.kms.unit
 import java.util.UUID
 
 import cats.Eval
-import com.sky.kms.base.AkkaStreamBaseSpec
+import com.sky.kms.base.AkkaStreamSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain._
@@ -11,7 +11,7 @@ import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduledMessagePublisher
 import org.apache.kafka.clients.producer.ProducerRecord
 
-class ScheduledMessagePublisherSpec extends AkkaStreamBaseSpec {
+class ScheduledMessagePublisherSpec extends AkkaStreamSpecBase {
 
   val testTopic = UUID.randomUUID().toString
   val publisher = ScheduledMessagePublisher(

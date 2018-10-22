@@ -11,11 +11,17 @@ package object e2e {
 
   val Tolerance = 200 millis
 
-  def withRunningSchedulerStream(scenario: => Assertion)(implicit conf: SchedulerConfig, system: ActorSystem, mat: ActorMaterializer) {
+  def withSchedulerApp[T](scenario: => T)(implicit conf: SchedulerConfig,
+                                          system: ActorSystem,
+                                          mat: ActorMaterializer): Unit = {
     val app = SchedulerApp.configure apply AppConfig(conf)
-    SchedulerApp.run apply app
+    withRunningScheduler(app)(_ => scenario)
+  }
 
-    scenario
+  def withRunningScheduler[T](schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => T)(implicit system: ActorSystem, mat: ActorMaterializer) {
+    val runningApp = SchedulerApp.run apply schedulerApp
+
+    scenario(runningApp)
 
     CoordinatedShutdown(system).run(UnknownReason)
   }

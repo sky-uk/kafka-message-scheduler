@@ -2,7 +2,7 @@ package com.sky.kms.base
 
 import akka.stream.ActorMaterializer
 
-abstract class AkkaStreamBaseSpec extends AkkaBaseSpec {
+abstract class AkkaStreamSpecBase extends AkkaSpecBase {
 
   implicit val materializer = ActorMaterializer()
 

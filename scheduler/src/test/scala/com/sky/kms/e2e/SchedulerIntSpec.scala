@@ -3,45 +3,46 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import com.sky.kms.avro._
-import com.sky.kms.base.SchedulerIntBaseSpec
+import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
-import org.apache.kafka.common.serialization._
+import net.manub.embeddedkafka.Codecs._
+import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.scalatest.Assertion
 
-class SchedulerIntSpec extends SchedulerIntBaseSpec {
+class SchedulerIntSpec extends SchedulerIntSpecBase {
 
   "Scheduler stream" should {
-    "schedule a message to be sent to Kafka and delete it after it has been emitted" in withRunningSchedulerStream {
+    "schedule a message to be sent to Kafka and delete it after it has been emitted" in withSchedulerApp {
       val (scheduleId1, schedule1) =
         (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
       val (scheduleId2, schedule2) =
         (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
 
-      val topic1 = ScheduleTopic.toSeq(0)
-      val topic2 = ScheduleTopic.toSeq(1)
+      withRunningKafka {
+        publishToKafka(scheduleTopic, scheduleId1, schedule1.toAvro)
+        publishToKafka(extraScheduleTopic, scheduleId2, schedule2.toAvro)
 
-      writeToKafka(topic1, (scheduleId1, schedule1.toAvro))
-      writeToKafka(topic2, (scheduleId2, schedule2.toAvro))
+        assertScheduledMsgHasBeenWritten(schedule1)
+        assertScheduledMsgHasBeenWritten(schedule2)
 
-      assertScheduleInOutputTopic(schedule1)
-      assertScheduleInOutputTopic(schedule2)
-
-      assertScheduleNulledFromInputTopic(scheduleId1, topic1)
-      assertScheduleNulledFromInputTopic(scheduleId2, topic2)
+        assertScheduleTombstoned(scheduleId1, scheduleTopic)
+        assertScheduleTombstoned(scheduleId2, extraScheduleTopic)
+      }
     }
   }
 
-  private def assertScheduleNulledFromInputTopic(scheduleId: ScheduleId, topic: String) = {
-    val latestMessageOnScheduleTopic = consumeFromKafka(topic, 2, new StringDeserializer).last
+  private def assertScheduleTombstoned(scheduleId: ScheduleId,
+                                       topic: String) = {
+    val latestMessageOnScheduleTopic: ConsumerRecord[String, String] =
+      consumeSomeFrom[String](topic, 2).last
 
     latestMessageOnScheduleTopic.key() shouldBe scheduleId
     latestMessageOnScheduleTopic.value() shouldBe null
   }
 
-  private def assertScheduleInOutputTopic(schedule: ScheduleEvent) = {
-    val cr =
-      consumeFromKafka(schedule.outputTopic,
-        keyDeserializer = new ByteArrayDeserializer).head
+  private def assertScheduledMsgHasBeenWritten(schedule: ScheduleEvent): Assertion = {
+    val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
 
     cr.key() should contain theSameElementsInOrderAs schedule.key
     cr.value() should contain theSameElementsInOrderAs schedule.value.get

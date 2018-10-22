@@ -31,12 +31,12 @@ val dependencies = Seq(
   "org.scalatest"              %% "scalatest"                  % "3.0.5"      % Test,
   "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion  % Test,
   "com.typesafe.akka"          %% "akka-stream-testkit"        % akkaVersion  % Test,
-  "net.cakesolutions"          %% "scala-kafka-client-testkit" % kafkaVersion % Test,
   "org.slf4j"                   % "log4j-over-slf4j"           % "1.7.25"     % Test,
   "com.danielasfregola"        %% "random-data-generator"      % "2.6"        % Test,
   "com.47deg"                  %% "scalacheck-toolbox-datetime"% "0.2.5"      % Test,
   "org.mockito"                 % "mockito-all"                % "1.10.19"    % Test,
-  "org.zalando"                %% "grafter"                    % "2.6.1"      % Test
+  "org.zalando"                %% "grafter"                    % "2.6.1"      % Test,
+  "net.manub"                  %% "scalatest-embedded-kafka"   % "1.1.0-kafka1.1-nosr"      % Test
 )
 
 val commonSettings = Seq(

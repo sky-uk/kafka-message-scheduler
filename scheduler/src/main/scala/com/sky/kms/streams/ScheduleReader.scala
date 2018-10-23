@@ -2,29 +2,48 @@ package com.sky.kms.streams
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.kafka.scaladsl.Consumer.Control
+import akka.pattern.ask
 import akka.stream._
 import akka.stream.scaladsl._
+import akka.util.Timeout
 import akka.{Done, NotUsed}
-import cats.Eval
+import cats.data.Nested
+import cats.instances.either._
+import cats.instances.future._
+import cats.syntax.functor._
+import cats.syntax.traverse._
+import cats.{Eval, Traverse}
 import com.sky.kms._
 import com.sky.kms.actors.SchedulingActor
-import com.sky.kms.actors.SchedulingActor.{Cancel, CreateOrUpdate, SchedulingMessage}
+import com.sky.kms.actors.SchedulingActor.{Ack, Cancel, CreateOrUpdate, SchedulingMessage}
 import com.sky.kms.config._
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
 import com.sky.kms.kafka._
-import com.sky.kms.streams.ScheduleReader.{In, Mat, SinkIn, SinkMat}
+import com.sky.kms.streams.ScheduleReader.{In, Mat, SinkIn}
 import com.typesafe.scalalogging.LazyLogging
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.language.higherKinds
 
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
-case class ScheduleReader(config: SchedulerConfig, scheduleSource: Eval[Source[In, Mat]], schedulingActor: ActorRef) {
+case class ScheduleReader[F[_] : Traverse, SrcMat, SinkMat](config: SchedulerConfig, scheduleSource: Eval[Source[F[In], Mat]], schedulingActor: ActorRef, commit: Sink[F[_], SinkMat]) {
+
+  implicit val t = Timeout(5.seconds)
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  val tr = Traverse[F[?]] compose Traverse[Either[ApplicationError, ?]]
 
   def stream: RunnableGraph[(Mat, SinkMat)] =
     scheduleSource.value
-      .map(ScheduleReader.toSchedulingMessage)
-      .toMat(PartitionedSink.withRight(sink).mapMaterializedValue(_._2))(Keep.both)
+      .map(_.map(ScheduleReader.toSchedulingMessage))
+      .mapAsync(5)(tr.traverse(_)(msg => (schedulingActor ? msg).mapTo[Ack.type]))
+      .alsoTo(errorSink)
+      .toMat(commit)(Keep.both)
 
   private def sink: Sink[SinkIn, SinkMat] =
     Sink.actorRefWithAck(schedulingActor, SchedulingActor.Init, SchedulingActor.Ack, Done, SchedulingActor.UpstreamFailure)

@@ -11,7 +11,6 @@ import com.sky.kms.streams.ScheduleReader
 class ScheduleReaderSpec extends AkkaStreamSpecBase {
 
   "toSchedulingMessage" should {
-
     "generate a CreateOrUpdate message if there is a schedule" in {
       val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent])
       ScheduleReader.toSchedulingMessage(Right((scheduleId, Some(schedule)))) shouldBe

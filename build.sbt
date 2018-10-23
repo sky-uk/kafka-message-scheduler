@@ -80,12 +80,14 @@ lazy val scheduler = (project in file("scheduler"))
       "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",
       Resolver.bintrayRepo("cakesolutions", "maven")),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8"),
     scalacOptions ++= Seq(
       "-language:implicitConversions",
       "-language:postfixOps",
       "-Xfatal-warnings",
       "-Ywarn-dead-code",
       "-deprecation",
+      "-Ypartial-unification",
       "-encoding", "utf-8"
     ),
     fork in run := true,

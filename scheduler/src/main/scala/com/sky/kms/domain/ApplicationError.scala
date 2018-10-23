@@ -1,13 +1,14 @@
 package com.sky.kms.domain
 
-import akka.Done
-import akka.stream.scaladsl.Sink
+import akka.NotUsed
+import akka.stream.scaladsl.{Flow, Sink}
 import cats.Show
 import cats.Show._
 import cats.syntax.show._
 import com.typesafe.scalalogging.LazyLogging
+import shapeless.{TypeCase, Typeable}
 
-import scala.concurrent.Future
+import scala.language.higherKinds
 
 sealed abstract class ApplicationError(key: String)
 
@@ -28,6 +29,8 @@ object ApplicationError extends LazyLogging {
     case messageFormatError: AvroMessageFormatError => showAvroMessageFormatError.show(messageFormatError)
   }
 
-  implicit val errorSink: Sink[ApplicationError, Future[Done]] =
-    Sink.foreach(error => logger.warn(error.show))
+  implicit def errorSink[F[_]: Typeable]: Sink[F[Either[ApplicationError, _]], NotUsed] = {
+    val fEither = TypeCase[F[Either[ApplicationError, _]]]
+    Flow[F[Either[ApplicationError, _]]].collect { case fEither(error) => error }.to(Sink.foreach(error => logger.warn(error.show)))
+  }
 }

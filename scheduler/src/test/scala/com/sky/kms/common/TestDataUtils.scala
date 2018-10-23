@@ -52,7 +52,7 @@ object TestDataUtils {
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
     def withReaderSource(src: Source[ScheduleReader.In, Control])(implicit as: ActorSystem): SchedulerApp =
-      schedulerApp.copy(reader = schedulerApp.reader.copy[Id, Control, NotUsed](scheduleSource = Eval.later(src)))
+      schedulerApp.copy(reader = schedulerApp.reader.copy[Id, NotUsed](scheduleSource = Eval.later(src)))
 
     def withPublisherSink(sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
       schedulerApp.modifyWith[Any] {

@@ -8,6 +8,8 @@ val kamonVersion = "1.1.1"
 val refinedVersion = "0.9.2"
 
 val dependencies = Seq(
+  "com.sky"                     %% "kafka-topic-loader"         % "1.0.0",
+
   "com.typesafe.akka"           %% "akka-actor"                 % akkaVersion,
   "com.typesafe.akka"           %% "akka-stream"                % akkaVersion,
   "com.typesafe.akka"           %% "akka-slf4j"                 % akkaVersion,
@@ -77,6 +79,7 @@ lazy val scheduler = (project in file("scheduler"))
     libraryDependencies ++= dependencies,
     dependencyOverrides += "org.scalacheck" %% "scalacheck" % "1.13.5",
     resolvers ++= Seq(
+      "bintray-sky-uk-oss-maven" at "https://dl.bintray.com/sky-uk/oss-maven",
       "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",
       Resolver.bintrayRepo("cakesolutions", "maven")),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),

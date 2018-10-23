@@ -8,12 +8,12 @@ import akka.testkit.{TestActor, TestProbe}
 import cats.{Eval, Id}
 import cats.syntax.either._
 import com.sky.kms.actors.SchedulingActor
-import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Init}
+import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Init, SchedulingMessage}
 import com.sky.kms.base.AkkaStreamSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
-import com.sky.kms.streams.ScheduleReader.In
+import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.{Future, Promise}
@@ -27,7 +27,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     "send a scheduling message to the scheduling the actor" in new TestContext {
       val schedule@(scheduleId, Some(scheduleEvent)) = (random[String], Some(random[ScheduleEvent]))
 
-      runReader(Source.single(schedule.asRight[ApplicationError]))
+      runReader()(Source.single(schedule.asRight[ApplicationError]))
 
       probe.expectMsg(Init)
       probe.expectMsgType[CreateOrUpdate].schedule shouldBe scheduleEvent
@@ -36,11 +36,19 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     "emit errors to the error handler" in new TestContext {
       val schedule = random[(String, Some[ScheduleEvent])]
 
-      runReader(Source.single(schedule.asRight[ApplicationError]), errorHandler)
+      runReader()(Source.single(schedule.asRight[ApplicationError]), errorHandler)
 
       eventually {
         errorHandlerTriggered.future.isCompleted shouldBe true
       }
+    }
+
+    "restore scheduling actor state fully before sending Init message" in new TestContext {
+      val schedules = random[SchedulingMessage](5).toList
+      runReader(Source(schedules).mapAsync(1)(_))(Source.empty)
+
+      probe.expectMsgAllOf(schedules: _*)
+      probe.expectMsg(Init)
     }
   }
 
@@ -72,8 +80,8 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
     val errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.foreach(errorHandlerTriggered.trySuccess)
 
-    def runReader(in: Source[In, NotUsed], errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.ignore): Done =
-      ScheduleReader[Id, NotUsed, NotUsed](Eval.now(in), probe.ref, Flow[Either[ApplicationError, Done]].map(_ => Done), errorHandler).stream.run._2.futureValue
+    def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed], errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.ignore): Done =
+      ScheduleReader[Id, NotUsed](init, Eval.now(in), probe.ref, Flow[Either[ApplicationError, Done]].map(_ => Done), errorHandler).stream.run._2.futureValue
   }
 
 }

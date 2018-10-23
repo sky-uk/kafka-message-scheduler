@@ -15,8 +15,6 @@ import scala.concurrent.duration.FiniteDuration
 
 class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monitoring: Monitoring) extends Actor with ActorLogging {
 
-  implicit val ec: ExecutionContextExecutor = context.dispatcher
-
   override def receive: Receive = waitForInit orElse stop
 
   private val waitForInit: Receive = {

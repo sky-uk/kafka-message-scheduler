@@ -3,6 +3,7 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import akka.actor.ActorSystem
+import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
 import cats.syntax.either._
@@ -105,7 +106,7 @@ class SchedulerResiliencySpec extends SpecBase {
   private trait IteratingSource {
     this: TestContext =>
 
-    def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, ScheduleReader.Mat] = {
+    def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, Control] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
       val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight)

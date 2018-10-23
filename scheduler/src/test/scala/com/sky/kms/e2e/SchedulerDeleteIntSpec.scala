@@ -12,7 +12,6 @@ import net.manub.embeddedkafka.Consumers
 class SchedulerDeleteIntSpec extends SchedulerIntSpecBase with Consumers {
 
   "Scheduler stream" should {
-
     "schedule a delete message if the body of the scheduled message is None" in withRunningKafka {
       withSchedulerApp {
         val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent].copy(value = None).secondsFromNow(4))

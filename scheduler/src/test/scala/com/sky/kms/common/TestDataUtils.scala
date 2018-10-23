@@ -3,8 +3,11 @@ package com.sky.kms.common
 import java.io.ByteArrayOutputStream
 import java.time._
 
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
-import cats.Eval
+import cats.{Eval, Id}
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
@@ -13,8 +16,8 @@ import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
-import org.zalando.grafter.syntax.rewriter._
 import org.scalacheck._
+import org.zalando.grafter.syntax.rewriter._
 
 object TestDataUtils {
 
@@ -48,10 +51,8 @@ object TestDataUtils {
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
-    def withReaderSource(src: Source[ScheduleReader.In, ScheduleReader.Mat]): SchedulerApp =
-      schedulerApp.modifyWith[Any] {
-        case reader: ScheduleReader => reader.replace(Eval.later(src))
-      }
+    def withReaderSource(src: Source[ScheduleReader.In, Control])(implicit as: ActorSystem): SchedulerApp =
+      schedulerApp.copy(reader = schedulerApp.reader.copy[Id, Control, NotUsed](scheduleSource = Eval.later(src)))
 
     def withPublisherSink(sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
       schedulerApp.modifyWith[Any] {

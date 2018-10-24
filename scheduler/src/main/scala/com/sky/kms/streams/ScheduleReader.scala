@@ -43,7 +43,7 @@ case class ScheduleReader[F[_] : Traverse : Comonad, OutMat](loadProcessedSchedu
       .alsoTo(errorHandler)
       .via(commit)
       .watchTermination() { case (mat, fu) => fu.failed.foreach(schedulingActor ! UpstreamFailure(_)); mat }
-      .runAfter(loadProcessedSchedules(msg => (schedulingActor ? msg).mapTo[Ack.type]).watchTermination() { case (_, fu) => fu.foreach(_ => schedulingActor ! Init) })
+      .runAfter(loadProcessedSchedules(msg => (schedulingActor ? msg).mapTo[Ack.type]).watchTermination() { case (_, fu) => fu.foreach(_ => schedulingActor ! Initialised) })
       .toMat(Sink.ignore)(Keep.both)
   }
 }

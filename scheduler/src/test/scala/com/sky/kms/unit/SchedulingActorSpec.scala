@@ -22,7 +22,32 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
   val NoMsgTimeout = 2 seconds
 
   "A scheduling actor" must {
-    "schedule new messages at the given time" in new TestContext {
+
+    "schedule its current state after receiving Initialised" in new TestContext {
+      val (scheduleId, schedule) = generateSchedule
+
+      createSchedule(scheduleId, schedule)
+
+      testScheduler.state.tasks.isEmpty shouldBe true
+
+      init(schedulingActor)
+
+      testScheduler.state.tasks.nonEmpty shouldBe true
+    }
+
+    "not schedules events that were cancelled before receiving Initialised" in new TestContext {
+      val (scheduleId, schedule) = generateSchedule
+
+      createSchedule(scheduleId, schedule)
+
+      cancelSchedule(scheduleId)
+
+      init(schedulingActor)
+
+      testScheduler.state.tasks.isEmpty shouldBe true
+    }
+
+    "schedule new messages at the given time" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
 
       createSchedule(scheduleId, schedule)
@@ -31,7 +56,7 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       probe.expectMsg(Trigger(scheduleId, schedule))
     }
 
-    "cancel schedules when a cancel message is received" in new TestContext {
+    "cancel schedules when a cancel message is received" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
 
@@ -41,7 +66,7 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       probe.expectNoMessage(NoMsgTimeout)
     }
 
-    "cancel previous schedule when updating an existing schedule" in new TestContext {
+    "cancel previous schedule when updating an existing schedule" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
 
@@ -55,20 +80,7 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       probe.expectMsg(Trigger(scheduleId, updatedSchedule))
     }
 
-    "accept scheduling messages only after it has received an Init" in {
-      val actorRef = TestActorRef(new SchedulingActor(TestProbe().ref, TestScheduler(), new SimpleCounterMonitoring()))
-      val (scheduleId, schedule) = generateSchedule
-
-      actorRef ! CreateOrUpdate(scheduleId, schedule)
-      expectNoMessage(NoMsgTimeout)
-
-      init(actorRef)
-
-      actorRef ! CreateOrUpdate(scheduleId, schedule)
-      expectMsg(Ack)
-    }
-
-    "stop when receiving an upstream failure" in new TestContext {
+    "stop when receiving an upstream failure" in new Initialised {
       watch(schedulingActor)
 
       schedulingActor ! UpstreamFailure(new Exception("boom!"))
@@ -76,7 +88,7 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       expectTerminated(schedulingActor)
     }
 
-    "update monitoring when new schedule is received" in new TestContext {
+    "update monitoring when new schedule is received" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
 
       createSchedule(scheduleId, schedule)
@@ -86,7 +98,7 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       }
     }
 
-    "update monitoring when a cancel message is received" in new TestContext {
+    "update monitoring when a cancel message is received" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
 
@@ -106,8 +118,6 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
     val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, testScheduler, monitoring))
     val now = System.currentTimeMillis()
 
-    init(schedulingActor)
-
     def advanceToTimeFrom(schedule: ScheduleEvent, startTime: Long = now): Unit =
       testScheduler.tick((schedule.timeInMillis - startTime).millis)
 
@@ -126,12 +136,16 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
     def scheduleDoneCounter: Long = monitoring.scheduleDoneCounter.get()
   }
 
-  private def generateSchedule: (ScheduleId, ScheduleEvent) =
-    (UUID.randomUUID().toString, random[ScheduleEvent])
+  private class Initialised extends TestContext  {
+        init(schedulingActor)
+  }
 
-  private def init(actorRef: ActorRef) = {
-    actorRef ! Init
+  def init(actorRef: ActorRef) = {
+    actorRef ! Initialised
     expectMsg(Ack)
   }
+
+  private def generateSchedule: (ScheduleId, ScheduleEvent) =
+    (UUID.randomUUID().toString, random[ScheduleEvent])
 
 }

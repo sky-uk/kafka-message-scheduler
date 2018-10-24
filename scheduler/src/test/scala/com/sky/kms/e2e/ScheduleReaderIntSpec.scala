@@ -3,7 +3,7 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import akka.testkit.{TestActor, TestProbe}
-import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Init}
+import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Initialised}
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.common.TestDataUtils._
@@ -63,7 +63,7 @@ class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
     val scheduleReader = ScheduleReader.configure(probe.testActor).apply(AppConfig(conf))
     val (running, _) = scheduleReader.stream.run()
 
-    probe.expectMsg(Init)
+    probe.expectMsg(Initialised)
 
     try {
       scenario(probe)

@@ -8,7 +8,7 @@ import akka.testkit.{TestActor, TestProbe}
 import cats.{Eval, Id}
 import cats.syntax.either._
 import com.sky.kms.actors.SchedulingActor
-import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Init, SchedulingMessage}
+import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Initialised, SchedulingMessage}
 import com.sky.kms.base.AkkaStreamSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
@@ -29,7 +29,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
       runReader()(Source.single(schedule.asRight[ApplicationError]))
 
-      probe.expectMsg(Init)
+      probe.expectMsg(Initialised)
       probe.expectMsgType[CreateOrUpdate].schedule shouldBe scheduleEvent
     }
 
@@ -43,12 +43,12 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
       }
     }
 
-    "restore scheduling actor state fully before sending Init message" in new TestContext {
+    "restore scheduling actor state fully before sending Initialised message" in new TestContext {
       val schedules = random[SchedulingMessage](5).toList
       runReader(Source(schedules).mapAsync(1)(_))(Source.empty)
 
       probe.expectMsgAllOf(schedules: _*)
-      probe.expectMsg(Init)
+      probe.expectMsg(Initialised)
     }
   }
 

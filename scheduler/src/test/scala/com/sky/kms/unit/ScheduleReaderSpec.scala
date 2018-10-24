@@ -81,7 +81,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     val errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.foreach(errorHandlerTriggered.trySuccess)
 
     def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed], errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.ignore): Done =
-      ScheduleReader[Id, NotUsed](init, Eval.now(in), probe.ref, Flow[Either[ApplicationError, Done]].map(_ => Done), errorHandler).stream.run._2.futureValue
+      ScheduleReader[Id](init, Eval.now(in), probe.ref, Flow[Either[ApplicationError, Done]].map(_ => Done), errorHandler).stream.run._2.futureValue
   }
 
 }

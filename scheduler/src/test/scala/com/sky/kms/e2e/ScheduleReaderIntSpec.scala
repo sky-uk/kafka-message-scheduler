@@ -13,7 +13,6 @@ import com.sky.kms.streams.ScheduleReader
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
 import org.scalatest.Assertion
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {

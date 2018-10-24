@@ -3,6 +3,7 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import akka.actor.ActorSystem
+import akka.kafka.ConsumerMessage.CommittableOffset
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
@@ -13,17 +14,19 @@ import com.sky.kms.base.{KafkaIntSpecBase, SpecBase}
 import com.sky.kms.common.TestActorSystem
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
-import com.sky.kms.domain.ScheduleEvent
+import com.sky.kms.domain.{ApplicationError, ScheduleEvent, ScheduleId}
+import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
-import com.sky.kms.utils.StubControl
+import com.sky.kms.utils.{StubControl, StubOffset}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{nullSerializer, stringSerializer}
+import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class SchedulerResiliencySpec extends SpecBase {
+class SchedulerResiliencySpec extends SpecBase with MockitoSugar {
 
   override implicit val patienceConfig = PatienceConfig(scaled(10 seconds), scaled(500 millis))
 
@@ -98,20 +101,23 @@ class SchedulerResiliencySpec extends SpecBase {
   private trait FailingSource {
     this: TestContext =>
 
-    val sourceThatWillFail =
-      Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
+    import cats.syntax.either._
+    import cats.syntax.option._
+
+    val sourceThatWillFail: Source[KafkaMessage[ScheduleReader.In], Control] =
+      Source.fromIterator(() => Iterator(KafkaMessage(StubOffset(), ("someId", none[ScheduleEvent]).asRight[ApplicationError])) ++ (throw new Exception("boom!")))
         .mapMaterializedValue(_ => StubControl())
   }
 
   private trait IteratingSource {
     this: TestContext =>
 
-    def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, Control] = {
+    def sourceWith(schedules: Seq[ScheduleEvent]): Source[KafkaMessage[ScheduleReader.In], Control] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
-      val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight)
+      val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight[ApplicationError]).toList
 
-      Source.fromIterator(() => elements).mapMaterializedValue(_ => StubControl())
+      Source(elements.map(KafkaMessage(StubOffset(), _))).mapMaterializedValue(_ => StubControl())
     }
   }
 

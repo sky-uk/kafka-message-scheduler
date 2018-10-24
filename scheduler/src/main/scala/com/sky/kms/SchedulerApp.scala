@@ -6,6 +6,7 @@ import akka.stream.{ActorMaterializer, KillSwitch}
 import cats.Id
 import com.sky.kms.actors._
 import com.sky.kms.config.Configured
+import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
 import kamon.jmx.collector.KamonJmxMetricCollector
@@ -13,7 +14,7 @@ import kamon.system.SystemMetrics
 
 import scala.concurrent.Future
 
-case class SchedulerApp(reader: ScheduleReader[Id, NotUsed], publisher: ScheduledMessagePublisher, publisherActor: ActorRef)
+case class SchedulerApp(reader: ScheduleReader[KafkaMessage], publisher: ScheduledMessagePublisher, publisherActor: ActorRef)
 
 object SchedulerApp {
 

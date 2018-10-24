@@ -25,12 +25,12 @@ import scala.language.higherKinds
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
-case class ScheduleReader[F[_] : Traverse : Comonad, OutMat](loadProcessedSchedules: LoadSchedule => Source[_, _],
-                                                             scheduleSource: Eval[Source[F[In], _]],
-                                                             schedulingActor: ActorRef,
-                                                             commit: Flow[F[Either[ApplicationError, Done]], Done, OutMat],
-                                                             errorHandler: Sink[F[Either[ApplicationError, Done]], Future[Done]])(
-                                                              implicit f: Functor[F], system: ActorSystem) {
+case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: LoadSchedule => Source[_, _],
+                                                     scheduleSource: Eval[Source[F[In], _]],
+                                                     schedulingActor: ActorRef,
+                                                     commit: Flow[F[Either[ApplicationError, Done]], Done, NotUsed],
+                                                     errorHandler: Sink[F[Either[ApplicationError, Done]], Future[Done]])(
+                                                      implicit f: Functor[F], system: ActorSystem) {
 
   import system.dispatcher
 
@@ -65,9 +65,9 @@ object ScheduleReader extends LazyLogging {
       }
     }
 
-  def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader[Id, NotUsed]] =
+  def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader[KafkaMessage]] =
     SchedulerConfig.configure.map { config =>
-      ScheduleReader[Id, NotUsed](_ => Source.empty, Eval.later(KafkaStream.source(config.scheduleTopics).map(_.value)), actorRef, Flow[Either[ApplicationError, Done]].map(_ => Done), errorHandler)
+      ScheduleReader[KafkaMessage](_ => Source.empty, Eval.later(KafkaStream.source(config.scheduleTopics)), actorRef, KafkaStream.commitOffset, errorHandler[KafkaMessage, Done])
     }
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running[KillSwitch, Future[Done]]] =

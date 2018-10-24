@@ -7,10 +7,12 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.{Consumer, Producer}
 import akka.kafka.{ConsumerSettings, ProducerSettings, Subscriptions}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import cats.{Applicative, Comonad, Eval, Traverse}
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer, StringDeserializer}
 
 import scala.concurrent.Future
+import scala.language.higherKinds
 
 object KafkaStream {
 
@@ -29,3 +31,18 @@ object KafkaStream {
 }
 
 case class KafkaMessage[T](offset: CommittableOffset, value: T)
+
+object KafkaMessage {
+
+  implicit val instances = new Traverse[KafkaMessage] with Comonad[KafkaMessage] {
+    override def traverse[G[_], A, B](fa: KafkaMessage[A])(f: A => G[B])(implicit A: Applicative[G]): G[KafkaMessage[B]] = A.map(f(fa.value))(KafkaMessage(fa.offset, _))
+
+    override def foldLeft[A, B](fa: KafkaMessage[A], b: B)(f: (B, A) => B): B = f(b, fa.value)
+
+    override def foldRight[A, B](fa: KafkaMessage[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = f(fa.value, lb)
+
+    override def extract[A](x: KafkaMessage[A]): A = x.value
+
+    override def coflatMap[A, B](fa: KafkaMessage[A])(f: KafkaMessage[A] => B): KafkaMessage[B] = KafkaMessage(fa.offset, f(fa))
+  }
+}

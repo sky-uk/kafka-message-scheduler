@@ -4,6 +4,7 @@ import akka.kafka.ConsumerMessage.CommittableOffset
 import cats.Eq
 import cats.laws.discipline.{ComonadTests, FunctorTests, TraverseTests}
 import cats.tests.CatsSuite
+import com.danielasfregola.randomdatagenerator.RandomDataGenerator._
 import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.utils.StubOffset
 import org.scalacheck.{Arbitrary, Cogen, Gen}

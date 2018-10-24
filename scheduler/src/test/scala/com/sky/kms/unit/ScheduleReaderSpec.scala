@@ -2,11 +2,12 @@ package com.sky.kms.unit
 
 import java.util.UUID
 
-import akka.{Done, NotUsed}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.testkit.{TestActor, TestProbe}
-import cats.{Eval, Id}
+import akka.{Done, NotUsed}
 import cats.syntax.either._
+import cats.{Eval, Id}
+import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Initialised, SchedulingMessage}
 import com.sky.kms.base.AkkaStreamSpecBase
@@ -14,10 +15,11 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
+import eu.timepit.refined.auto._
 import org.scalatest.concurrent.Eventually
 
-import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise}
 
 class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
@@ -50,6 +52,28 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
       probe.expectMsgAllOf(schedules: _*)
       probe.expectMsg(Initialised)
     }
+
+    "retry when processing fails" in new TestContext {
+      val pub = akka.stream.testkit.TestPublisher.probe[ScheduleReader.In]()
+
+      val schedule = random[(String, Some[ScheduleEvent])]
+
+      ScheduleReader[Id](_ => Source.empty,
+        Eval.now(Source.fromPublisher[ScheduleReader.In](pub)),
+        probe.ref,
+        Flow[Either[ApplicationError, Done]].map(_ => Done),
+        errorHandler,
+        noRestarts.copy(maxRestarts = Restarts(1))).stream.run
+
+      pub
+        .sendNext(schedule.asRight[ApplicationError])
+        .sendError(new Exception("bosh!"))
+        .expectSubscription()
+    }
+
+    "send upstream failure to scheduling when configured number of retries has been reached" in new TestContext {
+
+    }
   }
 
   "toSchedulingMessage" should {
@@ -81,7 +105,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     val errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.foreach(errorHandlerTriggered.trySuccess)
 
     def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed], errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.ignore): Done =
-      ScheduleReader[Id](init, Eval.now(in), probe.ref, Flow[Either[ApplicationError, Done]].map(_ => Done), errorHandler).stream.run._2.futureValue
+      ScheduleReader[Id](init, Eval.now(in), probe.ref, Flow[Either[ApplicationError, Done]].map(_ => Done), errorHandler, noRestarts).stream.run._2.futureValue
   }
 
 }

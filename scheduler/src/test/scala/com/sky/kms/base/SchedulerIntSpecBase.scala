@@ -18,6 +18,7 @@ abstract class SchedulerIntSpecBase
 
   override implicit lazy val system = TestActorSystem(kafkaConfig.kafkaPort)
 
+<<<<<<< HEAD
   implicit val conf = SchedulerConfig(Set(scheduleTopic, extraScheduleTopic), queueBufferSize = 100)
 
   def consumeFirstFrom[T: Deserializer](topic: String): ConsumerRecord[Array[Byte], T] =
@@ -28,4 +29,7 @@ abstract class SchedulerIntSpecBase
     withConsumer { cr: KafkaConsumer[String, T] =>
       cr.consumeLazily(topic)(identity, ConsumerRetryConfig()).take(numMsgs).toList
     }
+=======
+  val conf = SchedulerConfig(Set(scheduleTopic, extraScheduleTopic), 100)
+>>>>>>> resiliency tests
 }

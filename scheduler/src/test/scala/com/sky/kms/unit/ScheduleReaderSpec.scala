@@ -16,8 +16,9 @@ import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
+import eu.timepit.refined.numeric.{Negative, Positive}
 import eu.timepit.refined.auto._
+import eu.timepit.refined.boolean.Not
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
@@ -67,15 +68,21 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     }
 
     "signal failure to actor when configured number of retries has been reached" in new TestContext with ProbeSource {
-      val numRestarts: Int Refined Positive = 5
+      val numRestarts: Int Refined Not[Negative] = 1
 
       runReaderWithProbe(numRestarts)
 
       probe.expectMsg(Initialised)
 
       val error = new Exception("bosh!")
-      1 to numRestarts foreach { _ => pub.sendError(error) }
 
+      pub
+        .sendNext(random[(String, Some[ScheduleEvent])].asRight[ApplicationError])
+        .sendError(error)
+        .expectSubscription()
+        .sendError(error)
+
+      probe.expectMsgType[CreateOrUpdate]
       probe.expectMsg(UpstreamFailure(error))
     }
   }
@@ -129,8 +136,8 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
     val pub = TestPublisher.probe[ScheduleReader.In]()
 
-    def runReaderWithProbe(numRestarts: Int Refined Positive = 1): Future[Done] = runReader()(Source.fromPublisher[ScheduleReader.In](pub),
-      numRestarts = NoRestarts.copy(maxRestarts = Restarts(numRestarts)))
+    def runReaderWithProbe(numRestarts: Int Refined Not[Negative] = 1): Future[Done] =
+      runReader()(Source.fromPublisher[ScheduleReader.In](pub), numRestarts = NoRestarts.copy(maxRestarts = Restarts(numRestarts)))
   }
 
 }

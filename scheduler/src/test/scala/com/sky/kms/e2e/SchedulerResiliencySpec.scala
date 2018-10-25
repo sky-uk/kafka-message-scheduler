@@ -79,7 +79,7 @@ class SchedulerResiliencySpec extends SpecBase with MockitoSugar {
         }
 
         withRunningKafka {
-          noException should be thrownBy consumeNumberKeyedMessagesFromTopics(Set(destTopic), numSchedules, timeout = 10.seconds)
+          consumeSomeFrom[Array[Byte]](destTopic, numSchedules).size shouldBe numSchedules
         }
       }
     }

@@ -10,8 +10,7 @@ import scala.util.Try
 
 object Restartable extends LazyLogging {
   def apply[A, B](source: => Source[A, B])(bos: BackoffRestartStrategy,
-                                           onRestart: Try[Done] => Unit = doNothing)(
-                   implicit ec: ExecutionContext): Source[A, NotUsed] = {
+                                           onRestart: Try[Done] => Unit = doNothing)(implicit ec: ExecutionContext): Source[A, NotUsed] = {
 
     val numRestarts = bos.maxRestarts match {
       case Restarts(amount) => amount.value

@@ -13,8 +13,15 @@ class SchedulerDeleteIntSpec extends SchedulerIntSpecBase with Consumers {
 
   "Scheduler stream" should {
     "schedule a delete message if the body of the scheduled message is None" in withRunningKafka {
+<<<<<<< HEAD
       withSchedulerApp {
         val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent].copy(value = None).secondsFromNow(4))
+=======
+      withSchedulerApp(conf) {
+        val (scheduleId, schedule) =
+          (UUID.randomUUID().toString,
+           random[ScheduleEvent].copy(value = None).secondsFromNow(4))
+>>>>>>> resiliency tests
 
         publishToKafka(scheduleTopic, scheduleId, schedule.toAvro)
 

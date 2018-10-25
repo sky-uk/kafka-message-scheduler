@@ -38,7 +38,7 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
 
   val tr = Traverse[F[?]] compose Traverse[Either[ApplicationError, ?]]
 
-  def stream: RunnableGraph[(KillSwitch, Future[Done])] = {
+  def stream: Source[Done, KillSwitch] = {
     scheduleSource.value
       .map(f.map(_)(ScheduleReader.toSchedulingMessage))
       .mapAsync(Parallelism)(tr.traverse(_)(msg => (schedulingActor ? msg).mapTo[Ack.type].map[Done](_ => Done)))
@@ -47,7 +47,6 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
       .watchTermination() { case (mat, fu) => fu.failed.foreach(schedulingActor ! UpstreamFailure(_)); mat }
       .restartUsing(restartStrategy)
       .runAfter(loadProcessedSchedules(msg => (schedulingActor ? msg).mapTo[Ack.type]).watchTermination() { case (_, fu) => fu.foreach(_ => schedulingActor ! Initialised) })
-      .toMat(Sink.ignore)(Keep.both)
   }
 }
 
@@ -80,7 +79,7 @@ object ScheduleReader extends LazyLogging {
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running[KillSwitch, Future[Done]]] =
     Start { app =>
-      val (srcMat, sinkMat) = app.reader.stream.run()
+      val (srcMat, sinkMat) = app.reader.stream.toMat(Sink.ignore)(Keep.both).run()
       Running(srcMat, sinkMat)
     }
 }

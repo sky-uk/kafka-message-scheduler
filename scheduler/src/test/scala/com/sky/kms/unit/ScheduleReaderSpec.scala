@@ -1,20 +1,22 @@
 package com.sky.kms.unit
 
-import java.util.UUID
-
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.testkit.TestPublisher
 import akka.testkit.{TestActor, TestProbe}
 import akka.{Done, NotUsed}
 import cats.syntax.either._
 import cats.{Eval, Id}
+import com.sky.kms.BackoffRestartStrategy
 import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.actors.SchedulingActor
-import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Initialised, SchedulingMessage}
+import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaStreamSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.numeric.{Negative, Positive}
 import eu.timepit.refined.auto._
 import org.scalatest.concurrent.Eventually
 
@@ -23,11 +25,11 @@ import scala.concurrent.{Future, Promise}
 
 class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
-  override implicit val patienceConfig = PatienceConfig(5.seconds, 100.millis)
+  override implicit val patienceConfig = PatienceConfig(500.millis, 20.millis)
 
   "stream" should {
     "send a scheduling message to the scheduling the actor" in new TestContext {
-      val schedule@(scheduleId, Some(scheduleEvent)) = (random[String], Some(random[ScheduleEvent]))
+      val schedule@(_, Some(scheduleEvent)) = (random[String], Some(random[ScheduleEvent]))
 
       runReader()(Source.single(schedule.asRight[ApplicationError]))
 
@@ -35,17 +37,17 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
       probe.expectMsgType[CreateOrUpdate].schedule shouldBe scheduleEvent
     }
 
-    "emit errors to the error handler" in new TestContext {
+    "emit errors to the error handler" in new TestContext with ErrorHandler {
       val schedule = random[(String, Some[ScheduleEvent])]
 
-      runReader()(Source.single(schedule.asRight[ApplicationError]), errorHandler)
+      runReader()(Source.single(random[ApplicationError].asLeft), errorHandler)
 
       eventually {
-        errorHandlerTriggered.future.isCompleted shouldBe true
+        awaitingError.future.isCompleted shouldBe true
       }
     }
 
-    "restore scheduling actor state fully before sending Initialised message" in new TestContext {
+    "restore scheduling actor state fully before sending Initialised" in new TestContext {
       val schedules = random[SchedulingMessage](5).toList
       runReader(Source(schedules).mapAsync(1)(_))(Source.empty)
 
@@ -53,17 +55,10 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
       probe.expectMsg(Initialised)
     }
 
-    "retry when processing fails" in new TestContext {
-      val pub = akka.stream.testkit.TestPublisher.probe[ScheduleReader.In]()
-
+    "retry when processing fails" in new TestContext with ProbeSource {
       val schedule = random[(String, Some[ScheduleEvent])]
 
-      ScheduleReader[Id](_ => Source.empty,
-        Eval.now(Source.fromPublisher[ScheduleReader.In](pub)),
-        probe.ref,
-        Flow[Either[ApplicationError, Done]].map(_ => Done),
-        errorHandler,
-        noRestarts.copy(maxRestarts = Restarts(1))).stream.run
+      runReaderWithProbe()
 
       pub
         .sendNext(schedule.asRight[ApplicationError])
@@ -71,41 +66,71 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
         .expectSubscription()
     }
 
-    "send upstream failure to scheduling when configured number of retries has been reached" in new TestContext {
+    "signal failure to actor when configured number of retries has been reached" in new TestContext with ProbeSource {
+      val numRestarts: Int Refined Positive = 5
 
+      runReaderWithProbe(numRestarts)
+
+      probe.expectMsg(Initialised)
+
+      val error = new Exception("bosh!")
+      1 to numRestarts foreach { _ => pub.sendError(error) }
+
+      probe.expectMsg(UpstreamFailure(error))
     }
   }
 
   "toSchedulingMessage" should {
     "generate a CreateOrUpdate message if there is a schedule" in {
-      val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent])
+      val (scheduleId, schedule) = (random[String], random[ScheduleEvent])
       ScheduleReader.toSchedulingMessage(Right((scheduleId, Some(schedule)))) shouldBe
         Right(SchedulingActor.CreateOrUpdate(scheduleId, schedule))
     }
 
     "generate a Cancel message if there is no schedule" in {
-      val scheduleId = UUID.randomUUID().toString
+      val scheduleId = random[String]
       ScheduleReader.toSchedulingMessage(Right((scheduleId, None))) shouldBe
         Right(SchedulingActor.Cancel(scheduleId))
     }
   }
 
   private class TestContext {
-    val probe = TestProbe()
+    val probe = {
+      val p = TestProbe()
+      p.setAutoPilot((sender, msg) =>
+        msg match {
+          case _ =>
+            sender ! Ack
+            TestActor.KeepRunning
+        })
+      p
+    }
 
-    probe.setAutoPilot((sender, msg) =>
-      msg match {
-        case _ =>
-          sender ! Ack
-          TestActor.KeepRunning
-      })
+    def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed],
+                                                                          errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.ignore,
+                                                                          numRestarts: BackoffRestartStrategy = noRestarts): Future[Done] =
+      ScheduleReader[Id](init,
+        Eval.now(in),
+        probe.ref,
+        Flow[Either[ApplicationError, Done]].map(_ => Done),
+        errorHandler,
+        numRestarts).stream.runWith(Sink.ignore)
+  }
 
-    val errorHandlerTriggered = Promise[Either[ApplicationError, Done]]
+  private trait ErrorHandler {
+    this: TestContext =>
 
-    val errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.foreach(errorHandlerTriggered.trySuccess)
+    val awaitingError = Promise[ApplicationError]
+    val errorHandler = Sink.foreach[Either[ApplicationError, Done]](_.fold(awaitingError.trySuccess, _ => ()))
+  }
 
-    def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed], errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.ignore): Done =
-      ScheduleReader[Id](init, Eval.now(in), probe.ref, Flow[Either[ApplicationError, Done]].map(_ => Done), errorHandler, noRestarts).stream.run._2.futureValue
+  private trait ProbeSource {
+    this: TestContext =>
+
+    val pub = TestPublisher.probe[ScheduleReader.In]()
+
+    def runReaderWithProbe(numRestarts: Int Refined Positive = 1): Future[Done] = runReader()(Source.fromPublisher[ScheduleReader.In](pub),
+      numRestarts = noRestarts.copy(maxRestarts = Restarts(numRestarts)))
   }
 
 }

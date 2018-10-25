@@ -33,6 +33,7 @@ val dependencies = Seq(
   "io.kamon"                    %% "kamon-jmx-collector"        % "0.1.7",
   "eu.timepit"                  %% "refined"                    % refinedVersion,
   "eu.timepit"                  %% "refined-pureconfig"         % refinedVersion,
+  "eu.timepit"                  %% "refined-scalacheck"         % refinedVersion,
 
   "org.apache.kafka"            %% "kafka"                      % kafkaVersion           % Test,
   "org.scalatest"               %% "scalatest"                  % "3.0.5"                % Test,

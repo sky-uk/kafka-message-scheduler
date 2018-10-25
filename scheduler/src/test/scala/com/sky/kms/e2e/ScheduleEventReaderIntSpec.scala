@@ -10,10 +10,7 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
-import net.manub.embeddedkafka.Codecs.{
-  stringSerializer,
-  nullSerializer => arrayByteSerializer
-}
+import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
 import org.scalatest.Assertion
 
 import scala.concurrent.Await
@@ -25,12 +22,9 @@ class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
 
   "stream" should {
     "consume from the beginning of the topic on restart" in withRunningKafka {
-      createCustomTopic(conf.scheduleTopic.head,
-                        partitions = 20,
-                        replicationFactor = 1)
+      createCustomTopic(conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
 
-      val firstSchedule :: newSchedules =
-        List.fill(NumSchedules)(generateSchedules)
+      val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
 
       withRunningScheduleReader { probe =>
         writeSchedulesToKafka(firstSchedule)
@@ -60,15 +54,13 @@ class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
   private def withRunningScheduleReader(scenario: TestProbe => Assertion) {
     val probe = TestProbe()
 
-    probe.setAutoPilot((sender, msg) =>
-      msg match {
-        case _ =>
-          sender ! Ack
-          TestActor.KeepRunning
+    probe.setAutoPilot((sender, msg) => msg match {
+      case _ =>
+        sender ! Ack
+        TestActor.KeepRunning
     })
 
-    val scheduleReader =
-      ScheduleReader.configure(probe.testActor).apply(AppConfig(conf))
+    val scheduleReader = ScheduleReader.configure(probe.testActor).apply(AppConfig(conf))
     val (running, _) = scheduleReader.stream.run()
 
     probe.expectMsg(Init)
@@ -78,9 +70,7 @@ class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
     Await.ready(running.shutdown(), 5 seconds)
   }
 
-  private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*) =
-    publishToKafka(scheduleTopic, schedules.map {
-      case (scheduleId, schedule) => (scheduleId, schedule.toAvro)
-    })
+  private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
+    publishToKafka(scheduleTopic, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) })
 
 }

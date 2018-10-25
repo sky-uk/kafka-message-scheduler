@@ -9,7 +9,7 @@ import org.apache.kafka.common.serialization.Deserializer
 import net.manub.embeddedkafka.Codecs.{stringDeserializer, nullDeserializer}
 
 abstract class SchedulerIntSpecBase
-    extends AkkaStreamSpecBase
+  extends AkkaStreamSpecBase
     with KafkaIntSpecBase
     with Consumers {
 
@@ -18,21 +18,14 @@ abstract class SchedulerIntSpecBase
 
   override implicit lazy val system = TestActorSystem(kafkaConfig.kafkaPort)
 
-  implicit val conf = SchedulerConfig(Set(scheduleTopic, extraScheduleTopic), 100)
+  implicit val conf = SchedulerConfig(Set(scheduleTopic, extraScheduleTopic), queueBufferSize = 100)
 
-  def consumeFirstFrom[T: Deserializer](
-      topic: String): ConsumerRecord[Array[Byte], T] =
+  def consumeFirstFrom[T: Deserializer](topic: String): ConsumerRecord[Array[Byte], T] =
     withConsumer[Array[Byte], T, ConsumerRecord[Array[Byte], T]](
-      _.consumeLazily(topic)(identity[ConsumerRecord[Array[Byte], T]],
-                             ConsumerRetryConfig()).head)
+      _.consumeLazily(topic)(identity, ConsumerRetryConfig()).head)
 
-  def consumeSomeFrom[T: Deserializer](
-      topic: String,
-      numMsgs: Int): List[ConsumerRecord[String, T]] =
+  def consumeSomeFrom[T: Deserializer](topic: String, numMsgs: Int): List[ConsumerRecord[String, T]] =
     withConsumer { cr: KafkaConsumer[String, T] =>
-      cr.consumeLazily(topic)(identity[ConsumerRecord[String, T]],
-                              ConsumerRetryConfig())
-        .take(numMsgs)
-        .toList
+      cr.consumeLazily(topic)(identity, ConsumerRetryConfig()).take(numMsgs).toList
     }
 }

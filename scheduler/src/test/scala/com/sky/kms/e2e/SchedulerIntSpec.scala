@@ -14,10 +14,8 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
 
   "Scheduler stream" should {
     "schedule a message to be sent to Kafka and delete it after it has been emitted" in withSchedulerApp {
-      val (scheduleId1, schedule1) =
-        (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
-      val (scheduleId2, schedule2) =
-        (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
+      val (scheduleId1, schedule1) = (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
+      val (scheduleId2, schedule2) = (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
 
       withRunningKafka {
         publishToKafka(scheduleTopic, scheduleId1, schedule1.toAvro)
@@ -34,8 +32,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
 
   private def assertScheduleTombstoned(scheduleId: ScheduleId,
                                        topic: String) = {
-    val latestMessageOnScheduleTopic: ConsumerRecord[String, String] =
-      consumeSomeFrom[String](topic, 2).last
+    val latestMessageOnScheduleTopic = consumeSomeFrom[String](topic, 2).last
 
     latestMessageOnScheduleTopic.key() shouldBe scheduleId
     latestMessageOnScheduleTopic.value() shouldBe null

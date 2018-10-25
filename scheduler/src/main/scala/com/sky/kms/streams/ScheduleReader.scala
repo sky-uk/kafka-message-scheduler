@@ -12,6 +12,7 @@ import cats.{Comonad, Eval, Functor, Traverse}
 import com.sky.kafka.topicloader._
 import com.sky.kms.Restartable._
 import com.sky.kms._
+import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.config._
 import com.sky.kms.domain.ApplicationError._
@@ -29,8 +30,8 @@ import scala.language.higherKinds
 case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: LoadSchedule => Source[_, _],
                                                      scheduleSource: Eval[Source[F[In], _]],
                                                      schedulingActor: ActorRef,
-                                                     commit: Flow[F[Either[ApplicationError, Done]], Done, NotUsed],
-                                                     errorHandler: Sink[F[Either[ApplicationError, Done]], Future[Done]],
+                                                     commit: Flow[F[Either[ApplicationError, Ack.type]], Done, NotUsed],
+                                                     errorHandler: Sink[F[Either[ApplicationError, Ack.type]], Future[Done]],
                                                      restartStrategy: BackoffRestartStrategy)(
                                                       implicit f: Functor[F], system: ActorSystem) {
 
@@ -38,16 +39,18 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
 
   val tr = Traverse[F[?]] compose Traverse[Either[ApplicationError, ?]]
 
-  def stream: Source[Done, KillSwitch] = {
+  def stream: Source[Done, KillSwitch] =
     scheduleSource.value
       .map(f.map(_)(ScheduleReader.toSchedulingMessage))
-      .mapAsync(Parallelism)(tr.traverse(_)(msg => (schedulingActor ? msg).mapTo[Ack.type].map[Done](_ => Done)))
+      .mapAsync(Parallelism)(tr.traverse(_)(processSchedulingMessage))
       .alsoTo(errorHandler)
       .via(commit)
-      .watchTermination() { case (mat, fu) => fu.failed.foreach(schedulingActor ! UpstreamFailure(_)); mat }
       .restartUsing(restartStrategy)
-      .runAfter(loadProcessedSchedules(msg => (schedulingActor ? msg).mapTo[Ack.type]).watchTermination() { case (_, fu) => fu.foreach(_ => schedulingActor ! Initialised) })
-  }
+      .watchTermination() { case (mat, fu) => fu.failed.foreach(schedulingActor ! UpstreamFailure(_)); mat }
+      .runAfter(loadProcessedSchedules(processSchedulingMessage).watchTermination() { case (_, fu) => fu.foreach(_ => schedulingActor ! Initialised) })
+
+  private def processSchedulingMessage(msg: SchedulingMessage): Future[SchedulingActor.Ack.type] =
+    (schedulingActor ? msg).mapTo[Ack.type]
 }
 
 object ScheduleReader extends LazyLogging {
@@ -73,7 +76,7 @@ object ScheduleReader extends LazyLogging {
         Eval.later(KafkaStream.source(config.scheduleTopics)),
         actorRef,
         KafkaStream.commitOffset,
-        errorHandler[KafkaMessage, Done],
+        errorHandler[KafkaMessage, Ack.type],
         appRestartStrategy)
     }
 

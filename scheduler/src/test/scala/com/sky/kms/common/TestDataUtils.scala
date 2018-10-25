@@ -3,24 +3,29 @@ package com.sky.kms.common
 import java.io.ByteArrayOutputStream
 import java.time._
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
-import cats.{Eval, Id}
+import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
-import com.sky.kms.SchedulerApp
+import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain._
 import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import com.sky.kms.{BackoffRestartStrategy, SchedulerApp}
+import eu.timepit.refined.auto._
 import org.scalacheck._
 import org.zalando.grafter.syntax.rewriter._
 
+import scala.concurrent.duration.DurationInt
+
 object TestDataUtils {
+
+  val NoRestarts = BackoffRestartStrategy(10.millis, 10.millis, Restarts(0))
 
   implicit val arbAlphaString: Arbitrary[String] =
     Arbitrary(Gen.alphaStr.suchThat(_.nonEmpty).retryUntil(_.nonEmpty))

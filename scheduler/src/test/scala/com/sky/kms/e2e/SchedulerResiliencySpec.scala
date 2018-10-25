@@ -3,7 +3,6 @@ package com.sky.kms.e2e
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.kafka.ConsumerMessage.CommittableOffset
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
@@ -11,16 +10,15 @@ import cats.syntax.either._
 import cats.syntax.option._
 import com.sky.kms.avro._
 import com.sky.kms.base.{KafkaIntSpecBase, SpecBase}
-import com.sky.kms.common.TestActorSystem
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
-import com.sky.kms.domain.{ApplicationError, ScheduleEvent, ScheduleId}
+import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.utils.{StubControl, StubOffset}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
 import eu.timepit.refined.auto._
-import net.manub.embeddedkafka.Codecs.{nullSerializer, stringSerializer}
+import net.manub.embeddedkafka.Codecs.{stringSerializer, nullDeserializer => arrayByteDeserializer, nullSerializer => arrayByteSerializer}
 import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.duration._
@@ -35,7 +33,7 @@ class SchedulerResiliencySpec extends SpecBase with MockitoSugar {
       val app = createAppFrom(config)
         .withReaderSource(sourceThatWillFail)
 
-      withRunningScheduler(app) { _ =>
+      withRunningScheduler(app.copy(reader = app.reader.copy(restartStrategy = NoRestarts))) { _ =>
         hasActorSystemTerminated shouldBe true
       }
     }
@@ -69,27 +67,26 @@ class SchedulerResiliencySpec extends SpecBase with MockitoSugar {
       }
     }
 
-    "terminate when Kafka goes down during processing" in new KafkaTestContext {
-      val distantSchedules = random[ScheduleEvent](n = 100).map(_.secondsFromNow(60))
-      val scheduleIds = List.fill(distantSchedules.size)(UUID.randomUUID().toString)
+    "continue processing when Kafka becomes available" in new KafkaIntSpecBase with TestContext {
+      val numSchedules = 5
+      val destTopic = random[String]
+      val schedules = random[ScheduleEvent](numSchedules).map(_.copy(inputTopic = "some-topic", outputTopic = destTopic).secondsFromNow(1))
+      val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
-      withRunningKafka {
-        withRunningScheduler(createAppFrom(config)) { _ =>
-          publishToKafka(config.scheduleTopics.head, (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq)
-        }
-      }
-      hasActorSystemTerminated shouldBe true
-    }
-
-    "terminate when Kafka is unavailable at startup" in new KafkaTestContext {
       withRunningScheduler(createAppFrom(config)) { _ =>
-        hasActorSystemTerminated shouldBe true
+        withRunningKafka {
+          publishToKafka(config.scheduleTopics.head, (scheduleIds, schedules.map(_.toAvro)).zipped.toSeq)
+        }
+
+        withRunningKafka {
+          noException should be thrownBy consumeNumberKeyedMessagesFromTopics(Set(destTopic), numSchedules, timeout = 10.seconds)
+        }
       }
     }
   }
 
   private trait TestContext {
-    val config = SchedulerConfig(Set("some-topic"), 100)
+    val config = SchedulerConfig(Set("some-topic"), queueBufferSize = 100)
 
     def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
       SchedulerApp.configure apply AppConfig(config)
@@ -119,10 +116,6 @@ class SchedulerResiliencySpec extends SpecBase with MockitoSugar {
 
       Source(elements.map(KafkaMessage(StubOffset(), _))).mapMaterializedValue(_ => StubControl())
     }
-  }
-
-  private class KafkaTestContext extends KafkaIntSpecBase with TestContext {
-    override implicit lazy val system: ActorSystem = TestActorSystem(kafkaConfig.kafkaPort, terminateActorSystem = true)
   }
 
 }

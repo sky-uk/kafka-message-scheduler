@@ -16,7 +16,7 @@ import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.{Negative, Positive}
+import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.auto._
 import org.scalatest.concurrent.Eventually
 
@@ -107,12 +107,12 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     }
 
     def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed],
-                                                                          errorHandler: Sink[Either[ApplicationError, Done], Future[Done]] = Sink.ignore,
-                                                                          numRestarts: BackoffRestartStrategy = noRestarts): Future[Done] =
+                                                                          errorHandler: Sink[Either[ApplicationError, Ack.type], Future[Done]] = Sink.ignore,
+                                                                          numRestarts: BackoffRestartStrategy = NoRestarts): Future[Done] =
       ScheduleReader[Id](init,
         Eval.now(in),
         probe.ref,
-        Flow[Either[ApplicationError, Done]].map(_ => Done),
+        Flow[Either[ApplicationError, Ack.type]].map(_ => Done),
         errorHandler,
         numRestarts).stream.runWith(Sink.ignore)
   }
@@ -121,7 +121,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     this: TestContext =>
 
     val awaitingError = Promise[ApplicationError]
-    val errorHandler = Sink.foreach[Either[ApplicationError, Done]](_.fold(awaitingError.trySuccess, _ => ()))
+    val errorHandler = Sink.foreach[Either[ApplicationError, Ack.type]](_.fold(awaitingError.trySuccess, _ => ()))
   }
 
   private trait ProbeSource {
@@ -130,7 +130,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     val pub = TestPublisher.probe[ScheduleReader.In]()
 
     def runReaderWithProbe(numRestarts: Int Refined Positive = 1): Future[Done] = runReader()(Source.fromPublisher[ScheduleReader.In](pub),
-      numRestarts = noRestarts.copy(maxRestarts = Restarts(numRestarts)))
+      numRestarts = NoRestarts.copy(maxRestarts = Restarts(numRestarts)))
   }
 
 }

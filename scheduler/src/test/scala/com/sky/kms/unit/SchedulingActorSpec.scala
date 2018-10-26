@@ -136,8 +136,8 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
     def scheduleDoneCounter: Long = monitoring.scheduleDoneCounter.get()
   }
 
-  private class Initialised extends TestContext  {
-        init(schedulingActor)
+  private class Initialised extends TestContext {
+    init(schedulingActor)
   }
 
   def init(actorRef: ActorRef) = {

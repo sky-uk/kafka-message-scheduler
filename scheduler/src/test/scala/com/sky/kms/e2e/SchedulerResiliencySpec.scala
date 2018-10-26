@@ -12,7 +12,7 @@ import cats.syntax.option._
 import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.base.SpecBase
 import com.sky.kms.common.TestDataUtils._
-import com.sky.kms.config.{AppConfig, LoaderConfig, OffsetBatchConfig, SchedulerConfig}
+import com.sky.kms.config._
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.{KafkaMessage, Topic}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
@@ -91,9 +91,6 @@ class SchedulerResiliencySpec extends SpecBase {
 
   private trait FailingSource {
     this: TestContext =>
-
-    import cats.syntax.either._
-    import cats.syntax.option._
 
     val sourceThatWillFail: Source[KafkaMessage[ScheduleReader.In], Control] =
       Source.fromIterator(() => Iterator(KafkaMessage(StubOffset(), ("someId", none[ScheduleEvent]).asRight[ApplicationError])) ++ (throw new Exception("boom!")))

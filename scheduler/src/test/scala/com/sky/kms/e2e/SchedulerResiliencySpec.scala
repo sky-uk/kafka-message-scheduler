@@ -6,20 +6,19 @@ import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
+import cats.data.NonEmptyList
 import cats.syntax.either._
 import cats.syntax.option._
 import com.sky.kms.BackoffRestartStrategy.Restarts
-import com.sky.kms.avro._
-import com.sky.kms.base.{SchedulerIntSpecBase, SpecBase}
+import com.sky.kms.base.SpecBase
 import com.sky.kms.common.TestDataUtils._
-import com.sky.kms.config.{AppConfig, SchedulerConfig}
+import com.sky.kms.config.{AppConfig, LoaderConfig, SchedulerConfig}
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
-import com.sky.kms.kafka.KafkaMessage
+import com.sky.kms.kafka.{KafkaMessage, Topic}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.utils.{StubControl, StubOffset}
 import com.sky.kms.{AkkaComponents, BackoffRestartStrategy, SchedulerApp}
 import eu.timepit.refined.auto._
-import net.manub.embeddedkafka.Codecs.{stringSerializer, nullDeserializer => arrayByteDeserializer, nullSerializer => arrayByteSerializer}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -67,31 +66,21 @@ class SchedulerResiliencySpec extends SpecBase {
       }
     }
 
-    "continue processing when Kafka becomes available" in new SchedulerIntSpecBase with TestContext {
-      val numSchedules = 5
-      val destTopic = random[String]
-      val schedules = random[ScheduleEvent](numSchedules).map(_.copy(inputTopic = "some-topic", outputTopic = destTopic).secondsFromNow(1))
-      val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
+    "terminate when reader restarts has been reached" in new TestContext with FailingSource with AkkaComponents {
+      val app = createAppFrom(config)
+        .withReaderSource(sourceThatWillFail)
+        .withReaderRestartStrategy(BackoffRestartStrategy(10.millis, 10.millis, Restarts(1)))
 
-      val restartStrategy = BackoffRestartStrategy(100.millis, 100.millis, Restarts(500))
-
-      withRunningScheduler(createAppFrom(config).withReaderRestartStrategy(restartStrategy)) { _ =>
-        withRunningKafka {
-          publishToKafka(config.scheduleTopics.head, (scheduleIds, schedules.map(_.toAvro)).zipped.toSeq)
-        }
-
-        withRunningKafka {
-
-          println("*****************************************************")
-
-          consumeSomeFrom[Array[Byte]](destTopic, numSchedules).size shouldBe numSchedules
-        }
+      withRunningScheduler(app) { _ =>
+        hasActorSystemTerminated shouldBe true
       }
     }
   }
 
   private trait TestContext {
-    val config = SchedulerConfig(Set("some-topic"), queueBufferSize = 100)
+    val someTopic: Topic = "some-topic"
+    val config = SchedulerConfig(NonEmptyList.one(someTopic), queueBufferSize = 100,
+      LoaderConfig(idleTimeout = 2.minutes, bufferSize = 100, parallelism = 5))
 
     def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
       SchedulerApp.configure apply AppConfig(config)

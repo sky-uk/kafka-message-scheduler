@@ -4,67 +4,79 @@ import java.util.UUID
 
 import akka.stream.scaladsl.Sink
 import akka.testkit.{TestActor, TestProbe}
-import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Initialised}
+import com.sky.kms.BackoffRestartStrategy
+import com.sky.kms.BackoffRestartStrategy.InfiniteRestarts
+import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
+import com.sky.kms.common.TestActorSystem
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
-import org.scalatest.Assertion
 
 import scala.concurrent.duration._
 
-class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
+class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
 
-  val NumSchedules = 10
+  override implicit lazy val system = TestActorSystem(kafkaConfig.kafkaPort, maxWakeups = 3, wakeupTimeout = 3.seconds, akkaExpectDuration = 10.seconds)
+
+  val numSchedules = 3
 
   "stream" should {
-    "consume from the beginning of the topic on restart" in withRunningKafka {
-      createCustomTopic(conf.scheduleTopics.head, partitions = 20, replicationFactor = 1)
-
-      val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
+    "reload already processed schedules on restart before scheduling" in withRunningKafka {
+      val firstSchedule :: newSchedules = List.fill(numSchedules)(generateSchedule)
 
       withRunningScheduleReader { probe =>
+        probe.expectMsg(Initialised)
         writeSchedulesToKafka(firstSchedule)
 
-        probe
-          .expectMsgType[CreateOrUpdate](5 seconds)
-          .scheduleId shouldBe firstSchedule._1
+        probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe firstSchedule._1
       }
 
       withRunningScheduleReader { probe =>
         writeSchedulesToKafka(newSchedules: _*)
 
-        val allScheduleIds = (firstSchedule :: newSchedules).map {
-          case (scheduleId, _) => scheduleId
-        }
-        val receivedScheduleIds = List.fill(NumSchedules)(
-          probe.expectMsgType[CreateOrUpdate](5 seconds).scheduleId)
+        probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe firstSchedule._1
+        probe.expectMsg(Initialised)
 
-        receivedScheduleIds should contain theSameElementsAs allScheduleIds
+        val receivedScheduleIds = List.fill(newSchedules.size)(probe.expectMsgType[CreateOrUpdate].scheduleId)
+
+        receivedScheduleIds should contain theSameElementsAs newSchedules.map(_._1)
+      }
+    }
+
+    "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
+      withRunningKafka {
+        probe.expectMsg(Initialised)
+        scheduleShouldFlow(probe)
+      }
+      withRunningKafka {
+        scheduleShouldFlow(probe)
       }
     }
   }
 
-  private def generateSchedules: (ScheduleId, ScheduleEvent) =
-    (UUID.randomUUID().toString, random[ScheduleEvent])
+  private def generateSchedule: (ScheduleId, ScheduleEvent) = UUID.randomUUID().toString -> random[ScheduleEvent]
 
-  private def withRunningScheduleReader(scenario: TestProbe => Assertion) {
-    val probe = TestProbe()
+  private def withRunningScheduleReader[T](scenario: TestProbe => T): T = {
+    val probe = {
+      val p = TestProbe()
+      p.setAutoPilot((sender, msg) => msg match {
+        case _ =>
+          sender ! Ack
+          TestActor.KeepRunning
+      })
+      p
+    }
 
-    probe.setAutoPilot((sender, msg) => msg match {
-      case _ =>
-        sender ! Ack
-        TestActor.KeepRunning
-    })
-
-    val scheduleReader = ScheduleReader.configure(probe.testActor).apply(AppConfig(conf))
-    val killSwitch = scheduleReader.stream.to(Sink.ignore).run()
-
-    probe.expectMsg(Initialised)
+    val killSwitch = ScheduleReader
+      .configure(probe.ref)
+      .apply(AppConfig(conf))
+      .copy(restartStrategy = BackoffRestartStrategy(10.millis, 10.millis, InfiniteRestarts))
+      .stream.to(Sink.ignore).run()
 
     try {
       scenario(probe)
@@ -75,5 +87,10 @@ class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
     publishToKafka(scheduleTopic, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) })
+
+  private def scheduleShouldFlow(probe: TestProbe): SchedulingMessage = {
+    writeSchedulesToKafka(generateSchedule)
+    probe.expectMsgType[CreateOrUpdate]
+  }
 
 }

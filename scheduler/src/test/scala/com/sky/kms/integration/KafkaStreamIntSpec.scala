@@ -2,7 +2,8 @@ package com.sky.kms.integration
 
 import akka.kafka.ConsumerFailed
 import akka.stream.scaladsl.{Keep, Sink}
-import com.sky.kms.base.{KafkaIntSpecBase, SchedulerIntSpecBase}
+import cats.data.NonEmptyList
+import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.kafka.KafkaStream._
 import com.sky.kms.kafka.Topic
 import eu.timepit.refined.auto._
@@ -22,7 +23,7 @@ class KafkaStreamIntSpec extends SchedulerIntSpecBase with Eventually {
 
         val suffix = "-decoded"
 
-        source[String](Set(testTopic))(system,
+        source[String](NonEmptyList.one(testTopic))(system,
           cr => new String(cr.value) + suffix)
           .runWith(Sink.head)
           .futureValue
@@ -31,7 +32,7 @@ class KafkaStreamIntSpec extends SchedulerIntSpecBase with Eventually {
     }
 
     "fail when Kafka is unavailable" in new TestContext {
-      source(Set(testTopic))(system, _.value)
+      source(NonEmptyList.one(testTopic))(system, _.value)
         .runWith(Sink.head)
         .failed
         .futureValue shouldBe a[ConsumerFailed]
@@ -43,7 +44,7 @@ class KafkaStreamIntSpec extends SchedulerIntSpecBase with Eventually {
       withRunningKafka {
         publishStringMessageToKafka(testTopic, "some-msg")
 
-        val ctrl = source(Set(testTopic))(system, _.value)
+        val ctrl = source(NonEmptyList.one(testTopic))(system, _.value)
           .via(commitOffset)
           .toMat(Sink.head)(Keep.left)
           .run
@@ -54,7 +55,7 @@ class KafkaStreamIntSpec extends SchedulerIntSpecBase with Eventually {
 
         publishStringMessageToKafka(testTopic, testMessage)
 
-        source[Array[Byte]](Set(testTopic))(system, _.value)
+        source[Array[Byte]](NonEmptyList.one(testTopic))(system, _.value)
           .runWith(Sink.head)
           .futureValue
           .value shouldBe testMessage.getBytes
@@ -65,9 +66,9 @@ class KafkaStreamIntSpec extends SchedulerIntSpecBase with Eventually {
       withRunningKafka {
         publishStringMessageToKafka(testTopic, testMessage)
 
-        val ctrl = source[Array[Byte]](Set(testTopic))(
+        val ctrl = source[Array[Byte]](NonEmptyList.one(testTopic))(
           system, _ =>
-            throw new RuntimeException("error occurred processing messagge."))
+            throw new RuntimeException("error occurred processing message."))
           .toMat(Sink.head)(Keep.left)
           .run
 
@@ -75,7 +76,7 @@ class KafkaStreamIntSpec extends SchedulerIntSpecBase with Eventually {
           Await.ready(ctrl.isShutdown, 5 seconds)
         }
 
-        source[Array[Byte]](Set(testTopic))(system, _.value)
+        source[Array[Byte]](NonEmptyList.one(testTopic))(system, _.value)
           .runWith(Sink.head).futureValue.value shouldBe testMessage.getBytes
       }
     }

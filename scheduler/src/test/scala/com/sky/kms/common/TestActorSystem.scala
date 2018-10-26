@@ -6,11 +6,14 @@ import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.consumer.ConsumerConfig
 
+import scala.concurrent.duration._
+
 object TestActorSystem {
 
-  private def config(kafkaPort: Int, terminateActorSystem: Boolean): String =
+  private def config(kafkaPort: Int, terminateActorSystem: Boolean, maxWakeups: Int, wakeupTimeout: Duration, akkaExpectDuration: Duration): String =
     s"""
        |akka {
+       | test.single-expect-default = $akkaExpectDuration
        | coordinated-shutdown {
        |  terminate-actor-system = $terminateActorSystem
        |  run-by-jvm-shutdown-hook = off
@@ -18,10 +21,10 @@ object TestActorSystem {
        |
        | kafka {
        |  consumer {
-       |    max-wakeups = 2
-       |    wakeup-timeout = 2 seconds
+       |    max-wakeups = $maxWakeups
+       |    wakeup-timeout = $wakeupTimeout
        |    kafka-clients {
-       |      enable.auto.commit = false
+       |      group.id = kms-consumer-group
        |      bootstrap.servers = "localhost:$kafkaPort"
        |      ${ConsumerConfig.AUTO_OFFSET_RESET_CONFIG} = "earliest"
        |    }
@@ -33,9 +36,9 @@ object TestActorSystem {
     """.stripMargin
 
 
-  def apply(kafkaPort: Int = 9092, terminateActorSystem: Boolean = false): ActorSystem =
+  def apply(kafkaPort: Int = 9092, terminateActorSystem: Boolean = false, maxWakeups: Int = 2, wakeupTimeout: Duration = 2.seconds, akkaExpectDuration: Duration = 3.seconds): ActorSystem =
     ActorSystem(
       name = s"test-actor-system-${UUID.randomUUID().toString}",
-      config = ConfigFactory.parseString(config(kafkaPort, terminateActorSystem)).withFallback(ConfigFactory.load())
+      config = ConfigFactory.parseString(config(kafkaPort, terminateActorSystem, maxWakeups, wakeupTimeout, akkaExpectDuration)).withFallback(ConfigFactory.load())
     )
 }

@@ -61,7 +61,7 @@ object TestDataUtils {
       schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](restartStrategy = strategy))
 
     def withReaderSource(src: Source[KafkaMessage[ScheduleReader.In], Control])(implicit as: ActorSystem): SchedulerApp =
-      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](scheduleSource = Eval.later(src)))
+      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](loadProcessedSchedules = _ => Source.empty, scheduleSource = Eval.later(src)))
 
     def withPublisherSink(sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
       schedulerApp.modifyWith[Any] {

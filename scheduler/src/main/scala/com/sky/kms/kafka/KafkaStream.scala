@@ -7,7 +7,9 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.{Consumer, Producer}
 import akka.kafka.{ConsumerSettings, ProducerSettings, Subscriptions}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import cats.data.{NonEmptyList, NonEmptySet}
 import cats.{Applicative, Comonad, Eval, Traverse}
+import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer, StringDeserializer}
 
@@ -16,12 +18,14 @@ import scala.language.higherKinds
 
 object KafkaStream {
 
-  def source[T](topics: Set[Topic])(implicit system: ActorSystem, crDecoder: ConsumerRecordDecoder[T]): Source[KafkaMessage[T], Control] =
+  def source[T](topics: NonEmptyList[Topic])(implicit system: ActorSystem, crDecoder: ConsumerRecordDecoder[T]): Source[KafkaMessage[T], Control] =
     Consumer.committableSource(
-      ConsumerSettings(system, new StringDeserializer, new ByteArrayDeserializer),
-      Subscriptions.topics(topics.map(_.value))
+      ConsumerSettings(system, new StringDeserializer, new ByteArrayDeserializer)
+        .withProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false"),
+      Subscriptions.topics(topics.map(_.value).toList.toSet)
     ).map(cm => KafkaMessage(cm.committableOffset, crDecoder(cm.record)))
 
+  //TODO: batch commits
   def commitOffset: Flow[KafkaMessage[_], Done, NotUsed] =
     Flow[KafkaMessage[_]]
       .mapAsync(5)(_.offset.commitScaladsl())

@@ -12,8 +12,7 @@ import org.scalatest.WordSpecLike
 
 trait KafkaIntSpecBase extends EmbeddedKafka with WordSpecLike with Consumers {
 
-  implicit lazy val kafkaConfig =
-    EmbeddedKafkaConfig(kafkaPort = randomPort(), zooKeeperPort = randomPort())
+  implicit lazy val kafkaConfig = EmbeddedKafkaConfig(kafkaPort = randomPort(), zooKeeperPort = randomPort())
 
   val scheduleTopic: Topic = "scheduleTopic"
   val extraScheduleTopic: Topic = "extraScheduleTopic"

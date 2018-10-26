@@ -1,10 +1,12 @@
 package com.sky.kms
 
 import akka.util.Timeout
-import cats.data.Reader
+import cats.data.{NonEmptyList, Reader}
 import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.kafka.Topic
+import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
+import eu.timepit.refined.numeric.Positive
 
 import scala.concurrent.duration._
 
@@ -16,8 +18,9 @@ package object config {
 
   case class AppConfig(scheduler: SchedulerConfig)
 
-  case class SchedulerConfig(scheduleTopics: Set[Topic],
-                             queueBufferSize: Int)
+  case class SchedulerConfig(scheduleTopics: NonEmptyList[Topic], queueBufferSize: Int, topicLoader: LoaderConfig)
+
+  case class LoaderConfig(idleTimeout: FiniteDuration, bufferSize: Int Refined Positive, parallelism: Int Refined Positive)
 
   object SchedulerConfig {
     def configure: Configured[SchedulerConfig] = Reader(_.scheduler)

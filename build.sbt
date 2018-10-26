@@ -7,9 +7,10 @@ val akkaVersion = "2.5.17"
 val catsVersion = "1.4.0"
 val kamonVersion = "1.1.1"
 val refinedVersion = "0.9.2"
+val pureConfigVersion = "0.9.2"
 
 val dependencies = Seq(
-  "com.sky"                     %% "kafka-topic-loader"         % "1.0.0",
+  "com.sky"                     %% "kafka-topic-loader"         % "1.1.0",
 
   "com.typesafe.akka"           %% "akka-actor"                 % akkaVersion,
   "com.typesafe.akka"           %% "akka-stream"                % akkaVersion,
@@ -24,7 +25,8 @@ val dependencies = Seq(
   "ch.qos.logback"               % "logback-classic"            % "1.2.3"                % Runtime,
   "net.logstash.logback"         % "logstash-logback-encoder"   % "5.2"                  % Runtime,
   "org.codehaus.janino"          % "janino"                     % "3.0.10"               % Runtime,
-  "com.github.pureconfig"       %% "pureconfig"                 % "0.9.2",
+  "com.github.pureconfig"       %% "pureconfig"                 % pureConfigVersion,
+  "com.github.pureconfig"       %% "pureconfig-cats"            % pureConfigVersion,
 
   "io.kamon"                    %% "kamon-prometheus"           % kamonVersion,
   "io.kamon"                    %% "kamon-akka-2.5"             % kamonVersion,

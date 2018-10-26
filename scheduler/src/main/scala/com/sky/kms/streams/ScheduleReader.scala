@@ -8,6 +8,7 @@ import akka.{Done, NotUsed}
 import cats.instances.either._
 import cats.instances.future._
 import cats.syntax.functor._
+import cats.syntax.option._
 import cats.{Comonad, Eval, Functor, Traverse}
 import com.sky.kafka.topicloader._
 import com.sky.kms.Restartable._
@@ -20,6 +21,8 @@ import com.sky.kms.domain._
 import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 import scala.concurrent.Future
 import scala.language.higherKinds
@@ -72,7 +75,16 @@ object ScheduleReader extends LazyLogging {
 
   def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader[KafkaMessage]] =
     SchedulerConfig.configure.map { config =>
-      ScheduleReader[KafkaMessage](_ => Source.empty,
+      def reloadSchedules(loadSchedule: LoadSchedule) = {
+        import system.dispatcher
+        import config.topicLoader._
+        val f = (cr: ConsumerRecord[String, Array[Byte]]) => toSchedulingMessage(scheduleConsumerRecordDecoder(cr))
+        val tlc = TopicLoaderConfig(LoadCommitted, config.scheduleTopics.map(_.value), idleTimeout, bufferSize, parallelism)
+        TopicLoader(tlc, f andThen (_.fold(_ => Future.successful(None), loadSchedule(_).map(_.some))), new ByteArrayDeserializer)
+      }
+
+      ScheduleReader[KafkaMessage](
+        reloadSchedules,
         Eval.later(KafkaStream.source(config.scheduleTopics)),
         actorRef,
         KafkaStream.commitOffset,

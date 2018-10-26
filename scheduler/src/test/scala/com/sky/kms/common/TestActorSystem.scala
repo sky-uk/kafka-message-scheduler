@@ -24,7 +24,6 @@ object TestActorSystem {
        |    max-wakeups = $maxWakeups
        |    wakeup-timeout = $wakeupTimeout
        |    kafka-clients {
-       |      group.id = kms-consumer-group
        |      bootstrap.servers = "localhost:$kafkaPort"
        |      ${ConsumerConfig.AUTO_OFFSET_RESET_CONFIG} = "earliest"
        |    }

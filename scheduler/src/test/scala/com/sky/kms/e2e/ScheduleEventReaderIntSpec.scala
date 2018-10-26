@@ -65,9 +65,11 @@ class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
 
     probe.expectMsg(Init)
 
-    scenario(probe)
-
-    Await.ready(running.shutdown(), 5 seconds)
+    try {
+      scenario(probe)
+    } finally {
+      Await.ready(running.shutdown(), 5 seconds)
+    }
   }
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =

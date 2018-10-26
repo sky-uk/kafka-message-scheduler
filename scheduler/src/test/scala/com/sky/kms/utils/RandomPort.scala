@@ -3,7 +3,7 @@ package com.sky.kms.utils
 import java.net.ServerSocket
 
 object RandomPort {
-  def apply(): Int = {
+  def randomPort(): Int = {
     val socket = new ServerSocket(0)
     socket.setReuseAddress(true)
     val port = socket.getLocalPort

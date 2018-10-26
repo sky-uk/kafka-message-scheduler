@@ -1,5 +1,6 @@
 package com.sky.kms.e2e
 
+import cats.Applicative
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.common.TestDataUtils._
@@ -13,8 +14,8 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
       withSchedulerApp {
         val schedules = createSchedules(2, forTopics = List(scheduleTopic, extraScheduleTopic))
         withRunningKafka {
-          publishSchedules(schedules)
-          assertScheduledMessagesWritten(schedules)
+          publish(schedules)
+          assertMessagesWrittenFrom(schedules)
           assertTombstoned(schedules)
         }
       }
@@ -23,15 +24,15 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
 
   private class TestContext {
     def createSchedules(numSchedules: Int, forTopics: List[String]): List[(ScheduleId, ScheduleEvent)] =
-      for {
-        (id, schedule) <- random[(ScheduleId, ScheduleEvent)](numSchedules).toList
-        topic <- Stream.continually(forTopics.toStream).flatten.take(numSchedules)
-      } yield id -> schedule.copy(inputTopic = topic).secondsFromNow(4)
+      random[(ScheduleId, ScheduleEvent)](numSchedules).toList.zip(Stream.continually(forTopics.toStream).flatten.take(numSchedules).toList)
+        .map { case ((id, schedule), topic) =>
+          id -> schedule.copy(inputTopic = topic).secondsFromNow(4)
+        }
 
-    def publishSchedules(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
+    def publish(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
       schedules.foreach { case (id, schedule) => publishToKafka(schedule.inputTopic, id, schedule.toAvro) }
 
-    def assertScheduledMessagesWritten(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
+    def assertMessagesWrittenFrom(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
       schedules.foreach { case (_, schedule) =>
         val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
 
@@ -40,13 +41,13 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
         cr.timestamp() shouldBe schedule.timeInMillis +- Tolerance.toMillis
       }
 
-    def assertTombstoned(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
-      schedules.foreach { case (id, schedule) =>
-        val latestMessageOnScheduleTopic = consumeSomeFrom[String](schedule.inputTopic, 2).last
-
-        latestMessageOnScheduleTopic.key() shouldBe id
-        latestMessageOnScheduleTopic.value() shouldBe null
+    def assertTombstoned(schedules: List[(ScheduleId, ScheduleEvent)]): Unit = {
+      schedules.groupBy(_._2.inputTopic).foreach { case (topic, schedulesByInputTopic) =>
+        val tombstones = consumeSomeFrom[String](topic, schedulesByInputTopic.size * 2).filter(_.value == null)
+        tombstones.size shouldBe schedulesByInputTopic.size
+        tombstones.map(_.key) shouldBe schedulesByInputTopic.map(_._1).distinct
       }
+    }
   }
 
 }

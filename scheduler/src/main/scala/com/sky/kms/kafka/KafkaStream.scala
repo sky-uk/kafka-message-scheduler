@@ -2,13 +2,14 @@ package com.sky.kms.kafka
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.kafka.ConsumerMessage.CommittableOffset
+import akka.kafka.ConsumerMessage.{CommittableOffset, CommittableOffsetBatch}
 import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.{Consumer, Producer}
 import akka.kafka.{ConsumerSettings, ProducerSettings, Subscriptions}
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import cats.data.{NonEmptyList, NonEmptySet}
+import cats.data.NonEmptyList
 import cats.{Applicative, Comonad, Eval, Traverse}
+import com.sky.kms.config.OffsetBatchConfig
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer, StringDeserializer}
@@ -25,10 +26,12 @@ object KafkaStream {
       Subscriptions.topics(topics.map(_.value).toList.toSet)
     ).map(cm => KafkaMessage(cm.committableOffset, crDecoder(cm.record)))
 
-  //TODO: batch commits
-  def commitOffset: Flow[KafkaMessage[_], Done, NotUsed] =
+  def commitOffset(bc: OffsetBatchConfig): Flow[KafkaMessage[_], Done, NotUsed] =
     Flow[KafkaMessage[_]]
-      .mapAsync(5)(_.offset.commitScaladsl())
+      .map(_.offset)
+      .groupedWithin(bc.commitBatchSize.value, bc.maxCommitWait)
+      .map(CommittableOffsetBatch(_))
+      .mapAsync(5)(_.commitScaladsl())
 
   def sink(implicit system: ActorSystem): Sink[ProducerRecord[Array[Byte], Array[Byte]], Future[Done]] =
     Producer.plainSink(ProducerSettings(system, new ByteArraySerializer, new ByteArraySerializer))

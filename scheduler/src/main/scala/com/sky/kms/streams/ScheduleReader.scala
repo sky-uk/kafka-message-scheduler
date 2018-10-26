@@ -87,7 +87,7 @@ object ScheduleReader extends LazyLogging {
         reloadSchedules,
         Eval.later(KafkaStream.source(config.scheduleTopics)),
         actorRef,
-        KafkaStream.commitOffset,
+        KafkaStream.commitOffset(config.offsetBatch),
         errorHandler[KafkaMessage, Ack.type],
         appRestartStrategy)
     }

@@ -12,7 +12,7 @@ import cats.syntax.option._
 import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.base.SpecBase
 import com.sky.kms.common.TestDataUtils._
-import com.sky.kms.config.{AppConfig, LoaderConfig, SchedulerConfig}
+import com.sky.kms.config.{AppConfig, LoaderConfig, OffsetBatchConfig, SchedulerConfig}
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.{KafkaMessage, Topic}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
@@ -80,7 +80,7 @@ class SchedulerResiliencySpec extends SpecBase {
   private trait TestContext {
     val someTopic: Topic = "some-topic"
     val config = SchedulerConfig(NonEmptyList.one(someTopic), queueBufferSize = 100,
-      LoaderConfig(idleTimeout = 2.minutes, bufferSize = 100, parallelism = 5))
+      LoaderConfig(idleTimeout = 2.minutes, bufferSize = 100, parallelism = 5), OffsetBatchConfig(10, 5.seconds))
 
     def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
       SchedulerApp.configure apply AppConfig(config)

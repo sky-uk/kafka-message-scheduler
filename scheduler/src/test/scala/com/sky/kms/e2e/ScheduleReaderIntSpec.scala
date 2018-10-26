@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 
 class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
 
-  override implicit lazy val system = TestActorSystem(kafkaConfig.kafkaPort, maxWakeups = 3, wakeupTimeout = 3.seconds, akkaExpectDuration = 10.seconds)
+  override implicit lazy val system = TestActorSystem(kafkaConfig.kafkaPort, maxWakeups = 3, wakeupTimeout = 3.seconds, akkaExpectDuration = 15.seconds)
 
   val numSchedules = 3
 

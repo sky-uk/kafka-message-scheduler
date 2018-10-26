@@ -11,13 +11,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object ShutdownTasks extends LazyLogging {
 
-  def forScheduler(running: SchedulerApp.Running)(implicit system: ActorSystem): Unit =
+  def forScheduler(running: SchedulerApp.Running)(implicit system: ActorSystem): Unit = {
     CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "shutdown-scheduler") { () =>
       logger.info("Shutting down KMS streams")
       running.publisher.materializedSource.complete()
       running.reader.materializedSource.shutdown()
       Future.successful(Done)
     }
+  }
 
   def forKamon(implicit system: ActorSystem): Unit =
     CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "shutdown-kamon") { () =>

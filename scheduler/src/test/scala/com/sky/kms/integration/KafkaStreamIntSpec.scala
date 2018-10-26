@@ -2,7 +2,7 @@ package com.sky.kms.integration
 
 import akka.kafka.ConsumerFailed
 import akka.stream.scaladsl.{Keep, Sink}
-import com.sky.kms.base.KafkaIntSpecBase
+import com.sky.kms.base.{KafkaIntSpecBase, SchedulerIntSpecBase}
 import com.sky.kms.kafka.KafkaStream._
 import com.sky.kms.kafka.Topic
 import eu.timepit.refined.auto._
@@ -11,7 +11,7 @@ import org.scalatest.concurrent.Eventually
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class KafkaStreamIntSpec extends KafkaIntSpecBase with Eventually {
+class KafkaStreamIntSpec extends SchedulerIntSpecBase with Eventually {
 
   override implicit val patienceConfig = PatienceConfig(5 seconds, 250 millis)
 

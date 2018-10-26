@@ -2,6 +2,7 @@ package com.sky.kms.e2e
 
 import java.util.UUID
 
+import akka.stream.scaladsl.Sink
 import akka.testkit.{TestActor, TestProbe}
 import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Initialised}
 import com.sky.kms.avro._
@@ -10,6 +11,7 @@ import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
+import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
 import org.scalatest.Assertion
 
@@ -21,7 +23,7 @@ class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
 
   "stream" should {
     "consume from the beginning of the topic on restart" in withRunningKafka {
-      createCustomTopic(conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
+      createCustomTopic(conf.scheduleTopics.head, partitions = 20, replicationFactor = 1)
 
       val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
 
@@ -60,14 +62,14 @@ class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
     })
 
     val scheduleReader = ScheduleReader.configure(probe.testActor).apply(AppConfig(conf))
-    val (running, _) = scheduleReader.stream.run()
+    val killSwitch = scheduleReader.stream.to(Sink.ignore).run()
 
     probe.expectMsg(Initialised)
 
     try {
       scenario(probe)
     } finally {
-      Await.ready(running.shutdown(), 5 seconds)
+      killSwitch.shutdown()
     }
   }
 

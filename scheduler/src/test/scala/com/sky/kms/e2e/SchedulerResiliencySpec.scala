@@ -9,7 +9,7 @@ import akka.testkit.TestProbe
 import cats.syntax.either._
 import cats.syntax.option._
 import com.sky.kms.avro._
-import com.sky.kms.base.{KafkaIntSpecBase, SpecBase}
+import com.sky.kms.base.{SchedulerIntSpecBase, SpecBase}
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
@@ -19,14 +19,13 @@ import com.sky.kms.utils.{StubControl, StubOffset}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullDeserializer => arrayByteDeserializer, nullSerializer => arrayByteSerializer}
-import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class SchedulerResiliencySpec extends SpecBase with MockitoSugar {
+class SchedulerResiliencySpec extends SpecBase {
 
-  override implicit val patienceConfig = PatienceConfig(scaled(10 seconds), scaled(500 millis))
+  override implicit val patienceConfig = PatienceConfig(10 seconds, 500 millis)
 
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource with AkkaComponents {
@@ -67,7 +66,7 @@ class SchedulerResiliencySpec extends SpecBase with MockitoSugar {
       }
     }
 
-    "continue processing when Kafka becomes available" in new KafkaIntSpecBase with TestContext {
+    "continue processing when Kafka becomes available" in new SchedulerIntSpecBase with TestContext {
       val numSchedules = 5
       val destTopic = random[String]
       val schedules = random[ScheduleEvent](numSchedules).map(_.copy(inputTopic = "some-topic", outputTopic = destTopic).secondsFromNow(1))
@@ -76,9 +75,9 @@ class SchedulerResiliencySpec extends SpecBase with MockitoSugar {
       withRunningScheduler(createAppFrom(config)) { _ =>
         withRunningKafka {
           publishToKafka(config.scheduleTopics.head, (scheduleIds, schedules.map(_.toAvro)).zipped.toSeq)
-        }
+//        }
 
-        withRunningKafka {
+//        withRunningKafka {
           consumeSomeFrom[Array[Byte]](destTopic, numSchedules).size shouldBe numSchedules
         }
       }

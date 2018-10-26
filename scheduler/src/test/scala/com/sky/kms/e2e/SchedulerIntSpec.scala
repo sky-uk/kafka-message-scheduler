@@ -1,16 +1,15 @@
 package com.sky.kms.e2e
 
-import cats.Applicative
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
+import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs._
 
 class SchedulerIntSpec extends SchedulerIntSpecBase {
 
   "Scheduler stream" should {
-<<<<<<< HEAD
     "schedule a message to be sent to Kafka and delete it after it has been emitted" in new TestContext {
       withSchedulerApp {
         val schedules = createSchedules(2, forTopics = List(scheduleTopic, extraScheduleTopic))
@@ -19,23 +18,6 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
           assertMessagesWrittenFrom(schedules)
           assertTombstoned(schedules)
         }
-=======
-    "schedule a message to be sent to Kafka and delete it after it has been emitted" in withSchedulerApp(conf) {
-      val (scheduleId1, schedule1) =
-        (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
-      val (scheduleId2, schedule2) =
-        (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
-
-      withRunningKafka {
-        publishToKafka(scheduleTopic, scheduleId1, schedule1.toAvro)
-        publishToKafka(extraScheduleTopic, scheduleId2, schedule2.toAvro)
-
-        assertScheduledMsgHasBeenWritten(schedule1)
-        assertScheduledMsgHasBeenWritten(schedule2)
-
-        assertScheduleTombstoned(scheduleId1, scheduleTopic)
-        assertScheduleTombstoned(scheduleId2, extraScheduleTopic)
->>>>>>> resiliency tests
       }
     }
   }

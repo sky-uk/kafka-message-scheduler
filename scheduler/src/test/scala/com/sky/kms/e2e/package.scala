@@ -13,17 +13,7 @@ package object e2e {
   def withSchedulerApp[T](scenario: => T)(implicit conf: SchedulerConfig, system: ActorSystem, mat: ActorMaterializer): T =
     withRunningScheduler(SchedulerApp.configure apply AppConfig(conf))(_ => scenario)
 
-<<<<<<< HEAD
   def withRunningScheduler[T](schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => T)(implicit system: ActorSystem, mat: ActorMaterializer): T = {
-=======
-  def withSchedulerApp[T](conf: SchedulerConfig)(scenario: => T)(implicit system: ActorSystem,
-                                                                 mat: ActorMaterializer): Unit = {
-    val app = SchedulerApp.configure apply AppConfig(conf)
-    withRunningScheduler(app)(_ => scenario)
-  }
-
-  def withRunningScheduler[T](schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => T)(implicit system: ActorSystem, mat: ActorMaterializer) {
->>>>>>> resiliency tests
     val runningApp = SchedulerApp.run apply schedulerApp
 
     try {

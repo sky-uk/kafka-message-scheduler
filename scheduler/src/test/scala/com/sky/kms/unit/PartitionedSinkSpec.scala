@@ -1,13 +1,13 @@
 package com.sky.kms.unit
 
 import akka.stream.scaladsl._
-import com.sky.kms.base.AkkaStreamBaseSpec
+import com.sky.kms.base.AkkaStreamSpecBase
 import com.sky.kms.streams.PartitionedSink
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class PartitionedSinkSpec extends AkkaStreamBaseSpec {
+class PartitionedSinkSpec extends AkkaStreamSpecBase {
 
   implicit val leftSink: Sink[Int, Future[Seq[Int]]] =
     Flow[Int].toMat(Sink.seq)(Keep.right)

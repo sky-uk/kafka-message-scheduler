@@ -2,12 +2,12 @@ package com.sky.kms.unit
 
 import java.util.UUID
 
-import com.sky.kms.base.BaseSpec
+import com.sky.kms.base.SpecBase
 import com.sky.kms.domain.{PublishableMessage, ScheduleEvent}
 import com.sky.kms.common.TestDataUtils._
 import org.apache.kafka.clients.producer.ProducerRecord
 
-class PublishableMessageSpec extends BaseSpec {
+class PublishableMessageSpec extends SpecBase {
 
   "scheduledMessageProducerRecordEnc" should {
     "write a message" in {

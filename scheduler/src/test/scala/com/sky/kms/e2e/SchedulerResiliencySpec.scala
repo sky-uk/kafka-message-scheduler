@@ -12,22 +12,23 @@ import akka.testkit.TestProbe
 import cats.syntax.either._
 import cats.syntax.option._
 import com.sky.kms.avro._
-import com.sky.kms.base.BaseSpec
+import com.sky.kms.base.{KafkaIntSpecBase, SpecBase}
+import com.sky.kms.common.TestActorSystem
 import com.sky.kms.common.TestDataUtils._
-import com.sky.kms.common.{EmbeddedKafka, TestActorSystem}
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
 import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import com.sky.kms.utils.StubControl
 import com.sky.kms.{AkkaComponents, SchedulerApp}
+import net.manub.embeddedkafka.Codecs.{nullSerializer, stringSerializer}
 import org.apache.kafka.common.{Metric, MetricName}
-import org.scalatest.Assertion
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
+class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
 
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource with AkkaComponents {
@@ -72,14 +73,12 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
       val distantSchedules = random[ScheduleEvent](n = 100).map(_.secondsFromNow(60))
       val scheduleIds = List.fill(distantSchedules.size)(UUID.randomUUID().toString)
 
-      kafkaServer.startup()
-      withRunningScheduler(createAppFrom(config)) { _ =>
-        writeToKafka(topic = config.scheduleTopic.head,
-          keyValues = (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq: _*)
-        kafkaServer.close()
-
-        hasActorSystemTerminated shouldBe true
+      withRunningKafka {
+        withRunningScheduler(createAppFrom(config)) { _ =>
+          publishToKafka(config.scheduleTopic.head, (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq)
+        }
       }
+      hasActorSystemTerminated shouldBe true
     }
 
     "terminate when Kafka is unavailable at startup" in new KafkaTestContext {
@@ -98,26 +97,8 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
     def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
       SchedulerApp.configure apply AppConfig(config)
 
-    def withRunningScheduler(schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => Assertion)(implicit system: ActorSystem, mat: ActorMaterializer) {
-      val runningApp = SchedulerApp.run apply schedulerApp
-
-      scenario(runningApp)
-
-      CoordinatedShutdown(system).run(UnknownReason)
-    }
-
     def hasActorSystemTerminated(implicit system: ActorSystem): Boolean =
       Await.ready(system.whenTerminated, 10 seconds).isCompleted
-  }
-
-  private val stubControl = new Control {
-    override def stop() = Future(Done)
-
-    override def shutdown() = Future(Done)
-
-    override def isShutdown = Future(Done)
-
-    override def metrics: Future[Map[MetricName, Metric]] = Future(Map.empty)
   }
 
   private trait FailingSource {
@@ -125,7 +106,7 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
     val sourceThatWillFail =
       Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
-        .mapMaterializedValue(_ => stubControl)
+        .mapMaterializedValue(_ => StubControl())
   }
 
   private trait IteratingSource {
@@ -136,12 +117,12 @@ class SchedulerResiliencySpec extends BaseSpec with ScalaFutures {
 
       val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight)
 
-      Source.fromIterator(() => elements).mapMaterializedValue(_ => stubControl)
+      Source.fromIterator(() => elements).mapMaterializedValue(_ => StubControl())
     }
   }
 
-  private class KafkaTestContext extends TestContext with EmbeddedKafka with AkkaComponents {
-    override implicit lazy val system: ActorSystem = TestActorSystem(kafkaServer.kafkaPort, terminateActorSystem = true)
+  private class KafkaTestContext extends TestContext with KafkaIntSpecBase with AkkaComponents {
+    override implicit lazy val system: ActorSystem = TestActorSystem(kafkaConfig.kafkaPort, terminateActorSystem = true)
   }
 
 }

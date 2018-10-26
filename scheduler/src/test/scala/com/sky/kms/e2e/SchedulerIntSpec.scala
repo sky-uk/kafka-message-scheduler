@@ -1,50 +1,53 @@
 package com.sky.kms.e2e
 
-import java.util.UUID
-
+import cats.Applicative
 import com.sky.kms.avro._
-import com.sky.kms.base.SchedulerIntBaseSpec
+import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
-import org.apache.kafka.common.serialization._
+import net.manub.embeddedkafka.Codecs._
 
-class SchedulerIntSpec extends SchedulerIntBaseSpec {
+class SchedulerIntSpec extends SchedulerIntSpecBase {
 
   "Scheduler stream" should {
-    "schedule a message to be sent to Kafka and delete it after it has been emitted" in withRunningSchedulerStream {
-      val (scheduleId1, schedule1) =
-        (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
-      val (scheduleId2, schedule2) =
-        (UUID.randomUUID().toString, random[ScheduleEvent].secondsFromNow(4))
-
-      val topic1 = ScheduleTopic.toSeq(0)
-      val topic2 = ScheduleTopic.toSeq(1)
-
-      writeToKafka(topic1, (scheduleId1, schedule1.toAvro))
-      writeToKafka(topic2, (scheduleId2, schedule2.toAvro))
-
-      assertScheduleInOutputTopic(schedule1)
-      assertScheduleInOutputTopic(schedule2)
-
-      assertScheduleNulledFromInputTopic(scheduleId1, topic1)
-      assertScheduleNulledFromInputTopic(scheduleId2, topic2)
+    "schedule a message to be sent to Kafka and delete it after it has been emitted" in new TestContext {
+      withSchedulerApp {
+        val schedules = createSchedules(2, forTopics = List(scheduleTopic, extraScheduleTopic))
+        withRunningKafka {
+          publish(schedules)
+          assertMessagesWrittenFrom(schedules)
+          assertTombstoned(schedules)
+        }
+      }
     }
   }
 
-  private def assertScheduleNulledFromInputTopic(scheduleId: ScheduleId, topic: String) = {
-    val latestMessageOnScheduleTopic = consumeFromKafka(topic, 2, new StringDeserializer).last
+  private class TestContext {
+    def createSchedules(numSchedules: Int, forTopics: List[String]): List[(ScheduleId, ScheduleEvent)] =
+      random[(ScheduleId, ScheduleEvent)](numSchedules).toList.zip(Stream.continually(forTopics.toStream).flatten.take(numSchedules).toList)
+        .map { case ((id, schedule), topic) =>
+          id -> schedule.copy(inputTopic = topic).secondsFromNow(4)
+        }
 
-    latestMessageOnScheduleTopic.key() shouldBe scheduleId
-    latestMessageOnScheduleTopic.value() shouldBe null
+    def publish(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
+      schedules.foreach { case (id, schedule) => publishToKafka(schedule.inputTopic, id, schedule.toAvro) }
+
+    def assertMessagesWrittenFrom(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
+      schedules.foreach { case (_, schedule) =>
+        val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
+
+        cr.key() should contain theSameElementsInOrderAs schedule.key
+        cr.value() should contain theSameElementsInOrderAs schedule.value.get
+        cr.timestamp() shouldBe schedule.timeInMillis +- Tolerance.toMillis
+      }
+
+    def assertTombstoned(schedules: List[(ScheduleId, ScheduleEvent)]): Unit = {
+      schedules.groupBy(_._2.inputTopic).foreach { case (topic, schedulesByInputTopic) =>
+        val tombstones = consumeSomeFrom[String](topic, schedulesByInputTopic.size * 2).filter(_.value == null)
+        tombstones.size shouldBe schedulesByInputTopic.size
+        tombstones.map(_.key) shouldBe schedulesByInputTopic.map(_._1).distinct
+      }
+    }
   }
 
-  private def assertScheduleInOutputTopic(schedule: ScheduleEvent) = {
-    val cr =
-      consumeFromKafka(schedule.outputTopic,
-        keyDeserializer = new ByteArrayDeserializer).head
-
-    cr.key() should contain theSameElementsInOrderAs schedule.key
-    cr.value() should contain theSameElementsInOrderAs schedule.value.get
-    cr.timestamp() shouldBe schedule.timeInMillis +- Tolerance.toMillis
-  }
 }

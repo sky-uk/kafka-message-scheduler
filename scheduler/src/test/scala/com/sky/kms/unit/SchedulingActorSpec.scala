@@ -7,16 +7,17 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestProbe}
 import com.sky.kms.actors.PublisherActor.Trigger
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
-import com.sky.kms.base.{AkkaBaseSpec, SimpleCounterMonitoring}
+import com.sky.kms.base.AkkaSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.domain._
+import com.sky.kms.utils.SimpleCounterMonitoring
 import monix.execution.schedulers.TestScheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 
-class SchedulingActorSpec extends AkkaBaseSpec with ImplicitSender with MockitoSugar with Eventually {
+class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoSugar with Eventually {
 
   val NoMsgTimeout = 2 seconds
 

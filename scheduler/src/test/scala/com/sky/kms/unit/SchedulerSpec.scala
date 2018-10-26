@@ -4,7 +4,7 @@ import java.time.{Instant, OffsetDateTime, ZoneOffset}
 
 import cats.syntax.option._
 import com.sky.kms.avro._
-import com.sky.kms.base.BaseSpec
+import com.sky.kms.base.SpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.consumerRecordDecoder
 import com.sky.kms.domain.ApplicationError._
@@ -12,7 +12,7 @@ import com.sky.kms.domain._
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
 
-class SchedulerSpec extends BaseSpec {
+class SchedulerSpec extends SpecBase {
 
   val ScheduleId = "scheduleId"
   val TestSchedule = random[ScheduleEvent]

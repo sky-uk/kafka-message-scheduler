@@ -5,48 +5,43 @@ import java.util.UUID
 import akka.testkit.{TestActor, TestProbe}
 import com.sky.kms.actors.SchedulingActor.{Ack, CreateOrUpdate, Init}
 import com.sky.kms.avro._
-import com.sky.kms.base.SchedulerIntBaseSpec
+import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.common.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
-import kafka.zk.{AdminZkClient, KafkaZkClient}
-import org.apache.kafka.common.utils.Time
+import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
 import org.scalatest.Assertion
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ScheduleEventReaderIntSpec extends SchedulerIntBaseSpec {
+class ScheduleEventReaderIntSpec extends SchedulerIntSpecBase {
 
   val NumSchedules = 10
 
-  private lazy val zkClient = KafkaZkClient(zkServer, isSecure = false, sessionTimeoutMs = 3000,
-    connectionTimeoutMs = 3000, maxInFlightRequests = 10, time = Time.SYSTEM)
-  lazy val adminZkClient = new AdminZkClient(zkClient)
-
-  override def afterAll() {
-    zkClient.close()
-    super.afterAll()
-  }
-
   "stream" should {
-    "consume from the beginning of the topic on restart" in {
-      adminZkClient.createTopic(conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
+    "consume from the beginning of the topic on restart" in withRunningKafka {
+      createCustomTopic(conf.scheduleTopic.head, partitions = 20, replicationFactor = 1)
 
       val firstSchedule :: newSchedules = List.fill(NumSchedules)(generateSchedules)
 
       withRunningScheduleReader { probe =>
         writeSchedulesToKafka(firstSchedule)
 
-        probe.expectMsgType[CreateOrUpdate](5 seconds).scheduleId shouldBe firstSchedule._1
+        probe
+          .expectMsgType[CreateOrUpdate](5 seconds)
+          .scheduleId shouldBe firstSchedule._1
       }
 
       withRunningScheduleReader { probe =>
         writeSchedulesToKafka(newSchedules: _*)
 
-        val allScheduleIds = (firstSchedule :: newSchedules).map { case (scheduleId, _) => scheduleId }
-        val receivedScheduleIds = List.fill(NumSchedules)(probe.expectMsgType[CreateOrUpdate](5 seconds).scheduleId)
+        val allScheduleIds = (firstSchedule :: newSchedules).map {
+          case (scheduleId, _) => scheduleId
+        }
+        val receivedScheduleIds = List.fill(NumSchedules)(
+          probe.expectMsgType[CreateOrUpdate](5 seconds).scheduleId)
 
         receivedScheduleIds should contain theSameElementsAs allScheduleIds
       }
@@ -70,13 +65,14 @@ class ScheduleEventReaderIntSpec extends SchedulerIntBaseSpec {
 
     probe.expectMsg(Init)
 
-    scenario(probe)
-
-    Await.ready(running.shutdown(), 5 seconds)
+    try {
+      scenario(probe)
+    } finally {
+      Await.ready(running.shutdown(), 5 seconds)
+    }
   }
 
-  private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*) {
-    writeToKafka(ScheduleTopic.head, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) }: _*)
-  }
+  private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
+    publishToKafka(scheduleTopic, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) })
 
 }

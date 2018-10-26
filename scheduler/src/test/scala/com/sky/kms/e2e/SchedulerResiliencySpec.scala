@@ -8,6 +8,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
 import cats.syntax.either._
 import cats.syntax.option._
+import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.avro._
 import com.sky.kms.base.{SchedulerIntSpecBase, SpecBase}
 import com.sky.kms.common.TestDataUtils._
@@ -16,7 +17,7 @@ import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.utils.{StubControl, StubOffset}
-import com.sky.kms.{AkkaComponents, SchedulerApp}
+import com.sky.kms.{AkkaComponents, BackoffRestartStrategy, SchedulerApp}
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullDeserializer => arrayByteDeserializer, nullSerializer => arrayByteSerializer}
 
@@ -72,12 +73,17 @@ class SchedulerResiliencySpec extends SpecBase {
       val schedules = random[ScheduleEvent](numSchedules).map(_.copy(inputTopic = "some-topic", outputTopic = destTopic).secondsFromNow(1))
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
-      withRunningScheduler(createAppFrom(config)) { _ =>
+      val restartStrategy = BackoffRestartStrategy(100.millis, 100.millis, Restarts(500))
+
+      withRunningScheduler(createAppFrom(config).withReaderRestartStrategy(restartStrategy)) { _ =>
         withRunningKafka {
           publishToKafka(config.scheduleTopics.head, (scheduleIds, schedules.map(_.toAvro)).zipped.toSeq)
-//        }
+        }
 
-//        withRunningKafka {
+        withRunningKafka {
+
+          println("*****************************************************")
+
           consumeSomeFrom[Array[Byte]](destTopic, numSchedules).size shouldBe numSchedules
         }
       }

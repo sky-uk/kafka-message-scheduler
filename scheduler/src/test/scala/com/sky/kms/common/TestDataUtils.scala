@@ -57,6 +57,9 @@ object TestDataUtils {
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
+    def withReaderRestartStrategy(strategy: BackoffRestartStrategy)(implicit as: ActorSystem): SchedulerApp =
+      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](restartStrategy = strategy))
+
     def withReaderSource(src: Source[KafkaMessage[ScheduleReader.In], Control])(implicit as: ActorSystem): SchedulerApp =
       schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](scheduleSource = Eval.later(src)))
 

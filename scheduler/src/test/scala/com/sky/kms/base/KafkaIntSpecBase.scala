@@ -18,7 +18,7 @@ trait KafkaIntSpecBase extends EmbeddedKafka with WordSpecLike with Consumers {
   val scheduleTopic: Topic = "scheduleTopic"
   val extraScheduleTopic: Topic = "extraScheduleTopic"
 
-  val retryConfig = ConsumerRetryConfig(maximumAttempts = 5)
+  val retryConfig = ConsumerRetryConfig(maximumAttempts = 50)
 
   def consumeFirstFrom[T: Deserializer](topic: String): ConsumerRecord[Array[Byte], T] =
     withConsumer[Array[Byte], T, ConsumerRecord[Array[Byte], T]](

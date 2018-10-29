@@ -4,7 +4,6 @@ import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
-import org.scalatest.Assertion
 import scala.concurrent.duration._
 
 package object e2e {

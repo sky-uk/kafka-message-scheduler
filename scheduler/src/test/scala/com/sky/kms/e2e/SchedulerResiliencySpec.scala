@@ -2,40 +2,37 @@ package com.sky.kms.e2e
 
 import java.util.UUID
 
-import akka.Done
-import akka.actor.CoordinatedShutdown.UnknownReason
-import akka.actor.{ActorSystem, CoordinatedShutdown}
+import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
+import cats.data.NonEmptyList
 import cats.syntax.either._
 import cats.syntax.option._
-import com.sky.kms.avro._
-import com.sky.kms.base.{KafkaIntSpecBase, SpecBase}
-import com.sky.kms.common.TestActorSystem
-import com.sky.kms.common.TestDataUtils._
-import com.sky.kms.config.{AppConfig, SchedulerConfig}
-import com.sky.kms.domain.ScheduleEvent
+import com.sky.kms.BackoffRestartStrategy.Restarts
+import com.sky.kms.base.SpecBase
+import com.sky.kms.utils.TestDataUtils._
+import com.sky.kms.config._
+import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
+import com.sky.kms.kafka.{KafkaMessage, Topic}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
-import com.sky.kms.utils.StubControl
-import com.sky.kms.{AkkaComponents, SchedulerApp}
-import net.manub.embeddedkafka.Codecs.{nullSerializer, stringSerializer}
-import org.apache.kafka.common.{Metric, MetricName}
-import org.scalatest.concurrent.ScalaFutures
+import com.sky.kms.utils.{StubControl, StubOffset, TestConfig}
+import com.sky.kms.{AkkaComponents, BackoffRestartStrategy, SchedulerApp}
+import eu.timepit.refined.auto._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
+class SchedulerResiliencySpec extends SpecBase {
+
+  override implicit val patienceConfig = PatienceConfig(10 seconds, 500 millis)
 
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource with AkkaComponents {
       val app = createAppFrom(config)
         .withReaderSource(sourceThatWillFail)
 
-      withRunningScheduler(app) { _ =>
+      withRunningScheduler(app.copy(reader = app.reader.copy(restartStrategy = NoRestarts))) { _ =>
         hasActorSystemTerminated shouldBe true
       }
     }
@@ -60,7 +57,7 @@ class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
         .mapMaterializedValue(_ => Future.never)
 
       val app =
-        createAppFrom(config.copy(queueBufferSize = 1))
+        createAppFrom(config.copy(publisher = PublisherConfig(queueBufferSize = 1)))
           .withReaderSource(sourceWith(sameTimeSchedules))
           .withPublisherSink(sinkThatWillNotSignalDemand)
 
@@ -69,30 +66,20 @@ class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
       }
     }
 
-    "terminate when Kafka goes down during processing" in new KafkaTestContext {
-      val distantSchedules = random[ScheduleEvent](n = 100).map(_.secondsFromNow(60))
-      val scheduleIds = List.fill(distantSchedules.size)(UUID.randomUUID().toString)
+    "terminate when reader restarts has been reached" in new TestContext with FailingSource with AkkaComponents {
+      val app = createAppFrom(config)
+        .withReaderSource(sourceThatWillFail)
+        .withReaderRestartStrategy(BackoffRestartStrategy(10.millis, 10.millis, Restarts(1)))
 
-      withRunningKafka {
-        withRunningScheduler(createAppFrom(config)) { _ =>
-          publishToKafka(config.scheduleTopic.head, (scheduleIds, distantSchedules.map(_.toAvro)).zipped.toSeq)
-        }
-      }
-      hasActorSystemTerminated shouldBe true
-    }
-
-    "terminate when Kafka is unavailable at startup" in new KafkaTestContext {
-      withRunningScheduler(createAppFrom(config)) { _ =>
+      withRunningScheduler(app) { _ =>
         hasActorSystemTerminated shouldBe true
       }
     }
   }
 
   private trait TestContext {
-
-    implicit val patienceConfig = PatienceConfig(scaled(10 seconds), scaled(500 millis))
-
-    val config = SchedulerConfig(Set("some-topic"), 100)
+    val someTopic: Topic = "some-topic"
+    val config = TestConfig(NonEmptyList.one(someTopic))
 
     def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
       SchedulerApp.configure apply AppConfig(config)
@@ -104,25 +91,21 @@ class SchedulerResiliencySpec extends SpecBase with ScalaFutures {
   private trait FailingSource {
     this: TestContext =>
 
-    val sourceThatWillFail =
-      Source.fromIterator(() => Iterator(Right("someId", None)) ++ (throw new Exception("boom!")))
+    val sourceThatWillFail: Source[KafkaMessage[ScheduleReader.In], Control] =
+      Source.fromIterator(() => Iterator(KafkaMessage(StubOffset(), ("someId", none[ScheduleEvent]).asRight[ApplicationError])) ++ (throw new Exception("boom!")))
         .mapMaterializedValue(_ => StubControl())
   }
 
   private trait IteratingSource {
     this: TestContext =>
 
-    def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, ScheduleReader.Mat] = {
+    def sourceWith(schedules: Seq[ScheduleEvent]): Source[KafkaMessage[ScheduleReader.In], Control] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
-      val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight)
+      val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight[ApplicationError]).toList
 
-      Source.fromIterator(() => elements).mapMaterializedValue(_ => StubControl())
+      Source(elements.map(KafkaMessage(StubOffset(), _))).mapMaterializedValue(_ => StubControl())
     }
-  }
-
-  private class KafkaTestContext extends TestContext with KafkaIntSpecBase with AkkaComponents {
-    override implicit lazy val system: ActorSystem = TestActorSystem(kafkaConfig.kafkaPort, terminateActorSystem = true)
   }
 
 }

@@ -1,22 +1,31 @@
-package com.sky.kms.common
+package com.sky.kms.utils
 
 import java.io.ByteArrayOutputStream
-import java.time._
+import java.time.{Duration, OffsetDateTime, ZoneOffset, ZonedDateTime}
 
+import akka.actor.ActorSystem
+import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
-import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
+import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
-import com.sky.kms.domain._
+import com.sky.kms.domain.{Schedule, ScheduleEvent}
+import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import com.sky.kms.{BackoffRestartStrategy, SchedulerApp}
+import eu.timepit.refined.auto._
+import org.scalacheck.{Arbitrary, Gen}
 import org.zalando.grafter.syntax.rewriter._
-import org.scalacheck._
+
+import scala.concurrent.duration._
 
 object TestDataUtils {
+
+  val NoRestarts = BackoffRestartStrategy(10.millis, 10.millis, Restarts(0))
 
   implicit val arbAlphaString: Arbitrary[String] =
     Arbitrary(Gen.alphaStr.suchThat(_.nonEmpty).retryUntil(_.nonEmpty))
@@ -48,10 +57,11 @@ object TestDataUtils {
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
-    def withReaderSource(src: Source[ScheduleReader.In, ScheduleReader.Mat]): SchedulerApp =
-      schedulerApp.modifyWith[Any] {
-        case reader: ScheduleReader => reader.replace(Eval.later(src))
-      }
+    def withReaderRestartStrategy(strategy: BackoffRestartStrategy)(implicit as: ActorSystem): SchedulerApp =
+      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](restartStrategy = strategy))
+
+    def withReaderSource(src: Source[KafkaMessage[ScheduleReader.In], Control])(implicit as: ActorSystem): SchedulerApp =
+      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](loadProcessedSchedules = _ => Source.empty, scheduleSource = Eval.later(src)))
 
     def withPublisherSink(sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
       schedulerApp.modifyWith[Any] {

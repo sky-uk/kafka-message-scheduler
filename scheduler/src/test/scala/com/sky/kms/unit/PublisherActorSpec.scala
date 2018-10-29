@@ -6,7 +6,7 @@ import akka.testkit.TestActorRef
 import com.sky.kms.actors.PublisherActor
 import com.sky.kms.actors.PublisherActor._
 import com.sky.kms.base.AkkaSpecBase
-import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar

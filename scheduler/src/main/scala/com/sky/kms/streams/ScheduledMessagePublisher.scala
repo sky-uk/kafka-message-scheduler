@@ -22,16 +22,16 @@ import scala.concurrent.Future
   * writes the scheduled messages to the specified Kafka topics and then deletes the schedules
   * from the scheduling Kafka topic to mark completion
   */
-case class ScheduledMessagePublisher(config: SchedulerConfig, publisherSink: Eval[Sink[SinkIn, SinkMat]]) extends LazyLogging {
+case class ScheduledMessagePublisher(queueBufferSize: Int, publisherSink: Eval[Sink[SinkIn, SinkMat]]) extends LazyLogging {
 
-  lazy val splitToMessageAndDeletion: (In) => List[SinkIn] = {
+  lazy val splitToMessageAndDeletion: In => List[SinkIn] = {
     case (scheduleId, scheduledMessage) =>
       logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.outputTopic} and deleting it from ${scheduledMessage.inputTopic}")
       List(scheduledMessage, ScheduleDeletion(scheduleId, scheduledMessage.inputTopic))
   }
 
   def stream: RunnableGraph[(Mat, SinkMat)] =
-    Source.queue[In](config.queueBufferSize, OverflowStrategy.backpressure)
+    Source.queue[In](queueBufferSize, OverflowStrategy.backpressure)
       .mapConcat(splitToMessageAndDeletion)
       .toMat(publisherSink.value)(Keep.both)
 }
@@ -47,7 +47,7 @@ object ScheduledMessagePublisher {
   type SinkMat = Future[Done]
 
   def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] =
-    SchedulerConfig.configure.map(ScheduledMessagePublisher(_, Eval.later(KafkaStream.sink)))
+    PublisherConfig.configure.map(c => ScheduledMessagePublisher(c.queueBufferSize, Eval.later(KafkaStream.sink)))
 
   def run(implicit mat: ActorMaterializer): Start[Running] =
     Start { app =>

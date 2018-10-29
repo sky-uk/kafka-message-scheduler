@@ -4,7 +4,7 @@ import java.util.UUID
 
 import com.sky.kms.base.SpecBase
 import com.sky.kms.domain.{PublishableMessage, ScheduleEvent}
-import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils._
 import org.apache.kafka.clients.producer.ProducerRecord
 
 class PublishableMessageSpec extends SpecBase {

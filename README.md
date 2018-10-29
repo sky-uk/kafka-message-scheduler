@@ -61,9 +61,6 @@ This is for two reasons:
     
 ### Restart logic
 
-Due to the restart logic described above, the KMS Kafka consumer must *never* commit offsets. This is why we use the 
-`plainSource` instead of the `committableSource` from [reactive-kafka](https://github.com/akka/reactive-kafka). 
-
-To allow for the restart logic to work as intended you must ensure that the `enable.auto.commit` Kafka consumer property is 
-set to false. This combined with the `plainSource` ensures that consumer offsets are never committed, allowing the 
-application to consume from the beginning of the schedule topic every time it is restarted. 
+The KMS commits offset when schedules reach the scheduling actor. This is so that when starting up, the KMS will 
+reload everything from its input topics up until its last committed offset. Once that has finished, all of those 
+messages are scheduled - this prevents us from replaying already processed schedules that have not been compacted yet.

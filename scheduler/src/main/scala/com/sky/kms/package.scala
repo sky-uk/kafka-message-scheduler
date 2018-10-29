@@ -2,7 +2,7 @@ package com.sky
 
 import cats.data.Reader
 import cats.syntax.either._
-import com.sksamuel.avro4s.{AvroInputStream, AvroSchema}
+import com.sksamuel.avro4s.{AvroInputStream, AvroSchema, Decoder}
 import com.sky.kms.avro._
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
@@ -15,7 +15,7 @@ import scala.util.Try
 package object kms extends LazyLogging {
 
   implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])]] =
-    ConsumerRecordDecoder.instance(consumerRecordDecoder)
+    consumerRecordDecoder(_)
 
   def consumerRecordDecoder(cr: ConsumerRecord[String, Array[Byte]]): Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])] =
     Option(cr.value) match {
@@ -31,6 +31,8 @@ package object kms extends LazyLogging {
       case None =>
         Right((cr.key, None))
     }
+
+  implicit val scheduleDecoder = Decoder[Schedule]
 
   private val scheduleSchema = AvroSchema[Schedule]
 

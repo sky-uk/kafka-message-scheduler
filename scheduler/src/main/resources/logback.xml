@@ -12,7 +12,7 @@
         </if>
     </appender>
 
-    <logger name="com.sky.kms" level="${KMS_LOGGING_LEVEL:-INFO}" additivity="false">
+    <logger name="com.sky" level="${KMS_LOGGING_LEVEL:-INFO}" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
 

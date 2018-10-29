@@ -11,12 +11,12 @@ import cats.syntax.either._
 import cats.syntax.option._
 import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.base.SpecBase
-import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.{KafkaMessage, Topic}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
-import com.sky.kms.utils.{StubControl, StubOffset}
+import com.sky.kms.utils.{StubControl, StubOffset, TestConfig}
 import com.sky.kms.{AkkaComponents, BackoffRestartStrategy, SchedulerApp}
 import eu.timepit.refined.auto._
 
@@ -57,7 +57,7 @@ class SchedulerResiliencySpec extends SpecBase {
         .mapMaterializedValue(_ => Future.never)
 
       val app =
-        createAppFrom(config.copy(queueBufferSize = 1))
+        createAppFrom(config.copy(publisher = PublisherConfig(queueBufferSize = 1)))
           .withReaderSource(sourceWith(sameTimeSchedules))
           .withPublisherSink(sinkThatWillNotSignalDemand)
 
@@ -79,8 +79,7 @@ class SchedulerResiliencySpec extends SpecBase {
 
   private trait TestContext {
     val someTopic: Topic = "some-topic"
-    val config = SchedulerConfig(NonEmptyList.one(someTopic), queueBufferSize = 100,
-      LoaderConfig(idleTimeout = 2.minutes, bufferSize = 100, parallelism = 5), OffsetBatchConfig(10, 5.seconds))
+    val config = TestConfig(NonEmptyList.one(someTopic))
 
     def createAppFrom(config: SchedulerConfig)(implicit system: ActorSystem): SchedulerApp =
       SchedulerApp.configure apply AppConfig(config)

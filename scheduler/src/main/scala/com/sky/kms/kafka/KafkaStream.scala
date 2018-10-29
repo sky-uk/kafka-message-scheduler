@@ -41,7 +41,7 @@ case class KafkaMessage[T](offset: CommittableOffset, value: T)
 
 object KafkaMessage {
 
-  implicit val instances = new Traverse[KafkaMessage] with Comonad[KafkaMessage] {
+  implicit val catsInstances = new Traverse[KafkaMessage] with Comonad[KafkaMessage] {
     override def traverse[G[_], A, B](fa: KafkaMessage[A])(f: A => G[B])(implicit A: Applicative[G]): G[KafkaMessage[B]] = A.map(f(fa.value))(KafkaMessage(fa.offset, _))
 
     override def foldLeft[A, B](fa: KafkaMessage[A], b: B)(f: (B, A) => B): B = f(b, fa.value)

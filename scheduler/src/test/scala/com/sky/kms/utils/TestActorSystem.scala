@@ -1,4 +1,4 @@
-package com.sky.kms.common
+package com.sky.kms.utils
 
 import java.util.UUID
 

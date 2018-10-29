@@ -2,7 +2,7 @@ package com.sky.kms.e2e
 
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
-import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain._
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs._

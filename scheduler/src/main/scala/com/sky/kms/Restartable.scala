@@ -25,13 +25,13 @@ object Restartable extends LazyLogging {
         })
   }
 
-  val doNothing: Try[_] => Unit = _ => ()
+  private val doNothing: Try[_] => Unit = _ => ()
 
   implicit class RestartableSource[A, B, Mat](val source: Source[A, B]) extends AnyVal {
     def restartUsing(bos: BackoffRestartStrategy)(implicit ec: ExecutionContext): Source[A, NotUsed] =
       Restartable(source)(bos, logRestarts)
   }
 
-  val logRestarts: Try[_] => Unit =
+  private val logRestarts: Try[_] => Unit =
     _.fold(logger.warn("Stream has failed. Restarting.", _), _ => logger.info("Stream has completed. Restarting."))
 }

@@ -24,7 +24,7 @@ import scala.concurrent.Future
   */
 case class ScheduledMessagePublisher(queueBufferSize: Int, publisherSink: Eval[Sink[SinkIn, SinkMat]]) extends LazyLogging {
 
-  lazy val splitToMessageAndDeletion: (In) => List[SinkIn] = {
+  lazy val splitToMessageAndDeletion: In => List[SinkIn] = {
     case (scheduleId, scheduledMessage) =>
       logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.outputTopic} and deleting it from ${scheduledMessage.inputTopic}")
       List(scheduledMessage, ScheduleDeletion(scheduleId, scheduledMessage.inputTopic))
@@ -47,7 +47,7 @@ object ScheduledMessagePublisher {
   type SinkMat = Future[Done]
 
   def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] =
-    SchedulerConfig.configure.map(c => ScheduledMessagePublisher(c.queueBufferSize, Eval.later(KafkaStream.sink)))
+    PublisherConfig.configure.map(c => ScheduledMessagePublisher(c.queueBufferSize, Eval.later(KafkaStream.sink)))
 
   def run(implicit mat: ActorMaterializer): Start[Running] =
     Start { app =>

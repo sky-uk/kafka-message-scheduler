@@ -4,7 +4,7 @@ import java.util.UUID
 
 import cats.Eval
 import com.sky.kms.base.AkkaStreamSpecBase
-import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduledMessagePublisher

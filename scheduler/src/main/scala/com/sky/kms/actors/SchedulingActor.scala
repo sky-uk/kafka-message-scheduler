@@ -1,8 +1,7 @@
 package com.sky.kms.actors
 
 import java.time.OffsetDateTime
-import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
+import java.time.temporal.ChronoUnit.MILLIS
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.sky.kms.actors.SchedulingActor._
@@ -10,7 +9,7 @@ import com.sky.kms.domain._
 import com.sky.kms.monitoring._
 import monix.execution.{Cancelable, Scheduler => MonixScheduler}
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monitoring: Monitoring) extends Actor with ActorLogging {
 
@@ -26,12 +25,16 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         schedules - scheduleId
     }
 
-    (handleSchedulingMessage andThen (updateStateAndAck(initSchedules(_), _))) orElse {
+    val finishInitialisation: Receive = {
       case Initialised =>
         log.info("State initialised - scheduling stored schedules.")
         val scheduled = schedules.map { case (scheduleId, schedule) => monitoring.scheduleReceived(); scheduleId -> scheduleOnce(scheduleId, schedule) }
         updateStateAndAck(receiveWithSchedules(_), scheduled)
     }
+
+    val updateSchedulesThenAck = handleSchedulingMessage andThen (updateStateAndAck[ScheduleEvent](initSchedules, _))
+
+    updateSchedulesThenAck orElse finishInitialisation
   }
 
   private def receiveWithSchedules(schedules: Map[ScheduleId, Cancelable]): Receive = {
@@ -56,17 +59,15 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         schedules - scheduleId
     }
 
-    (handleSchedulingMessage andThen (updateStateAndAck(receiveWithSchedules(_), _))) orElse stop
+    val updateCancelables = handleSchedulingMessage andThen (updateStateAndAck[Cancelable](receiveWithSchedules, _))
+
+    updateCancelables orElse stop
   }
 
-  private def scheduleOnce(scheduleId: ScheduleId, schedule: ScheduleEvent): Cancelable = {
-    def timeFromNow: FiniteDuration = {
-      val offset = ChronoUnit.MILLIS.between(OffsetDateTime.now, schedule.time)
-      FiniteDuration(offset, TimeUnit.MILLISECONDS)
+  private def scheduleOnce(scheduleId: ScheduleId, schedule: ScheduleEvent): Cancelable =
+    monixScheduler.scheduleOnce(MILLIS.between(OffsetDateTime.now, schedule.time).millis) {
+      publisher ! PublisherActor.Trigger(scheduleId, schedule)
     }
-
-    monixScheduler.scheduleOnce(timeFromNow)(publisher ! PublisherActor.Trigger(scheduleId, schedule))
-  }
 
   private def updateStateAndAck[T](f: Map[ScheduleId, T] => Receive, state: Map[ScheduleId, T]): Unit = {
     context.become(f(state))

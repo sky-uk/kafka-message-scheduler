@@ -8,7 +8,7 @@ import com.sky.kms.actors.PublisherActor.Trigger
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaSpecBase
-import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.utils.SimpleCounterMonitoring
 import monix.execution.schedulers.TestScheduler

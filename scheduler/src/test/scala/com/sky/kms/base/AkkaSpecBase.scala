@@ -1,7 +1,7 @@
 package com.sky.kms.base
 
 import akka.testkit.{TestKit, TestKitBase}
-import com.sky.kms.common.TestActorSystem
+import com.sky.kms.utils.TestActorSystem
 
 abstract class AkkaSpecBase extends TestKitBase with SpecBase {
 

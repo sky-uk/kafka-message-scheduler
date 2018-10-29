@@ -11,12 +11,12 @@ import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaStreamSpecBase
-import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.{Negative, Positive}
+import eu.timepit.refined.numeric.Negative
 import eu.timepit.refined.auto._
 import eu.timepit.refined.boolean.Not
 import org.scalatest.concurrent.Eventually
@@ -114,7 +114,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     }
 
     def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed],
-                                                                          errorHandler: Sink[Either[ApplicationError, Ack.type], Future[Done]] = Sink.ignore,
+                                                                          errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
                                                                           numRestarts: BackoffRestartStrategy = NoRestarts): Future[Done] =
       ScheduleReader[Id](init,
         Eval.now(in),
@@ -128,7 +128,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     this: TestContext =>
 
     val awaitingError = Promise[ApplicationError]
-    val errorHandler = Sink.foreach[Either[ApplicationError, Ack.type]](_.fold(awaitingError.trySuccess, _ => ()))
+    val errorHandler = Sink.foreach[ApplicationError](awaitingError.trySuccess)
   }
 
   private trait ProbeSource {

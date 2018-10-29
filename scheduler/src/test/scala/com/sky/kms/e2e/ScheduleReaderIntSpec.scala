@@ -9,11 +9,11 @@ import com.sky.kms.BackoffRestartStrategy.InfiniteRestarts
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
-import com.sky.kms.common.TestActorSystem
-import com.sky.kms.common.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
+import com.sky.kms.utils.TestActorSystem
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
 

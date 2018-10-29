@@ -7,9 +7,8 @@ import akka.stream.scaladsl._
 import akka.{Done, NotUsed}
 import cats.instances.either._
 import cats.instances.future._
-import cats.syntax.functor._
 import cats.syntax.option._
-import cats.{Comonad, Eval, Functor, Traverse}
+import cats.{Comonad, Eval, Traverse}
 import com.sky.kafka.topicloader._
 import com.sky.kms.Restartable._
 import com.sky.kms._
@@ -34,19 +33,19 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
                                                      scheduleSource: Eval[Source[F[In], _]],
                                                      schedulingActor: ActorRef,
                                                      commit: Flow[F[Either[ApplicationError, Ack.type]], Done, NotUsed],
-                                                     errorHandler: Sink[F[Either[ApplicationError, Ack.type]], Future[Done]],
+                                                     errorHandler: Sink[ApplicationError, Future[Done]],
                                                      restartStrategy: BackoffRestartStrategy)(
-                                                      implicit f: Functor[F], system: ActorSystem) {
+                                                      implicit system: ActorSystem) {
 
   import system.dispatcher
 
-  val tr = Traverse[F[?]] compose Traverse[Either[ApplicationError, ?]]
+  val tr = Traverse[F] compose Traverse[Either[ApplicationError, ?]]
 
   def stream: Source[Done, KillSwitch] =
     scheduleSource.value
-      .map(f.map(_)(ScheduleReader.toSchedulingMessage))
+      .map(Traverse[F].map(_)(ScheduleReader.toSchedulingMessage))
       .mapAsync(Parallelism)(tr.traverse(_)(processSchedulingMessage))
-      .alsoTo(errorHandler)
+      .alsoTo(extractError.to(errorHandler))
       .via(commit)
       .restartUsing(restartStrategy)
       .watchTermination() { case (mat, fu) => fu.failed.foreach(schedulingActor ! UpstreamFailure(_)); mat }
@@ -74,7 +73,7 @@ object ScheduleReader extends LazyLogging {
     }
 
   def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader[KafkaMessage]] =
-    SchedulerConfig.configure.map { config =>
+    ReaderConfig.configure.map { config =>
       def reloadSchedules(loadSchedule: LoadSchedule) = {
         import system.dispatcher
         import config.topicLoader._
@@ -88,8 +87,8 @@ object ScheduleReader extends LazyLogging {
         Eval.later(KafkaStream.source(config.scheduleTopics)),
         actorRef,
         KafkaStream.commitOffset(config.offsetBatch),
-        errorHandler[KafkaMessage, Ack.type],
-        appRestartStrategy)
+        logErrors,
+        config.restartStrategy)
     }
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running[KillSwitch, Future[Done]]] =

@@ -45,7 +45,7 @@ class KafkaStreamIntSpec extends SchedulerIntSpecBase with Eventually {
         publishStringMessageToKafka(testTopic, "some-msg")
 
         val ctrl = source(NonEmptyList.one(testTopic))(system, _.value)
-          .via(commitOffset(conf.offsetBatch))
+          .via(commitOffset(conf.reader.offsetBatch))
           .toMat(Sink.head)(Keep.left)
           .run
 

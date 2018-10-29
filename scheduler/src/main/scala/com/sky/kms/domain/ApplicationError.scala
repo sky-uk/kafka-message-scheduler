@@ -1,7 +1,7 @@
 package com.sky.kms.domain
 
-import akka.Done
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.scaladsl.{Flow, Sink}
+import akka.{Done, NotUsed}
 import cats.Show._
 import cats.syntax.comonad._
 import cats.syntax.show._
@@ -31,9 +31,10 @@ object ApplicationError extends LazyLogging {
     case messageFormatError: AvroMessageFormatError => showAvroMessageFormatError.show(messageFormatError)
   }
 
-  def errorHandler[F[_] : Comonad, T]: Sink[F[Either[ApplicationError, T]], Future[Done]] =
+  def extractError[F[_] : Comonad, T]: Flow[F[Either[ApplicationError, T]], ApplicationError, NotUsed] =
     Flow[F[Either[ApplicationError, T]]]
       .map(_.extract)
       .collect { case Left(error) => error }
-      .toMat(Sink.foreach(error => logger.warn(error.show)))(Keep.right)
+
+  val logErrors: Sink[ApplicationError, Future[Done]] = Sink.foreach(error => logger.warn(error.show))
 }

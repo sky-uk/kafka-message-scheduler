@@ -1,7 +1,7 @@
-package com.sky.kms.common
+package com.sky.kms.utils
 
 import java.io.ByteArrayOutputStream
-import java.time._
+import java.time.{Duration, OffsetDateTime, ZoneOffset, ZonedDateTime}
 
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
@@ -10,18 +10,18 @@ import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
-import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.avro._
+import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
-import com.sky.kms.domain._
+import com.sky.kms.domain.{Schedule, ScheduleEvent}
 import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.{BackoffRestartStrategy, SchedulerApp}
 import eu.timepit.refined.auto._
-import org.scalacheck._
+import org.scalacheck.{Arbitrary, Gen}
 import org.zalando.grafter.syntax.rewriter._
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration._
 
 object TestDataUtils {
 

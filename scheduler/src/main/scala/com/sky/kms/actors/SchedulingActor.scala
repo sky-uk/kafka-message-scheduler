@@ -27,7 +27,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
 
     val finishInitialisation: Receive = {
       case Initialised =>
-        log.info("State initialised - scheduling stored schedules.")
+        log.info("State initialised - scheduling stored schedules")
         val scheduled = schedules.map { case (scheduleId, schedule) => monitoring.scheduleReceived(); scheduleId -> scheduleOnce(scheduleId, schedule) }
         updateStateAndAck(receiveWithSchedules(_), scheduled)
     }
@@ -41,17 +41,15 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
 
     val handleSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancelable]] = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
-        schedules.get(scheduleId).fold(log.info(s"Creating schedule $scheduleId")) { schedule =>
-          log.info(s"Updating schedule $scheduleId")
-          schedule.cancel()
-        }
-
+        schedules.get(scheduleId).foreach(_.cancel())
         val cancellable = scheduleOnce(scheduleId, schedule)
+        log.info(s"Scheduled $scheduleId")
+
         monitoring.scheduleReceived()
         schedules + (scheduleId -> cancellable)
 
       case Cancel(scheduleId: String) =>
-        schedules.get(scheduleId).fold(log.warning(s"Unable to cancel $scheduleId as it does not exist.")) { schedule =>
+        schedules.get(scheduleId).foreach { schedule =>
           schedule.cancel()
           monitoring.scheduleDone()
           log.info(s"Cancelled schedule $scheduleId")

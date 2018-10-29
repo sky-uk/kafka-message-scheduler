@@ -2,7 +2,7 @@ package com.sky
 
 import cats.data.Reader
 import cats.syntax.either._
-import com.sksamuel.avro4s.{AvroInputStream, AvroSchema}
+import com.sksamuel.avro4s.{AvroInputStream, AvroSchema, Decoder}
 import com.sky.kms.avro._
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
@@ -31,6 +31,8 @@ package object kms extends LazyLogging {
       case None =>
         Right((cr.key, None))
     }
+
+  implicit val scheduleDecoder = Decoder[Schedule]
 
   private val scheduleSchema = AvroSchema[Schedule]
 

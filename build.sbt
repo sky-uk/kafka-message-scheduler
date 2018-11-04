@@ -31,7 +31,6 @@ val dependencies = Seq(
   "io.kamon"                    %% "kamon-prometheus"           % kamonVersion,
   "io.kamon"                    %% "kamon-akka-2.5"             % kamonVersion,
   "io.kamon"                    %% "kamon-core"                 % kamonVersion,
-  "io.kamon"                    %% "kamon-system-metrics"       % "1.0.0",
   "io.kamon"                    %% "kamon-jmx-collector"        % "0.1.7",
   "eu.timepit"                  %% "refined"                    % refinedVersion,
   "eu.timepit"                  %% "refined-pureconfig"         % refinedVersion,
@@ -118,5 +117,7 @@ lazy val avro = (project in file("avro"))
 lazy val root = (project in file(".")).withId("kafka-message-scheduler")
   .settings(commonSettings)
   .settings(defineCommandAliases)
+  .settings(dockerImageCreationTask := (publishLocal in Docker).value)
   .aggregate(scheduler, avro)
+  .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)

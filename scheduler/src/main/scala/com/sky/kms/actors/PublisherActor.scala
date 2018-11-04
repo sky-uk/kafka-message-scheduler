@@ -1,9 +1,8 @@
 package com.sky.kms.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props, Scheduler}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
-import cats.syntax.option._
 import cats.syntax.show._
 import com.sky.kms.Start
 import com.sky.kms.actors.PublisherActor.{DownstreamFailure, Init, ScheduleQueue, Trigger}
@@ -59,7 +58,7 @@ object PublisherActor {
   case class DownstreamFailure(t: Throwable)
 
   def create(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props[PublisherActor])
+    system.actorOf(Props[PublisherActor], "publisher-actor")
 
   def init(queue: ScheduleQueue): Start[Unit] =
     Start(_.publisherActor ! Init(queue))

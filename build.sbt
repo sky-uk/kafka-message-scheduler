@@ -81,7 +81,7 @@ lazy val scheduler = (project in file("scheduler"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= dependencies,
-    dependencyOverrides += "org.scalacheck" %% "scalacheck" % "1.13.5",
+    dependencyOverrides ++= Seq("org.apache.kafka" % "kafka-clients" % "1.1.1", "org.scalacheck" %% "scalacheck" % "1.13.5"),
     resolvers ++= Seq(
       "bintray-sky-uk-oss-maven" at "https://dl.bintray.com/sky-uk/oss-maven",
       "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",

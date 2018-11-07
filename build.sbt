@@ -31,7 +31,6 @@ val dependencies = Seq(
   "io.kamon"                    %% "kamon-prometheus"           % kamonVersion,
   "io.kamon"                    %% "kamon-akka-2.5"             % kamonVersion,
   "io.kamon"                    %% "kamon-core"                 % kamonVersion,
-  "io.kamon"                    %% "kamon-system-metrics"       % "1.0.0",
   "io.kamon"                    %% "kamon-jmx-collector"        % "0.1.7",
   "eu.timepit"                  %% "refined"                    % refinedVersion,
   "eu.timepit"                  %% "refined-pureconfig"         % refinedVersion,
@@ -82,7 +81,7 @@ lazy val scheduler = (project in file("scheduler"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= dependencies,
-    dependencyOverrides += "org.scalacheck" %% "scalacheck" % "1.13.5",
+    dependencyOverrides ++= Seq("org.apache.kafka" % "kafka-clients" % "1.1.1", "org.scalacheck" %% "scalacheck" % "1.13.5"),
     resolvers ++= Seq(
       "bintray-sky-uk-oss-maven" at "https://dl.bintray.com/sky-uk/oss-maven",
       "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",
@@ -118,5 +117,7 @@ lazy val avro = (project in file("avro"))
 lazy val root = (project in file(".")).withId("kafka-message-scheduler")
   .settings(commonSettings)
   .settings(defineCommandAliases)
+  .settings(dockerImageCreationTask := (publishLocal in Docker).value)
   .aggregate(scheduler, avro)
+  .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)

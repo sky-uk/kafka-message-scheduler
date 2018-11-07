@@ -1,16 +1,14 @@
 package com.sky.kms
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.{ActorMaterializer, KillSwitch}
-import cats.Id
 import com.sky.kms.actors._
 import com.sky.kms.config.Configured
 import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
 import kamon.jmx.collector.KamonJmxMetricCollector
-import kamon.system.SystemMetrics
 
 import scala.concurrent.Future
 
@@ -33,7 +31,6 @@ object SchedulerApp {
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
     Kamon.loadReportersFromConfig()
-    SystemMetrics.startCollecting()
     KamonJmxMetricCollector()
     ShutdownTasks.forKamon
 

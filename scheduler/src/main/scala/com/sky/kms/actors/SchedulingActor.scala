@@ -95,5 +95,5 @@ object SchedulingActor {
   case class UpstreamFailure(t: Throwable)
 
   def create(publisherActor: ActorRef)(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher), new KamonMonitoring())))
+    system.actorOf(Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher), new KamonMonitoring())), "scheduling-actor")
 }

@@ -10,7 +10,8 @@ import cats.instances.future._
 import cats.syntax.option._
 import cats.{Comonad, Eval, Traverse}
 import com.sky.kafka.topicloader._
-import com.sky.kms.Restartable._
+import com.sky.map.commons.akka.streams.utils.SourceOps._
+import com.sky.map.commons.akka.streams.utils.Restartable._
 import com.sky.kms._
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
@@ -19,12 +20,14 @@ import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
 import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 import scala.concurrent.Future
 import scala.language.higherKinds
+import scala.util.Try
 
 /**
   * Provides stream from the schedule source to the scheduling actor.
@@ -49,10 +52,15 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
       .via(commit)
       .restartUsing(restartStrategy)
       .watchTermination() { case (mat, fu) => fu.failed.foreach(schedulingActor ! UpstreamFailure(_)); mat }
-      .runAfter(loadProcessedSchedules(processSchedulingMessage).watchTermination() { case (_, fu) => fu.foreach(_ => schedulingActor ! Initialised) })
+      .runAfter(loadProcessedSchedules(processSchedulingMessage).watchTermination() {
+        case (_, fu) => fu onComplete signalFailureOrInit
+      })
 
   private def processSchedulingMessage(msg: SchedulingMessage): Future[SchedulingActor.Ack.type] =
     (schedulingActor ? msg).mapTo[Ack.type]
+
+  private val signalFailureOrInit: Try[_] => Unit = _.fold(schedulingActor ! UpstreamFailure(_), _ => schedulingActor ! Initialised)
+
 }
 
 object ScheduleReader extends LazyLogging {
@@ -76,10 +84,8 @@ object ScheduleReader extends LazyLogging {
     ReaderConfig.configure.map { config =>
       def reloadSchedules(loadSchedule: LoadSchedule) = {
         import system.dispatcher
-        import config.topicLoader._
         val f = (cr: ConsumerRecord[String, Array[Byte]]) => toSchedulingMessage(scheduleConsumerRecordDecoder(cr))
-        val tlc = TopicLoaderConfig(LoadCommitted, config.scheduleTopics.map(_.value), idleTimeout, bufferSize, parallelism)
-        TopicLoader(tlc, f andThen (_.fold(_ => Future.successful(None), loadSchedule(_).map(_.some))), new ByteArrayDeserializer)
+        TopicLoader(LoadCommitted, config.scheduleTopics.map(_.value), f andThen (_.fold(_ => Future.successful(None), loadSchedule(_).map(_.some))), new ByteArrayDeserializer)
       }
 
       ScheduleReader[KafkaMessage](

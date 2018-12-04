@@ -2,6 +2,7 @@ package com.sky.kms.utils
 
 import java.io.ByteArrayOutputStream
 import java.time.{Duration, OffsetDateTime, ZoneOffset, ZonedDateTime}
+import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
@@ -11,12 +12,13 @@ import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
 import com.sky.kms.avro._
-import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain.{Schedule, ScheduleEvent}
 import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
-import com.sky.kms.{BackoffRestartStrategy, SchedulerApp}
+import com.sky.kms.SchedulerApp
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
 import eu.timepit.refined.auto._
 import org.scalacheck.{Arbitrary, Gen}
 import org.zalando.grafter.syntax.rewriter._
@@ -36,24 +38,36 @@ object TestDataUtils {
     Arbitrary(genDateTimeWithinRange(from, range).map(_.withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime))
   }
 
+  implicit val arbFiniteDuration: Arbitrary[FiniteDuration] =
+    Arbitrary(arbNextMonthOffsetDateTime.arbitrary.map(_.getSecond.seconds))
+
+  implicit val scheduleEncoder = Encoder[Schedule]
+
   private val scheduleSchema = AvroSchema[Schedule]
 
-  implicit class ScheduleOps(val schedule: ScheduleEvent) extends AnyVal {
-    def toAvro(implicit toRecord: Encoder[Schedule]): Array[Byte] = {
+  implicit class ScheduleEventOps(val schedule: ScheduleEvent) extends AnyVal {
+    def toSchedule: Schedule = {
+      val time = OffsetDateTime.now().toInstant.plusMillis(schedule.delay.toMillis).atOffset(ZoneOffset.UTC)
+      Schedule(time, schedule.outputTopic, schedule.key, schedule.value)
+    }
+
+    def secondsFromNow(secondsAsLong: Long): ScheduleEvent =
+      schedule.copy(delay = secondsAsLong.seconds)
+
+    def toScheduledMessage: ScheduledMessage =
+      ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value)
+  }
+
+  implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {
+    def toAvro: Array[Byte] = {
       val baos = new ByteArrayOutputStream()
       val output = AvroOutputStream.binary[Schedule].to(baos).build(scheduleSchema)
-      output.write(Schedule(schedule.time, schedule.outputTopic, schedule.key, schedule.value))
+      output.write(schedule)
       output.close()
       baos.toByteArray
     }
 
     def timeInMillis: Long = schedule.time.toInstant.toEpochMilli
-
-    def secondsFromNow(seconds: Long): ScheduleEvent =
-      schedule.copy(time = OffsetDateTime.now().plusSeconds(seconds))
-
-    def toScheduledMessage: ScheduledMessage =
-      ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value)
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {

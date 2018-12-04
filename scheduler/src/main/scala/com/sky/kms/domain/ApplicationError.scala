@@ -1,5 +1,7 @@
 package com.sky.kms.domain
 
+import java.time.OffsetDateTime
+
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.{Done, NotUsed}
 import cats.Show._
@@ -15,20 +17,17 @@ sealed abstract class ApplicationError(key: String)
 
 object ApplicationError extends LazyLogging {
 
-  case class InvalidSchemaError(key: String) extends ApplicationError(key)
+  final case class InvalidSchemaError(key: String) extends ApplicationError(key)
 
-  implicit val showInvalidSchemaError: Show[InvalidSchemaError] =
-    show(error => s"Invalid schema used to produce message with key: ${error.key}")
-
-  case class AvroMessageFormatError(key: String, cause: Throwable)
+  final case class AvroMessageFormatError(key: String, cause: Throwable)
     extends ApplicationError(key)
 
-  implicit val showAvroMessageFormatError: Show[AvroMessageFormatError] =
-    show(error => s"Error when processing message with key: ${error.key}. Error message: ${error.cause.getMessage}")
+  final case class InvalidTimeError(key: String, time: OffsetDateTime) extends ApplicationError(key)
 
   implicit val showError: Show[ApplicationError] = show {
-    case schemaError: InvalidSchemaError => showInvalidSchemaError.show(schemaError)
-    case messageFormatError: AvroMessageFormatError => showAvroMessageFormatError.show(messageFormatError)
+    case error: InvalidSchemaError => s"Invalid schema used to produce message with key ${error.key}"
+    case error: AvroMessageFormatError => s"Error when processing message with key ${error.key}. ${error.cause.getMessage}"
+    case error: InvalidTimeError => s"Time between now and ${error.time} is not within 292 years"
   }
 
   def extractError[F[_] : Comonad, T]: Flow[F[Either[ApplicationError, T]], ApplicationError, NotUsed] =

@@ -1,8 +1,8 @@
 package com.sky.kms.config
 
 import cats.data.{NonEmptyList, Reader}
-import com.sky.kms.BackoffRestartStrategy
 import com.sky.kms.kafka.Topic
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 

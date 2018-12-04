@@ -1,7 +1,5 @@
 package com.sky.kms.e2e
 
-import java.util.UUID
-
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.utils.TestDataUtils._
@@ -13,17 +11,18 @@ import net.manub.embeddedkafka.Consumers
 class SchedulerDeleteIntSpec extends SchedulerIntSpecBase with Consumers {
 
   "Scheduler stream" should {
-    "schedule a delete message if the body of the scheduled message is None" in withRunningKafka {
+    "schedule a delete message if the value of the scheduled message is empty" in withRunningKafka {
       withSchedulerApp {
-        val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent].copy(value = None).secondsFromNow(4))
+        val scheduleId = random[String]
+        val schedule = random[ScheduleEvent].copy(value = None).secondsFromNow(4).toSchedule
 
         publishToKafka(scheduleTopic, scheduleId, schedule.toAvro)
 
-        val cr = consumeFirstFrom[String](schedule.outputTopic)
+        val cr = consumeFirstFrom[String](schedule.topic)
 
-        cr.key() should contain theSameElementsInOrderAs schedule.key
-        cr.value() shouldBe null
-        cr.timestamp() shouldBe schedule.timeInMillis +- Tolerance.toMillis
+        cr.key should contain theSameElementsInOrderAs schedule.key
+        cr.value shouldBe null
+        cr.timestamp shouldBe schedule.timeInMillis +- Tolerance.toMillis
       }
     }
   }

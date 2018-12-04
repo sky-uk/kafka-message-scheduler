@@ -5,8 +5,6 @@ import java.util.UUID
 import akka.kafka.ConsumerSettings
 import akka.stream.scaladsl.Sink
 import akka.testkit.{TestActor, TestProbe}
-import com.sky.kms.BackoffRestartStrategy
-import com.sky.kms.BackoffRestartStrategy.InfiniteRestarts
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
@@ -15,6 +13,8 @@ import com.sky.kms.config._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestActorSystem
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy.InfiniteRestarts
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
 import org.apache.kafka.common.TopicPartition
@@ -103,7 +103,7 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
   }
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
-    publishToKafka(scheduleTopic, schedules.map { case (scheduleId, schedule) => (scheduleId, schedule.toAvro) })
+    publishToKafka(scheduleTopic, schedules.map { case (scheduleId, scheduleEvent) => (scheduleId, scheduleEvent.toSchedule.toAvro) })
 
   private def scheduleShouldFlow(probe: TestProbe): SchedulingMessage = {
     writeSchedulesToKafka(generateSchedule)

@@ -11,5 +11,5 @@ package object config {
 
   implicit val timeout = Timeout(2.minutes)
 
-  val Parallelism = 5
+  val Parallelism = 2
 }

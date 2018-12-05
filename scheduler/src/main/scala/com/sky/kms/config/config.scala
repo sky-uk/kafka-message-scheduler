@@ -16,13 +16,11 @@ object SchedulerConfig {
   def configure: Configured[SchedulerConfig] = Reader(_.scheduler)
 }
 
-case class ReaderConfig(scheduleTopics: NonEmptyList[Topic], topicLoader: LoaderConfig, restartStrategy: BackoffRestartStrategy, offsetBatch: OffsetBatchConfig)
+case class ReaderConfig(scheduleTopics: NonEmptyList[Topic], restartStrategy: BackoffRestartStrategy, offsetBatch: OffsetBatchConfig)
 
 object ReaderConfig {
   def configure: Configured[ReaderConfig] = SchedulerConfig.configure.map(_.reader)
 }
-
-case class LoaderConfig(idleTimeout: FiniteDuration, bufferSize: Int Refined Positive, parallelism: Int Refined Positive)
 
 case class OffsetBatchConfig(commitBatchSize: Int Refined Positive, maxCommitWait: FiniteDuration)
 

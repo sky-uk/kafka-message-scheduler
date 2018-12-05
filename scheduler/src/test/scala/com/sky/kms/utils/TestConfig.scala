@@ -1,7 +1,7 @@
 package com.sky.kms.utils
 
 import cats.data.NonEmptyList
-import com.sky.kms.config.{LoaderConfig, OffsetBatchConfig, PublisherConfig, ReaderConfig, SchedulerConfig}
+import com.sky.kms.config._
 import com.sky.kms.kafka.Topic
 import eu.timepit.refined.auto._
 
@@ -12,7 +12,6 @@ object TestConfig {
     SchedulerConfig(
       ReaderConfig(
         topics,
-        LoaderConfig(idleTimeout = 2.minutes, bufferSize = 100, parallelism = 5),
         TestDataUtils.NoRestarts,
         OffsetBatchConfig(1, 1.milli)),
       PublisherConfig(queueBufferSize = 100),

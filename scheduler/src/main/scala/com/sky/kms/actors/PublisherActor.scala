@@ -26,9 +26,10 @@ class PublisherActor extends Actor with ActorLogging {
   private def receiveWithQueue(queue: ScheduleQueue): Receive = {
     case Trigger(scheduleId, schedule) =>
       queue.offer((scheduleId, messageFrom(schedule))) onComplete {
+        case Success(QueueOfferResult.Enqueued) =>
+          log.debug(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
         case Success(res) =>
-          if (res != QueueOfferResult.Enqueued)
-            log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
+          log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
         case Failure(t) =>
           log.error(t, s"Failed to enqueue $scheduleId")
           self ! DownstreamFailure(t)

@@ -28,7 +28,7 @@ package object kms {
             .leftMap(_ => InvalidTimeError(cr.key, avroSchedule.time))
         } yield cr.key -> ScheduleEvent(delay, cr.topic, avroSchedule.topic, avroSchedule.key, avroSchedule.value).some
       case None =>
-        Right((cr.key, None))
+        (cr.key, None).asRight
     }
 
   implicit val scheduleDecoder = Decoder[Schedule]

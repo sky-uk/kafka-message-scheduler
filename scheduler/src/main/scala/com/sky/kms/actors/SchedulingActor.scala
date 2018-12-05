@@ -34,7 +34,9 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         context become receiveWithSchedules(scheduled)
     }
 
-    (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender ! Ack)
+    stop orElse {
+      (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender ! Ack)
+    }
   }
 
   private def receiveWithSchedules(schedules: mutable.AnyRefMap[ScheduleId, Cancelable]): Receive = {

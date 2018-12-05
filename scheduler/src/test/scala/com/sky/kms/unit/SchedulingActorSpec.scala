@@ -47,6 +47,14 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       testScheduler.state.tasks.isEmpty shouldBe true
     }
 
+    "stop when receiving an upstream failure before being initialised" in new TestContext {
+      watch(schedulingActor)
+
+      schedulingActor ! UpstreamFailure(new Exception("boom!"))
+
+      expectTerminated(schedulingActor)
+    }
+
     "schedule new messages at the given time" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
 

@@ -5,7 +5,6 @@ import Release._
 val kafkaVersion = "1.1.1"
 val akkaVersion = "2.5.17"
 val catsVersion = "1.4.0"
-val kamonVersion = "1.1.1"
 val refinedVersion = "0.9.2"
 val pureConfigVersion = "0.9.2"
 
@@ -28,10 +27,10 @@ val dependencies = Seq(
   "com.github.pureconfig"       %% "pureconfig"                 % pureConfigVersion,
   "com.github.pureconfig"       %% "pureconfig-cats"            % pureConfigVersion,
 
-  "io.kamon"                    %% "kamon-prometheus"           % kamonVersion,
-  "io.kamon"                    %% "kamon-akka-2.5"             % kamonVersion,
-  "io.kamon"                    %% "kamon-core"                 % kamonVersion,
-  "io.kamon"                    %% "kamon-jmx-collector"        % "0.1.7",
+  "io.kamon"                    %% "kamon-prometheus"           % "1.1.1",
+  "io.kamon"                    %% "kamon-akka-2.5"             % "1.1.2",
+  "io.kamon"                    %% "kamon-core"                 % "1.1.3",
+  "io.kamon"                    %% "kamon-jmx-collector"        % "0.1.8",
   "eu.timepit"                  %% "refined"                    % refinedVersion,
   "eu.timepit"                  %% "refined-pureconfig"         % refinedVersion,
   "eu.timepit"                  %% "refined-scalacheck"         % refinedVersion,
@@ -56,7 +55,7 @@ val commonSettings = Seq(
 
 lazy val dockerSettings = Seq(
   packageName in Docker := "kafka-message-scheduler",
-  dockerBaseImage := "openjdk:8u131-jre-alpine",
+  dockerBaseImage := "openjdk:8u171-jre-alpine",
   dockerRepository := Some("skyuk"),
   dockerLabels := Map("maintainer" -> "Sky"),
   dockerUpdateLatest := updateLatest.value,

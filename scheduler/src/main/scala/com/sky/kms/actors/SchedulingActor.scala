@@ -59,9 +59,9 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         schedules -= scheduleId
     }
 
-    val updateCancelables = handleSchedulingMessage andThen (_ => sender ! Ack)
-
-    updateCancelables orElse stop
+    stop orElse {
+      handleSchedulingMessage andThen (_ => sender ! Ack)
+    }
   }
 
   private def scheduleOnce(scheduleId: ScheduleId, schedule: ScheduleEvent): Cancelable =

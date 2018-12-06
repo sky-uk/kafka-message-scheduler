@@ -4,6 +4,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.stream._
 import akka.stream.scaladsl._
+import akka.util.Timeout
 import akka.{Done, NotUsed}
 import cats.instances.either._
 import cats.instances.future._
@@ -26,6 +27,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.language.higherKinds
 import scala.util.Try
 
@@ -52,14 +54,14 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
       .via(commit)
       .restartUsing(restartStrategy)
       .watchTermination() { case (mat, fu) => fu.failed.foreach(schedulingActor ! UpstreamFailure(_)); mat }
-      .runAfter(loadProcessedSchedules(processSchedulingMessage).watchTermination() {
-        case (_, fu) => fu onComplete signalFailureOrInit
+      .runAfter(loadProcessedSchedules(processSchedulingMessage).watchTermination() { case (_, fu) =>
+        fu
+          .flatMap(_ => schedulingActor ? Initialised)
+          .recover { case t => schedulingActor ! UpstreamFailure(t) }
       })
 
   private def processSchedulingMessage(msg: SchedulingMessage): Future[SchedulingActor.Ack.type] =
     (schedulingActor ? msg).mapTo[Ack.type]
-
-  private val signalFailureOrInit: Try[_] => Unit = _.fold(schedulingActor ! UpstreamFailure(_), _ => schedulingActor ! Initialised)
 
 }
 

@@ -9,7 +9,7 @@ package object config {
 
   type Configured[T] = Reader[AppConfig, T]
 
-  implicit val timeout = Timeout(30.seconds)
+  implicit val timeout = Timeout(5.seconds)
 
-  val Parallelism = 2
+  val Parallelism = 10
 }

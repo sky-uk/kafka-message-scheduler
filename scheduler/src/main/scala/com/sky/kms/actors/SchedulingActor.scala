@@ -26,11 +26,12 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
 
     val finishInitialisation: Receive = {
       case Initialised =>
-        log.info("State initialised - scheduling stored schedules")
+        log.debug("State initialised - scheduling stored schedules")
         val scheduled = schedules.map { case (scheduleId, schedule) =>
           monitoring.scheduleReceived()
           scheduleId -> scheduleOnce(scheduleId, schedule)
         }
+        log.info("Reloaded state has been scheduled")
         context become receiveWithSchedules(scheduled)
     }
 

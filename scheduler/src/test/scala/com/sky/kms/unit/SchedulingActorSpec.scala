@@ -47,12 +47,20 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       testScheduler.state.tasks.isEmpty shouldBe true
     }
 
+    "stop when receiving an upstream failure before being initialised" in new TestContext {
+      watch(schedulingActor)
+
+      schedulingActor ! UpstreamFailure(new Exception("boom!"))
+
+      expectTerminated(schedulingActor)
+    }
+
     "schedule new messages at the given time" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
 
       createSchedule(scheduleId, schedule)
 
-      advanceToTimeFrom(schedule, now)
+      advanceToTimeFrom(schedule)
       probe.expectMsg(Trigger(scheduleId, schedule))
     }
 
@@ -70,13 +78,13 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
 
-      val updatedSchedule = schedule.copy(time = schedule.time.plusMinutes(5))
+      val updatedSchedule = schedule.copy(delay = schedule.delay + 5.minutes)
       createSchedule(scheduleId, updatedSchedule)
 
       advanceToTimeFrom(schedule)
       probe.expectNoMessage(NoMsgTimeout)
 
-      advanceToTimeFrom(updatedSchedule, schedule.timeInMillis)
+      advanceToTimeFrom(updatedSchedule)
       probe.expectMsg(Trigger(scheduleId, updatedSchedule))
     }
 
@@ -118,8 +126,8 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
     val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, testScheduler, monitoring))
     val now = System.currentTimeMillis()
 
-    def advanceToTimeFrom(schedule: ScheduleEvent, startTime: Long = now): Unit =
-      testScheduler.tick((schedule.timeInMillis - startTime).millis)
+    def advanceToTimeFrom(schedule: ScheduleEvent): Unit =
+      testScheduler.tick(schedule.delay)
 
     def createSchedule(scheduleId: ScheduleId, schedule: ScheduleEvent): Unit = {
       schedulingActor ! CreateOrUpdate(scheduleId, schedule)

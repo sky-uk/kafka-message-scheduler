@@ -9,15 +9,16 @@ import akka.testkit.TestProbe
 import cats.data.NonEmptyList
 import cats.syntax.either._
 import cats.syntax.option._
-import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.base.SpecBase
-import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.{KafkaMessage, Topic}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.utils.{StubControl, StubOffset, TestConfig}
-import com.sky.kms.{AkkaComponents, BackoffRestartStrategy, SchedulerApp}
+import com.sky.kms.{AkkaComponents, SchedulerApp}
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
 import eu.timepit.refined.auto._
 
 import scala.concurrent.duration._

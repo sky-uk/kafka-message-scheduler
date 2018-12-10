@@ -1,82 +1,79 @@
 package com.sky.kms.actors
 
-import java.time.OffsetDateTime
-import java.time.temporal.ChronoUnit.MILLIS
-
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.domain._
 import com.sky.kms.monitoring._
 import monix.execution.{Cancelable, Scheduler => MonixScheduler}
 
-import scala.concurrent.duration._
+import scala.collection.mutable
 
 class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monitoring: Monitoring) extends Actor with ActorLogging {
 
-  override def receive: Receive = initSchedules(Map.empty)
+  override def receive: Receive = initSchedules
 
-  private def initSchedules(schedules: Map[ScheduleId, ScheduleEvent]): Receive = {
+  private def initSchedules: Receive = {
 
-    val handleSchedulingMessage: PartialFunction[Any, Map[ScheduleId, ScheduleEvent]] = {
+    val schedules = mutable.AnyRefMap.empty[ScheduleId, ScheduleEvent]
+
+    val handleSchedulingMessage: Receive = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
-        schedules + (scheduleId -> schedule)
+        schedules += (scheduleId -> schedule)
 
       case Cancel(scheduleId: String) =>
-        schedules - scheduleId
+        schedules -= scheduleId
     }
 
     val finishInitialisation: Receive = {
       case Initialised =>
-        log.info("State initialised - scheduling stored schedules")
-        val scheduled = schedules.map { case (scheduleId, schedule) => monitoring.scheduleReceived(); scheduleId -> scheduleOnce(scheduleId, schedule) }
-        updateStateAndAck(receiveWithSchedules(_), scheduled)
+        log.debug("State initialised - scheduling stored schedules")
+        val scheduled = schedules.map { case (scheduleId, schedule) =>
+          monitoring.scheduleReceived()
+          scheduleId -> scheduleOnce(scheduleId, schedule)
+        }
+        log.info("Reloaded state has been scheduled")
+        context become receiveWithSchedules(scheduled)
     }
 
-    val updateSchedulesThenAck = handleSchedulingMessage andThen (updateStateAndAck[ScheduleEvent](initSchedules, _))
-
-    updateSchedulesThenAck orElse finishInitialisation
+    stop orElse {
+      (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender ! Ack)
+    }
   }
 
-  private def receiveWithSchedules(schedules: Map[ScheduleId, Cancelable]): Receive = {
+  private def receiveWithSchedules(schedules: mutable.AnyRefMap[ScheduleId, Cancelable]): Receive = {
 
-    val handleSchedulingMessage: PartialFunction[Any, Map[ScheduleId, Cancelable]] = {
+    val handleSchedulingMessage: Receive = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
         schedules.get(scheduleId).foreach(_.cancel())
         val cancellable = scheduleOnce(scheduleId, schedule)
-        log.info(s"Scheduled $scheduleId")
+        log.info(s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} in ${schedule.delay.toMillis} millis")
 
         monitoring.scheduleReceived()
-        schedules + (scheduleId -> cancellable)
+        schedules += (scheduleId -> cancellable)
 
       case Cancel(scheduleId: String) =>
         schedules.get(scheduleId).foreach { schedule =>
           schedule.cancel()
           monitoring.scheduleDone()
-          log.info(s"Cancelled schedule $scheduleId")
+          log.info(s"Cancelled $scheduleId")
         }
-        schedules - scheduleId
+        schedules -= scheduleId
     }
 
-    val updateCancelables = handleSchedulingMessage andThen (updateStateAndAck[Cancelable](receiveWithSchedules, _))
-
-    updateCancelables orElse stop
+    stop orElse {
+      handleSchedulingMessage andThen (_ => sender ! Ack)
+    }
   }
 
   private def scheduleOnce(scheduleId: ScheduleId, schedule: ScheduleEvent): Cancelable =
-    monixScheduler.scheduleOnce(MILLIS.between(OffsetDateTime.now, schedule.time).millis) {
+    monixScheduler.scheduleOnce(schedule.delay) {
       publisher ! PublisherActor.Trigger(scheduleId, schedule)
     }
-
-  private def updateStateAndAck[T](f: Map[ScheduleId, T] => Receive, state: Map[ScheduleId, T]): Unit = {
-    context.become(f(state))
-    sender ! Ack
-  }
 
   private val stop: Receive = {
     case UpstreamFailure(t) =>
       log.error(t, "Reader stream has died")
       context stop self
-
   }
 }
 

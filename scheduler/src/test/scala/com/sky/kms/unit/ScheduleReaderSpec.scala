@@ -6,19 +6,19 @@ import akka.testkit.{TestActor, TestProbe}
 import akka.{Done, NotUsed}
 import cats.syntax.either._
 import cats.{Eval, Id}
-import com.sky.kms.BackoffRestartStrategy
-import com.sky.kms.BackoffRestartStrategy.Restarts
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaStreamSpecBase
-import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
+import com.sky.kms.utils.TestDataUtils._
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy
+import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
 import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Negative
 import eu.timepit.refined.auto._
 import eu.timepit.refined.boolean.Not
+import eu.timepit.refined.numeric.Negative
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
@@ -84,6 +84,13 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
       probe.expectMsgType[CreateOrUpdate]
       probe.expectMsg(UpstreamFailure(error))
+    }
+
+    "signal failure to actor when loading processed schedules fails" in new TestContext {
+      val ex = new Exception("boom!")
+      runReader(Source.failed(ex).mapAsync(1)(_))(Source.empty)
+
+      probe.expectMsg(UpstreamFailure(ex))
     }
   }
 

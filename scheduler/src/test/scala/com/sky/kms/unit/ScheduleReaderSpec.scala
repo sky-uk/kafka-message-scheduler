@@ -128,7 +128,8 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
         probe.ref,
         Flow[Either[ApplicationError, Ack.type]].map(_ => Done),
         errorHandler,
-        numRestarts).stream.runWith(Sink.ignore)
+        numRestarts,
+        ScheduleReader.Timeouts(100.millis, 100.millis)).stream.runWith(Sink.ignore)
   }
 
   private trait ErrorHandler {

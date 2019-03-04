@@ -97,6 +97,7 @@ lazy val scheduler = (project in file("scheduler"))
       "-encoding", "utf-8"
     ),
     fork in run := true,
+    fork in Test := true,
     javaAgents += "org.aspectj" % "aspectjweaver" % "1.9.1",
     javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
     buildInfoSettings,

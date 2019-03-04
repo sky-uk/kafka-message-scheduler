@@ -1,5 +1,6 @@
 package com.sky.kms.config
 
+import akka.util.Timeout
 import cats.data.{NonEmptyList, Reader}
 import com.sky.kms.kafka.Topic
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy
@@ -16,10 +17,15 @@ object SchedulerConfig {
   def configure: Configured[SchedulerConfig] = Reader(_.scheduler)
 }
 
-case class ReaderConfig(scheduleTopics: NonEmptyList[Topic], restartStrategy: BackoffRestartStrategy, offsetBatch: OffsetBatchConfig)
+case class ReaderConfig(scheduleTopics: NonEmptyList[Topic],
+                        restartStrategy: BackoffRestartStrategy,
+                        offsetBatch: OffsetBatchConfig,
+                        timeouts: ReaderConfig.Timeouts)
 
 object ReaderConfig {
   def configure: Configured[ReaderConfig] = SchedulerConfig.configure.map(_.reader)
+
+  case class Timeouts(scheduling: Timeout, initialisation: Timeout)
 }
 
 case class OffsetBatchConfig(commitBatchSize: Int Refined Positive, maxCommitWait: FiniteDuration)

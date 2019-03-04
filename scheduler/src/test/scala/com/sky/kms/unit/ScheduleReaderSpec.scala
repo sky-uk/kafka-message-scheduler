@@ -9,6 +9,7 @@ import cats.{Eval, Id}
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaStreamSpecBase
+import com.sky.kms.config.ReaderConfig
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
@@ -128,7 +129,8 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
         probe.ref,
         Flow[Either[ApplicationError, Ack.type]].map(_ => Done),
         errorHandler,
-        numRestarts).stream.runWith(Sink.ignore)
+        numRestarts,
+        ReaderConfig.Timeouts(100.millis, 100.millis)).stream.runWith(Sink.ignore)
   }
 
   private trait ErrorHandler {

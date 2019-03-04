@@ -13,7 +13,8 @@ object TestConfig {
       ReaderConfig(
         topics,
         TestDataUtils.NoRestarts,
-        OffsetBatchConfig(1, 1.milli)),
+        OffsetBatchConfig(1, 1.milli),
+        timeouts = ReaderConfig.Timeouts(100.millis, 100.millis)),
       PublisherConfig(queueBufferSize = 100),
     )
 }

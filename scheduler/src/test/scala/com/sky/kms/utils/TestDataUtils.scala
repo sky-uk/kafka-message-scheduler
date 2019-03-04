@@ -2,7 +2,6 @@ package com.sky.kms.utils
 
 import java.io.ByteArrayOutputStream
 import java.time.{Duration, OffsetDateTime, ZoneOffset, ZonedDateTime}
-import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorSystem
@@ -19,7 +18,6 @@ import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.SchedulerApp
 import com.sky.kms.actors.SchedulingActor.Ack
-import com.sky.kms.streams.ScheduleReader.LoadSchedule
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
 import eu.timepit.refined.auto._
@@ -82,9 +80,6 @@ object TestDataUtils {
         loadProcessedSchedules = _ => Source.empty,
         scheduleSource = Eval.later(src),
         commit = Flow[KafkaMessage[Either[ApplicationError, Ack.type]]].map(_ => Done)))
-
-    def withLoadProcessedSchedules(f: LoadSchedule => Source[_, _])(implicit as: ActorSystem): SchedulerApp =
-      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](loadProcessedSchedules = f))
 
     def withPublisherSink(sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
       schedulerApp.modifyWith[Any] {

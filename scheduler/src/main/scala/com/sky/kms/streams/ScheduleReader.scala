@@ -27,7 +27,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.language.higherKinds
 
 /**
@@ -39,7 +38,7 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
                                                      commit: Flow[F[Either[ApplicationError, Ack.type]], Done, NotUsed],
                                                      errorHandler: Sink[ApplicationError, Future[Done]],
                                                      restartStrategy: BackoffRestartStrategy,
-                                                     timeouts: ScheduleReader.Timeouts)(
+                                                     timeouts: ReaderConfig.Timeouts)(
                                                       implicit system: ActorSystem) {
 
   import system.dispatcher
@@ -61,15 +60,13 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
       })
 
   private def processSchedulingMessage(msg: SchedulingMessage): Future[SchedulingActor.Ack.type] =
-    (schedulingActor ? msg)(timeouts.schedulingMessage).mapTo[Ack.type]
+    (schedulingActor ? msg)(timeouts.scheduling).mapTo[Ack.type]
 
 }
 
 object ScheduleReader extends LazyLogging {
 
   case class Running[SrcMat, SinkMat](materializedSource: SrcMat, materializedSink: SinkMat)
-
-  case class Timeouts(schedulingMessage: Timeout, initialisation: Timeout)
 
   type In = Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])]
   type LoadSchedule = SchedulingMessage => Future[Ack.type]
@@ -89,7 +86,8 @@ object ScheduleReader extends LazyLogging {
       def reloadSchedules(loadSchedule: LoadSchedule) = {
         import system.dispatcher
         val f = (cr: ConsumerRecord[String, Array[Byte]]) => toSchedulingMessage(scheduleConsumerRecordDecoder(cr))
-        TopicLoader(LoadCommitted, config.scheduleTopics.map(_.value), f andThen (_.fold(_ => Future.successful(None), loadSchedule(_).map(_.some))), new ByteArrayDeserializer)
+        TopicLoader(LoadCommitted, config.scheduleTopics.map(_.value), f andThen (
+          _.fold(_ => Future.successful(None), loadSchedule(_).map(_.some))), new ByteArrayDeserializer)
       }
 
       ScheduleReader[KafkaMessage](
@@ -99,7 +97,7 @@ object ScheduleReader extends LazyLogging {
         KafkaStream.commitOffset(config.offsetBatch),
         logErrors,
         config.restartStrategy,
-        ScheduleReader.Timeouts(config.schedulingTimeout, config.initTimeout))
+        config.timeouts)
     }
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running[KillSwitch, Future[Done]]] =

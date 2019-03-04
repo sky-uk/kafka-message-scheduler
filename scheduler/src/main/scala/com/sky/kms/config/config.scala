@@ -20,11 +20,12 @@ object SchedulerConfig {
 case class ReaderConfig(scheduleTopics: NonEmptyList[Topic],
                         restartStrategy: BackoffRestartStrategy,
                         offsetBatch: OffsetBatchConfig,
-                        schedulingTimeout: Timeout,
-                        initTimeout: Timeout)
+                        timeouts: ReaderConfig.Timeouts)
 
 object ReaderConfig {
   def configure: Configured[ReaderConfig] = SchedulerConfig.configure.map(_.reader)
+
+  case class Timeouts(scheduling: Timeout, initialisation: Timeout)
 }
 
 case class OffsetBatchConfig(commitBatchSize: Int Refined Positive, maxCommitWait: FiniteDuration)

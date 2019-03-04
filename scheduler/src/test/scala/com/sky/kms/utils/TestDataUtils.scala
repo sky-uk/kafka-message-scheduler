@@ -4,19 +4,22 @@ import java.io.ByteArrayOutputStream
 import java.time.{Duration, OffsetDateTime, ZoneOffset, ZonedDateTime}
 import java.util.concurrent.TimeUnit
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
 import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
-import com.sky.kms.domain.{Schedule, ScheduleEvent}
+import com.sky.kms.domain.{ApplicationError, Schedule, ScheduleEvent}
 import com.sky.kms.kafka.KafkaMessage
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.SchedulerApp
+import com.sky.kms.actors.SchedulingActor.Ack
+import com.sky.kms.streams.ScheduleReader.LoadSchedule
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
 import eu.timepit.refined.auto._
@@ -75,7 +78,13 @@ object TestDataUtils {
       schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](restartStrategy = strategy))
 
     def withReaderSource(src: Source[KafkaMessage[ScheduleReader.In], Control])(implicit as: ActorSystem): SchedulerApp =
-      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](loadProcessedSchedules = _ => Source.empty, scheduleSource = Eval.later(src)))
+      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](
+        loadProcessedSchedules = _ => Source.empty,
+        scheduleSource = Eval.later(src),
+        commit = Flow[KafkaMessage[Either[ApplicationError, Ack.type]]].map(_ => Done)))
+
+    def withLoadProcessedSchedules(f: LoadSchedule => Source[_, _])(implicit as: ActorSystem): SchedulerApp =
+      schedulerApp.copy(reader = schedulerApp.reader.copy[KafkaMessage](loadProcessedSchedules = f))
 
     def withPublisherSink(sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
       schedulerApp.modifyWith[Any] {

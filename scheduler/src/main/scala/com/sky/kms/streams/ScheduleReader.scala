@@ -38,7 +38,7 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
                                                      commit: Flow[F[Either[ApplicationError, Ack.type]], Done, NotUsed],
                                                      errorHandler: Sink[ApplicationError, Future[Done]],
                                                      restartStrategy: BackoffRestartStrategy,
-                                                     timeouts: ReaderConfig.Timeouts)(
+                                                     timeouts: ReaderConfig.TimeoutConfig)(
                                                       implicit system: ActorSystem) {
 
   import system.dispatcher

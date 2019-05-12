@@ -12,10 +12,10 @@ import cats.syntax.option._
 import com.sky.kms.base.SpecBase
 import com.sky.kms.config._
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
-import com.sky.kms.kafka.{KafkaMessage, Topic}
+import com.sky.kms.kafka.Topic
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.utils.TestDataUtils._
-import com.sky.kms.utils.{StubControl, StubOffset, TestConfig}
+import com.sky.kms.utils.{StubControl, TestConfig}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
@@ -92,20 +92,20 @@ class SchedulerResiliencySpec extends SpecBase {
   private trait FailingSource {
     this: TestContext =>
 
-    val sourceThatWillFail: Source[KafkaMessage[ScheduleReader.In], Control] =
-      Source.fromIterator(() => Iterator(KafkaMessage(StubOffset(), ("someId", none[ScheduleEvent]).asRight[ApplicationError])) ++ (throw new Exception("boom!")))
+    val sourceThatWillFail: Source[ScheduleReader.In, Control] =
+      Source.fromIterator(() => Iterator(("someId" -> none[ScheduleEvent]).asRight[ApplicationError]) ++ (throw new Exception("boom!")))
         .mapMaterializedValue(_ => StubControl())
   }
 
   private trait IteratingSource {
     this: TestContext =>
 
-    def sourceWith(schedules: Seq[ScheduleEvent]): Source[KafkaMessage[ScheduleReader.In], Control] = {
+    def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, Control] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
       val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight[ApplicationError]).toList
 
-      Source(elements.map(KafkaMessage(StubOffset(), _))).mapMaterializedValue(_ => StubControl())
+      Source(elements).mapMaterializedValue(_ => StubControl())
     }
   }
 

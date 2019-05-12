@@ -53,14 +53,22 @@ the PROMETHEUS_SCRAPING_ENDPOINT_PORT environment variable).
 
 ### Topic configuration
 
-The `schedule-topic` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). 
+The `schedule-topics` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). 
 This is for two reasons:
 1.  to allow the scheduler to delete the schedule after it has been written to its destination topic.
-2.  because the scheduler uses the `schedule-topic` to reconstruct its state - in case of a restart of the
+2.  because the scheduler uses the `schedule-topics` to reconstruct its state - in case of a restart of the
     KMS, this ensures that schedules are not lost.
     
-### Restart logic
+#### Recommended configuration
 
-The KMS commits offset when schedules reach the scheduling actor. This is so that when starting up, the KMS will 
-reload everything from its input topics up until its last committed offset. Once that has finished, all of those 
-messages are scheduled - this prevents us from replaying already processed schedules that have not been compacted yet.
+It is advised that the log compaction configuration of the `schedule-topics` is quite aggressive to 
+keep the restart times low, see below for recommended configuration:
+
+```
+cleanup.policy: compact
+delete.retention.ms: 3600000
+min.compaction.lag.ms: 0
+min.cleanable.dirty.ratio: "0.1"
+segment.ms: 86400000
+segment.bytes: 100000000
+```

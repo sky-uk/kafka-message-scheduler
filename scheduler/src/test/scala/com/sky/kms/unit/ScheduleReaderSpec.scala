@@ -1,11 +1,11 @@
 package com.sky.kms.unit
 
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.testkit.TestPublisher
 import akka.testkit.{TestActor, TestProbe}
 import akka.{Done, NotUsed}
+import cats.Eval
 import cats.syntax.either._
-import cats.{Eval, Id}
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaStreamSpecBase
@@ -40,8 +40,6 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     }
 
     "emit errors to the error handler" in new TestContext with ErrorHandler {
-      val schedule = random[(String, Some[ScheduleEvent])]
-
       runReader()(Source.single(random[ApplicationError].asLeft), errorHandler)
 
       eventually {
@@ -124,10 +122,9 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed],
                                                                           errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
                                                                           numRestarts: BackoffRestartStrategy = NoRestarts): Future[Done] =
-      ScheduleReader[Id](init,
+      ScheduleReader(init,
         Eval.now(in),
         probe.ref,
-        Flow[Either[ApplicationError, Ack.type]].map(_ => Done),
         errorHandler,
         numRestarts,
         ReaderConfig.TimeoutConfig(100.millis, 100.millis)).stream.runWith(Sink.ignore)

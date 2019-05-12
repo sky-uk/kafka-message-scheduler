@@ -7,8 +7,6 @@ import eu.timepit.refined.pureconfig._
 import pureconfig._
 import pureconfig.module.cats._
 
-import scala.language.higherKinds
-
 object Main extends App with LazyLogging with AkkaComponents {
 
   val conf = loadConfigOrThrow[AppConfig]

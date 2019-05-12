@@ -1,18 +1,16 @@
 package com.sky.kms.streams
 
+import akka.Done
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.util.Timeout
-import akka.{Done, NotUsed}
+import cats.Eval
 import cats.instances.either._
 import cats.instances.future._
 import cats.syntax.option._
-import cats.{Comonad, Eval, Traverse}
+import cats.syntax.traverse._
 import com.sky.kafka.topicloader._
-import com.sky.map.commons.akka.streams.utils.SourceOps._
-import com.sky.map.commons.akka.streams.utils.Restartable._
 import com.sky.kms._
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
@@ -22,20 +20,20 @@ import com.sky.kms.domain._
 import com.sky.kms.kafka._
 import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy
+import com.sky.map.commons.akka.streams.utils.Restartable._
+import com.sky.map.commons.akka.streams.utils.SourceOps._
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 import scala.concurrent.Future
-import scala.language.higherKinds
 
 /**
   * Provides stream from the schedule source to the scheduling actor.
   */
-case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: LoadSchedule => Source[_, _],
-                                                     scheduleSource: Eval[Source[F[In], _]],
+case class ScheduleReader(loadProcessedSchedules: LoadSchedule => Source[_, _],
+                                                     scheduleSource: Eval[Source[In, _]],
                                                      schedulingActor: ActorRef,
-                                                     commit: Flow[F[Either[ApplicationError, Ack.type]], Done, NotUsed],
                                                      errorHandler: Sink[ApplicationError, Future[Done]],
                                                      restartStrategy: BackoffRestartStrategy,
                                                      timeouts: ReaderConfig.TimeoutConfig)(
@@ -43,14 +41,11 @@ case class ScheduleReader[F[_] : Traverse : Comonad](loadProcessedSchedules: Loa
 
   import system.dispatcher
 
-  val tr = Traverse[F] compose Traverse[Either[ApplicationError, ?]]
-
-  def stream: Source[Done, KillSwitch] =
+  def stream: Source[Either[ApplicationError, SchedulingActor.Ack.type], KillSwitch] =
     scheduleSource.value
-      .map(Traverse[F].map(_)(ScheduleReader.toSchedulingMessage))
-      .mapAsync(Parallelism)(tr.traverse(_)(processSchedulingMessage))
+      .map(ScheduleReader.toSchedulingMessage)
+      .mapAsync(Parallelism)(_.traverse(processSchedulingMessage))
       .alsoTo(extractError.to(errorHandler))
-      .via(commit)
       .restartUsing(restartStrategy)
       .watchTermination() { case (mat, fu) => fu.failed.foreach(schedulingActor ! UpstreamFailure(_)); mat }
       .runAfter(loadProcessedSchedules(processSchedulingMessage).watchTermination() { case (_, fu) =>
@@ -73,34 +68,28 @@ object ScheduleReader extends LazyLogging {
 
   def toSchedulingMessage(readResult: In): Either[ApplicationError, SchedulingMessage] =
     readResult.map { case (scheduleId, scheduleOpt) =>
-      scheduleOpt match {
-        case Some(schedule) =>
-          CreateOrUpdate(scheduleId, schedule)
-        case None =>
-          Cancel(scheduleId)
-      }
+      scheduleOpt.fold[SchedulingMessage](Cancel(scheduleId))(CreateOrUpdate(scheduleId, _))
     }
 
-  def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader[KafkaMessage]] =
+  def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader] =
     ReaderConfig.configure.map { config =>
       def reloadSchedules(loadSchedule: LoadSchedule) = {
         import system.dispatcher
         val f = (cr: ConsumerRecord[String, Array[Byte]]) => toSchedulingMessage(scheduleConsumerRecordDecoder(cr))
-        TopicLoader(LoadCommitted, config.scheduleTopics.map(_.value), f andThen (
+        TopicLoader(LoadAll, config.scheduleTopics.map(_.value), f andThen (
           _.fold(_ => Future.successful(None), loadSchedule(_).map(_.some))), new ByteArrayDeserializer)
       }
 
-      ScheduleReader[KafkaMessage](
+      ScheduleReader(
         reloadSchedules,
         Eval.later(KafkaStream.source(config.scheduleTopics)),
         actorRef,
-        KafkaStream.commitOffset(config.offsetBatch),
         logErrors,
         config.restartStrategy,
         config.timeouts)
     }
 
-  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running[KillSwitch, Future[Done]]] =
+  def run(implicit mat: ActorMaterializer): Start[Running[KillSwitch, Future[Done]]] =
     Start { app =>
       val (srcMat, sinkMat) = app.reader.stream.toMat(Sink.ignore)(Keep.both).run()
       Running(srcMat, sinkMat)

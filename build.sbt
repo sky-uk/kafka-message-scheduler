@@ -92,6 +92,7 @@ lazy val scheduler = (project in file("scheduler"))
       "-language:postfixOps",
       "-Xfatal-warnings",
       "-Ywarn-dead-code",
+      "-Ywarn-unused",
       "-deprecation",
       "-Ypartial-unification",
       "-encoding", "utf-8"

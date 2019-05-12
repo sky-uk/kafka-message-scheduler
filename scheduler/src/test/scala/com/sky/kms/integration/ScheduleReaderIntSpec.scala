@@ -1,28 +1,24 @@
-package com.sky.kms.e2e
+package com.sky.kms.integration
 
 import java.util.UUID
 
-import akka.kafka.ConsumerSettings
 import akka.stream.scaladsl.Sink
 import akka.testkit.{TestActor, TestProbe}
+import cats.instances.tuple._
+import cats.syntax.functor._
 import com.sky.kms.actors.SchedulingActor._
-import com.sky.kms.avro._
 import com.sky.kms.base.SchedulerIntSpecBase
-import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.config._
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestActorSystem
+import com.sky.kms.utils.TestDataUtils._
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy
 import com.sky.map.commons.akka.streams.BackoffRestartStrategy.InfiniteRestarts
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
-import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.serialization.ByteArrayDeserializer
-import org.scalatest.Assertion
 import org.scalatest.concurrent.Eventually
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
 class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
@@ -32,29 +28,17 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
   val numSchedules = 3
 
   "stream" should {
-    "reload already processed schedules on restart before scheduling" in withRunningKafka {
-      val firstSchedule :: newSchedules = List.fill(numSchedules)(generateSchedule)
+    "not schedule messages that have been deleted but not compacted on startup" in withRunningKafka {
+      val schedules@firstSchedule :: _ = List.fill(numSchedules)(generateSchedule)
+      writeSchedulesToKafka(schedules: _*)
+      deleteSchedulesInKafka(firstSchedule)
 
       withRunningScheduleReader { probe =>
+        val receivedScheduleIds = List.fill(schedules.size)(probe.expectMsgType[CreateOrUpdate].scheduleId)
+
+        receivedScheduleIds should contain theSameElementsAs schedules.map(_._1)
+        probe.expectMsgType[Cancel].scheduleId shouldBe firstSchedule._1
         probe.expectMsg(Initialised)
-        writeSchedulesToKafka(firstSchedule)
-
-        probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe firstSchedule._1
-
-        eventually {
-          offsetShouldBeCommitted
-        }
-      }
-
-      withRunningScheduleReader { probe =>
-        writeSchedulesToKafka(newSchedules: _*)
-
-        probe.expectMsgType[CreateOrUpdate].scheduleId shouldBe firstSchedule._1
-        probe.expectMsg(Initialised)
-
-        val receivedScheduleIds = List.fill(newSchedules.size)(probe.expectMsgType[CreateOrUpdate].scheduleId)
-
-        receivedScheduleIds should contain theSameElementsAs newSchedules.map(_._1)
       }
     }
 
@@ -95,13 +79,6 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
     }
   }
 
-  private def offsetShouldBeCommitted: Assertion = {
-    val consumer = ConsumerSettings(system, new ByteArrayDeserializer, new ByteArrayDeserializer).createKafkaConsumer()
-    val partition = new TopicPartition(scheduleTopic, 0)
-    consumer.assign(List(partition).asJava)
-    consumer.position(partition) should be > 0l
-  }
-
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
     publishToKafka(scheduleTopic, schedules.map { case (scheduleId, scheduleEvent) => (scheduleId, scheduleEvent.toSchedule.toAvro) })
 
@@ -109,5 +86,8 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
     writeSchedulesToKafka(generateSchedule)
     probe.expectMsgType[CreateOrUpdate]
   }
+
+  private def deleteSchedulesInKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
+    publishToKafka(scheduleTopic, schedules.map(_.map(_ => null.asInstanceOf[Array[Byte]])))
 
 }

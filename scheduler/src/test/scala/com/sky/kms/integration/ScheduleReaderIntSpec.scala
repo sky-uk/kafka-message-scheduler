@@ -2,7 +2,6 @@ package com.sky.kms.integration
 
 import java.util.UUID
 
-import akka.stream.scaladsl.Sink
 import akka.testkit.{TestActor, TestProbe}
 import cats.instances.tuple._
 import cats.syntax.functor._
@@ -13,12 +12,11 @@ import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestActorSystem
 import com.sky.kms.utils.TestDataUtils._
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy.InfiniteRestarts
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
 import org.scalatest.concurrent.Eventually
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
@@ -34,6 +32,7 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
       deleteSchedulesInKafka(firstSchedule)
 
       withRunningScheduleReader { probe =>
+        probe.expectMsg(StreamStarted)
         val receivedScheduleIds = List.fill(schedules.size)(probe.expectMsgType[CreateOrUpdate].scheduleId)
 
         receivedScheduleIds should contain theSameElementsAs schedules.map(_._1)
@@ -44,6 +43,7 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
 
     "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
       withRunningKafka {
+        probe.expectMsg(StreamStarted)
         probe.expectMsg(Initialised)
         scheduleShouldFlow(probe)
       }
@@ -66,16 +66,15 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
       p
     }
 
-    val killSwitch = ScheduleReader
+    val controlF = ScheduleReader
       .configure(probe.ref)
       .apply(AppConfig(conf))
-      .copy(restartStrategy = BackoffRestartStrategy(10.millis, 10.millis, InfiniteRestarts))
-      .stream.to(Sink.ignore).run()
+      .stream.run()
 
     try {
       scenario(probe)
     } finally {
-      killSwitch.shutdown()
+      Await.ready(controlF.flatMap(_.shutdown())(system.dispatcher), 5 seconds)
     }
   }
 

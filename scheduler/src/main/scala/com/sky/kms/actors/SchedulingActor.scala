@@ -35,7 +35,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         context become receiveWithSchedules(scheduled)
     }
 
-    stop orElse {
+    streamStartedOrFailed orElse {
       (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender ! Ack)
     }
   }
@@ -60,7 +60,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         schedules -= scheduleId
     }
 
-    stop orElse {
+    streamStartedOrFailed orElse {
       handleSchedulingMessage andThen (_ => sender ! Ack)
     }
   }
@@ -70,10 +70,12 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
       publisher ! PublisherActor.Trigger(scheduleId, schedule)
     }
 
-  private val stop: Receive = {
+  private val streamStartedOrFailed: Receive = {
     case UpstreamFailure(t) =>
       log.error(t, "Reader stream has died")
       context stop self
+    case StreamStarted =>
+      sender ! Ack
   }
 }
 
@@ -84,6 +86,8 @@ object SchedulingActor {
   case class CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) extends SchedulingMessage
 
   case class Cancel(scheduleId: ScheduleId) extends SchedulingMessage
+
+  case object StreamStarted
 
   case object Initialised
 

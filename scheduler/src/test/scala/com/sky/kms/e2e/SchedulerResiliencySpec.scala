@@ -2,6 +2,7 @@ package com.sky.kms.e2e
 
 import java.util.UUID
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
@@ -17,8 +18,6 @@ import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.utils.{StubControl, TestConfig}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
 import eu.timepit.refined.auto._
 
 import scala.concurrent.duration._
@@ -33,7 +32,7 @@ class SchedulerResiliencySpec extends SpecBase {
       val app = createAppFrom(config)
         .withReaderSource(sourceThatWillFail)
 
-      withRunningScheduler(app.copy(reader = app.reader.copy(restartStrategy = NoRestarts))) { _ =>
+      withRunningScheduler(app) { _ =>
         hasActorSystemTerminated shouldBe true
       }
     }
@@ -66,16 +65,6 @@ class SchedulerResiliencySpec extends SpecBase {
         hasActorSystemTerminated shouldBe true
       }
     }
-
-    "terminate when reader restarts has been reached" in new TestContext with FailingSource with AkkaComponents {
-      val app = createAppFrom(config)
-        .withReaderSource(sourceThatWillFail)
-        .withReaderRestartStrategy(BackoffRestartStrategy(10.millis, 10.millis, Restarts(1)))
-
-      withRunningScheduler(app) { _ =>
-        hasActorSystemTerminated shouldBe true
-      }
-    }
   }
 
   private trait TestContext {
@@ -92,20 +81,20 @@ class SchedulerResiliencySpec extends SpecBase {
   private trait FailingSource {
     this: TestContext =>
 
-    val sourceThatWillFail: Source[ScheduleReader.In, Control] =
+    val sourceThatWillFail: Source[ScheduleReader.In, (Future[Done], Future[Control])] =
       Source.fromIterator(() => Iterator(("someId" -> none[ScheduleEvent]).asRight[ApplicationError]) ++ (throw new Exception("boom!")))
-        .mapMaterializedValue(_ => StubControl())
+        .mapMaterializedValue(_ => Future.successful(Done) -> Future.successful(StubControl()))
   }
 
   private trait IteratingSource {
     this: TestContext =>
 
-    def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, Control] = {
+    def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, (Future[Done], Future[Control])] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
       val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight[ApplicationError]).toList
 
-      Source(elements).mapMaterializedValue(_ => StubControl())
+      Source(elements).mapMaterializedValue(_ => Future.successful(Done) -> Future.successful(StubControl()))
     }
   }
 

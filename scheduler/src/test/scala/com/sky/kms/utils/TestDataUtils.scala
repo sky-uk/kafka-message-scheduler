@@ -3,6 +3,7 @@ package com.sky.kms.utils
 import java.io.ByteArrayOutputStream
 import java.time.{Duration, OffsetDateTime, ZoneOffset, ZonedDateTime}
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
@@ -15,17 +16,13 @@ import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain.{Schedule, ScheduleEvent}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
-import eu.timepit.refined.auto._
 import org.scalacheck.{Arbitrary, Gen}
 import org.zalando.grafter.syntax.rewriter._
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object TestDataUtils {
-
-  val NoRestarts = BackoffRestartStrategy(10.millis, 10.millis, Restarts(0))
 
   implicit val arbAlphaString: Arbitrary[String] =
     Arbitrary(Gen.alphaStr.suchThat(_.nonEmpty).retryUntil(_.nonEmpty))
@@ -69,12 +66,8 @@ object TestDataUtils {
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
-    def withReaderRestartStrategy(strategy: BackoffRestartStrategy)(implicit as: ActorSystem): SchedulerApp =
-      schedulerApp.copy(reader = schedulerApp.reader.copy(restartStrategy = strategy))
-
-    def withReaderSource(src: Source[ScheduleReader.In, Control])(implicit as: ActorSystem): SchedulerApp =
+    def withReaderSource(src: Source[ScheduleReader.In, (Future[Done], Future[Control])])(implicit as: ActorSystem): SchedulerApp =
       schedulerApp.copy(reader = schedulerApp.reader.copy(
-        loadProcessedSchedules = _ => Source.empty,
         scheduleSource = Eval.later(src)))
 
     def withPublisherSink(sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =

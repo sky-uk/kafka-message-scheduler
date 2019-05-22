@@ -12,14 +12,8 @@ import com.sky.kms.base.AkkaStreamSpecBase
 import com.sky.kms.config.ReaderConfig
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
-import com.sky.kms.streams.ScheduleReader.{In, LoadSchedule}
+import com.sky.kms.streams.ScheduleReader.In
 import com.sky.kms.utils.TestDataUtils._
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy.Restarts
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.auto._
-import eu.timepit.refined.boolean.Not
-import eu.timepit.refined.numeric.Negative
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
@@ -33,61 +27,47 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     "send a scheduling message to the scheduling the actor" in new TestContext {
       val schedule@(_, Some(scheduleEvent)) = (random[String], Some(random[ScheduleEvent]))
 
-      runReader()(Source.single(schedule.asRight[ApplicationError]))
+      runReader(Source.single(schedule.asRight[ApplicationError]))
 
-      probe.expectMsg(Initialised)
+      probe.expectMsg(StreamStarted)
       probe.expectMsgType[CreateOrUpdate].schedule shouldBe scheduleEvent
     }
 
     "emit errors to the error handler" in new TestContext with ErrorHandler {
-      runReader()(Source.single(random[ApplicationError].asLeft), errorHandler)
+      runReader(Source.single(random[ApplicationError].asLeft), errorHandler)
 
       eventually {
         awaitingError.future.isCompleted shouldBe true
       }
     }
 
-    "restore scheduling actor state fully before sending Initialised" in new TestContext {
-      val schedules = random[SchedulingMessage](5).toList
-      runReader(Source(schedules).mapAsync(1)(_))(Source.empty)
+    "send Initialised to scheduling actor only when source materialized future completes" in new TestContext {
+      val p = Promise[Done]()
+      runReader(delayedSource, sourceMatFuture = p.future)
 
-      probe.expectMsgAllOf(schedules: _*)
-      probe.expectMsg(Initialised)
-    }
-
-    "retry when processing fails" in new TestContext with ProbeSource {
-      val schedule = random[(String, Some[ScheduleEvent])]
-
-      runReaderWithProbe()
-
-      pub
-        .sendNext(schedule.asRight[ApplicationError])
-        .sendError(new Exception("bosh!"))
-        .expectSubscription()
-    }
-
-    "signal failure to actor when configured number of retries has been reached" in new TestContext with ProbeSource {
-      val numRestarts: Int Refined Not[Negative] = 1
-
-      runReaderWithProbe(numRestarts)
-
-      probe.expectMsg(Initialised)
-
-      val error = new Exception("bosh!")
-
-      pub
-        .sendNext(random[(String, Some[ScheduleEvent])].asRight[ApplicationError])
-        .sendError(error)
-        .expectSubscription()
-        .sendError(error)
-
+      probe.expectMsg(StreamStarted)
       probe.expectMsgType[CreateOrUpdate]
+
+      p.success(Done)
+      probe.expectMsg(Initialised)
+    }
+
+    "signal failure to actor when stream fails" in new TestContext {
+      val error = new Exception("bosh!")
+      runReader(Source.failed(error))
+      probe.expectMsg(StreamStarted)
+
       probe.expectMsg(UpstreamFailure(error))
     }
 
-    "signal failure to actor when loading processed schedules fails" in new TestContext {
+    "signal failure to actor when source materialised future fails" in new TestContext {
       val ex = new Exception("boom!")
-      runReader(Source.failed(ex).mapAsync(1)(_))(Source.empty)
+      val p = Promise()
+
+      runReader(delayedSource, sourceMatFuture = p.future)
+      probe.expectMsg(StreamStarted)
+
+      p.failure(ex)
 
       probe.expectMsg(UpstreamFailure(ex))
     }
@@ -108,6 +88,8 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
   }
 
   private class TestContext {
+    val msg = random[(String, Some[ScheduleEvent])].asRight[ApplicationError]
+
     val probe = {
       val p = TestProbe()
       p.setAutoPilot((sender, msg) =>
@@ -119,15 +101,16 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
       p
     }
 
-    def runReader(init: LoadSchedule => Source[_, _] = _ => Source.empty)(in: Source[In, NotUsed],
-                                                                          errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
-                                                                          numRestarts: BackoffRestartStrategy = NoRestarts): Future[Done] =
-      ScheduleReader(init,
-        Eval.now(in),
+    def delayedSource = Source.tick(100.millis, 100.millis, msg).mapMaterializedValue(_ => NotUsed)
+
+    def runReader(in: Source[In, NotUsed],
+                  errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
+                  sourceMatFuture: Future[Done] = Future.never): NotUsed =
+      ScheduleReader(
+        Eval.now(in.mapMaterializedValue(nu => sourceMatFuture -> nu)),
         probe.ref,
         errorHandler,
-        numRestarts,
-        ReaderConfig.TimeoutConfig(100.millis, 100.millis)).stream.runWith(Sink.ignore)
+        ReaderConfig.TimeoutConfig(100.millis, 100.millis)).stream.run()
   }
 
   private trait ErrorHandler {
@@ -142,8 +125,8 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
     val pub = TestPublisher.probe[ScheduleReader.In]()
 
-    def runReaderWithProbe(numRestarts: Int Refined Not[Negative] = 1): Future[Done] =
-      runReader()(Source.fromPublisher[ScheduleReader.In](pub), numRestarts = NoRestarts.copy(maxRestarts = Restarts(numRestarts)))
+    def runReaderWithProbe: NotUsed =
+      runReader(Source.fromPublisher[ScheduleReader.In](pub))
   }
 
 }

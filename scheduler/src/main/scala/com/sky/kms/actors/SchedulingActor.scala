@@ -40,24 +40,24 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
     }
   }
 
-  private def receiveWithSchedules(schedules: mutable.AnyRefMap[ScheduleId, Cancelable]): Receive = {
+  private def receiveWithSchedules(scheduled: mutable.AnyRefMap[ScheduleId, Cancelable]): Receive = {
 
     val handleSchedulingMessage: Receive = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
-        schedules.get(scheduleId).foreach(_.cancel())
+        scheduled.get(scheduleId).foreach(_.cancel())
         val cancellable = scheduleOnce(scheduleId, schedule)
         log.info(s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} in ${schedule.delay.toMillis} millis")
 
         monitoring.scheduleReceived()
-        schedules += (scheduleId -> cancellable)
+        scheduled += (scheduleId -> cancellable)
 
       case Cancel(scheduleId: String) =>
-        schedules.get(scheduleId).foreach { schedule =>
+        scheduled.get(scheduleId).foreach { schedule =>
           schedule.cancel()
           monitoring.scheduleDone()
           log.info(s"Cancelled $scheduleId")
         }
-        schedules -= scheduleId
+        scheduled -= scheduleId
     }
 
     streamStartedOrFailed orElse {

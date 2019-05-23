@@ -75,7 +75,7 @@ segment.bytes: 100000000
 
 ## Limitations
 
-Until [#69](/../../issues/69) is addressed the KMS does not fully support horizontal 
+Until [this issue](/../../issues/69) is addressed the KMS does not fully support horizontal 
 scaling. Multiple instances can be run, and Kafka will balance the partitions, however schedules are likely to be duplicated 
 as when a rebalance happens the state for the rebalanced partition will not be removed from the original instance. If there 
 is a desire to run multiple instances before that issue is addressed, it is best to not attempt dynamic scaling, 

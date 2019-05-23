@@ -31,7 +31,7 @@ case class ScheduledMessagePublisher(queueBufferSize: Int, publisherSink: Eval[S
       .mapConcat(splitToMessageAndDeletion)
       .toMat(publisherSink.value)(Keep.both)
 
-  val splitToMessageAndDeletion: In => List[SinkIn] = {
+  val splitToMessageAndDeletion: In => List[PublishableMessage] = {
     case (scheduleId, scheduledMessage) =>
       logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.outputTopic} and deleting it from ${scheduledMessage.inputTopic}")
       List(scheduledMessage, ScheduleDeletion(scheduleId, scheduledMessage.inputTopic))
@@ -45,12 +45,22 @@ object ScheduledMessagePublisher {
   type In = (ScheduleId, ScheduledMessage)
   type Mat = ScheduleQueue
 
-  type SinkIn = ProducerRecord[Array[Byte], Array[Byte]]
+  type SinkIn = PublishableMessage
   type SinkMat = Future[Done]
 
   def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] = {
-    val writeToKafka = Eval.always(Producer.plainSink(ProducerSettings(system, new ByteArraySerializer, new ByteArraySerializer)))
-    PublisherConfig.configure.map(c => ScheduledMessagePublisher(c.queueBufferSize, writeToKafka))
+
+    val writeMsgToKafka = Eval.always(
+      Flow[PublishableMessage]
+        .map(toProducerRecord)
+        .toMat(Producer.plainSink(ProducerSettings(system, new ByteArraySerializer, new ByteArraySerializer)))(Keep.right))
+
+    PublisherConfig.configure.map(c => ScheduledMessagePublisher(c.queueBufferSize, writeMsgToKafka))
+  }
+
+  val toProducerRecord: PublishableMessage => ProducerRecord[Array[Byte], Array[Byte]] = {
+    case ScheduledMessage(_, outputTopic, key, value) => new ProducerRecord(outputTopic, key, value.orNull)
+    case ScheduleDeletion(id, topic) => new ProducerRecord(topic, id.getBytes, null)
   }
 
   def run(implicit mat: ActorMaterializer): Start[Running] =

@@ -15,7 +15,7 @@ use it as input, output and data store.
 
 ## How it works
 
-The Kafka Message Scheduler (KMS, for short) consumes messages from a source topic.  On this topic:
+The Kafka Message Scheduler (KMS, for short) consumes messages from configured source (schedule) topics.  On this topic:
 -  message keys are "Schedule IDs" - string values, with an expectation of uniqueness
 -  message values are Schedule messages, encoded in Avro binary format according to the [Schema](#schema).
 
@@ -28,6 +28,13 @@ The KMS is responsible for sending the actual message to the specified topic at 
 
 The Schedule ID can be used to delete a scheduled message, via a delete message (with a null message value)
 in the source topic.
+
+### Startup logic
+
+When the KMS starts up it uses the [kafka-topic-loader](https://github.com/sky-uk/kafka-topic-loader) to consume all 
+messages from the configured `schedule-topics` and populate the scheduling actors state. Once this has completed, all 
+of the schedules loaded are scheduled and the application will start normal processing. This means that schedules that 
+have been fired and tombstoned, but not compacted yet, will not be replayed during startup.  
 
 ## Schema
 

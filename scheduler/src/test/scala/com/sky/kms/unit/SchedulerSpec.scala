@@ -3,12 +3,11 @@ package com.sky.kms.unit
 import java.time.OffsetDateTime
 
 import cats.syntax.option._
-import com.sky.kms.avro._
 import com.sky.kms.base.SpecBase
-import com.sky.kms.utils.TestDataUtils._
-import com.sky.kms.scheduleConsumerRecordDecoder
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
+import com.sky.kms.scheduleConsumerRecordDecoder
+import com.sky.kms.utils.TestDataUtils._
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
 class SchedulerSpec extends SpecBase {
@@ -55,7 +54,7 @@ class SchedulerSpec extends SpecBase {
       val schedule = TestSchedule.toSchedule.copy(time = tooDistantFuture)
       val cr = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
-      scheduleConsumerRecordDecoder(cr) shouldBe Left(InvalidTimeError(ScheduleId, schedule.time))
+      scheduleConsumerRecordDecoder(cr).left.get shouldBe a[InvalidTimeError]
     }
   }
 

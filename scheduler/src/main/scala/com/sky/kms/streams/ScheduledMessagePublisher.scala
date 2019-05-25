@@ -2,6 +2,8 @@ package com.sky.kms.streams
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.kafka.ProducerSettings
+import akka.kafka.scaladsl.Producer
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import cats.Eval
@@ -10,10 +12,10 @@ import com.sky.kms.actors.PublisherActor.ScheduleQueue
 import com.sky.kms.config._
 import com.sky.kms.domain.PublishableMessage._
 import com.sky.kms.domain._
-import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduledMessagePublisher._
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.serialization.ByteArraySerializer
 
 import scala.concurrent.Future
 
@@ -24,16 +26,16 @@ import scala.concurrent.Future
   */
 case class ScheduledMessagePublisher(queueBufferSize: Int, publisherSink: Eval[Sink[SinkIn, SinkMat]]) extends LazyLogging {
 
-  lazy val splitToMessageAndDeletion: In => List[SinkIn] = {
-    case (scheduleId, scheduledMessage) =>
-      logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.outputTopic} and deleting it from ${scheduledMessage.inputTopic}")
-      List(scheduledMessage, ScheduleDeletion(scheduleId, scheduledMessage.inputTopic))
-  }
-
   def stream: RunnableGraph[(Mat, SinkMat)] =
     Source.queue[In](queueBufferSize, OverflowStrategy.backpressure)
       .mapConcat(splitToMessageAndDeletion)
       .toMat(publisherSink.value)(Keep.both)
+
+  val splitToMessageAndDeletion: In => List[PublishableMessage] = {
+    case (scheduleId, scheduledMessage) =>
+      logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.outputTopic} and deleting it from ${scheduledMessage.inputTopic}")
+      List(scheduledMessage, ScheduleDeletion(scheduleId, scheduledMessage.inputTopic))
+  }
 }
 
 object ScheduledMessagePublisher {
@@ -43,11 +45,23 @@ object ScheduledMessagePublisher {
   type In = (ScheduleId, ScheduledMessage)
   type Mat = ScheduleQueue
 
-  type SinkIn = ProducerRecord[Array[Byte], Array[Byte]]
+  type SinkIn = PublishableMessage
   type SinkMat = Future[Done]
 
-  def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] =
-    PublisherConfig.configure.map(c => ScheduledMessagePublisher(c.queueBufferSize, Eval.later(KafkaStream.sink)))
+  def configure(implicit system: ActorSystem): Configured[ScheduledMessagePublisher] = {
+
+    val writeMsgToKafka = Eval.always(
+      Flow[PublishableMessage]
+        .map(toProducerRecord)
+        .toMat(Producer.plainSink(ProducerSettings(system, new ByteArraySerializer, new ByteArraySerializer)))(Keep.right))
+
+    PublisherConfig.configure.map(c => ScheduledMessagePublisher(c.queueBufferSize, writeMsgToKafka))
+  }
+
+  val toProducerRecord: PublishableMessage => ProducerRecord[Array[Byte], Array[Byte]] = {
+    case ScheduledMessage(_, outputTopic, key, value) => new ProducerRecord(outputTopic, key, value.orNull)
+    case ScheduleDeletion(id, topic) => new ProducerRecord(topic, id.getBytes, null)
+  }
 
   def run(implicit mat: ActorMaterializer): Start[Running] =
     Start { app =>

@@ -1,14 +1,11 @@
 package com.sky.kms
 
-import java.time.format.DateTimeFormatter
 import java.time.{Instant, OffsetDateTime, ZoneOffset}
 
-import com.sksamuel.avro4s.{SchemaFor, Encoder, Decoder}
+import com.sksamuel.avro4s.{Decoder, Encoder, SchemaFor}
 import org.apache.avro.Schema
 
 package object avro {
-
-  private val dateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
 
   implicit object DateTimeSchemaFor extends SchemaFor[OffsetDateTime] {
     override val schema: Schema = Schema.create(Schema.Type.LONG)

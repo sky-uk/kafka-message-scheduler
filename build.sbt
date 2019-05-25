@@ -9,7 +9,7 @@ val refinedVersion = "0.9.2"
 val pureConfigVersion = "0.9.2"
 
 val dependencies = Seq(
-  "com.sky"                     %% "kafka-topic-loader"         % "1.2.3",
+  "com.sky"                     %% "kafka-topic-loader"         % "1.3.0",
 
   "com.typesafe.akka"           %% "akka-actor"                 % akkaVersion,
   "com.typesafe.akka"           %% "akka-stream"                % akkaVersion,
@@ -92,6 +92,7 @@ lazy val scheduler = (project in file("scheduler"))
       "-language:postfixOps",
       "-Xfatal-warnings",
       "-Ywarn-dead-code",
+      "-Ywarn-unused",
       "-deprecation",
       "-Ypartial-unification",
       "-encoding", "utf-8"

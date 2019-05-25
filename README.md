@@ -15,7 +15,7 @@ use it as input, output and data store.
 
 ## How it works
 
-The Kafka Message Scheduler (KMS, for short) consumes messages from a source topic.  On this topic:
+The Kafka Message Scheduler (KMS, for short) consumes messages from configured source (schedule) topics.  On this topic:
 -  message keys are "Schedule IDs" - string values, with an expectation of uniqueness
 -  message values are Schedule messages, encoded in Avro binary format according to the [Schema](#schema).
 
@@ -28,6 +28,13 @@ The KMS is responsible for sending the actual message to the specified topic at 
 
 The Schedule ID can be used to delete a scheduled message, via a delete message (with a null message value)
 in the source topic.
+
+### Startup logic
+
+When the KMS starts up it uses the [kafka-topic-loader](https://github.com/sky-uk/kafka-topic-loader) to consume all 
+messages from the configured `schedule-topics` and populate the scheduling actors state. Once this has completed, all 
+of the schedules loaded are scheduled and the application will start normal processing. This means that schedules that 
+have been fired and tombstoned, but not compacted yet, will not be replayed during startup.  
 
 ## Schema
 
@@ -53,14 +60,30 @@ the PROMETHEUS_SCRAPING_ENDPOINT_PORT environment variable).
 
 ### Topic configuration
 
-The `schedule-topic` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). 
+The `schedule-topics` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). 
 This is for two reasons:
 1.  to allow the scheduler to delete the schedule after it has been written to its destination topic.
-2.  because the scheduler uses the `schedule-topic` to reconstruct its state - in case of a restart of the
+2.  because the scheduler uses the `schedule-topics` to reconstruct its state - in case of a restart of the
     KMS, this ensures that schedules are not lost.
     
-### Restart logic
+#### Recommended configuration
 
-The KMS commits offset when schedules reach the scheduling actor. This is so that when starting up, the KMS will 
-reload everything from its input topics up until its last committed offset. Once that has finished, all of those 
-messages are scheduled - this prevents us from replaying already processed schedules that have not been compacted yet.
+It is advised that the log compaction configuration of the `schedule-topics` is quite aggressive to 
+keep the restart times low, see below for recommended configuration:
+
+```
+cleanup.policy: compact
+delete.retention.ms: 3600000
+min.compaction.lag.ms: 0
+min.cleanable.dirty.ratio: "0.1"
+segment.ms: 86400000
+segment.bytes: 100000000
+```
+
+## Limitations
+
+Until [this issue](/../../issues/69) is addressed the KMS does not fully support horizontal 
+scaling. Multiple instances can be run, and Kafka will balance the partitions, however schedules are likely to be duplicated 
+as when a rebalance happens the state for the rebalanced partition will not be removed from the original instance. If there 
+is a desire to run multiple instances before that issue is addressed, it is best to not attempt dynamic scaling, 
+but to start with your desired number of instances.

@@ -35,32 +35,32 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         context become receiveWithSchedules(scheduled)
     }
 
-    stop orElse {
+    streamStartedOrFailed orElse {
       (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender ! Ack)
     }
   }
 
-  private def receiveWithSchedules(schedules: mutable.AnyRefMap[ScheduleId, Cancelable]): Receive = {
+  private def receiveWithSchedules(scheduled: mutable.AnyRefMap[ScheduleId, Cancelable]): Receive = {
 
     val handleSchedulingMessage: Receive = {
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
-        schedules.get(scheduleId).foreach(_.cancel())
+        scheduled.get(scheduleId).foreach(_.cancel())
         val cancellable = scheduleOnce(scheduleId, schedule)
         log.info(s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} in ${schedule.delay.toMillis} millis")
 
         monitoring.scheduleReceived()
-        schedules += (scheduleId -> cancellable)
+        scheduled += (scheduleId -> cancellable)
 
       case Cancel(scheduleId: String) =>
-        schedules.get(scheduleId).foreach { schedule =>
+        scheduled.get(scheduleId).foreach { schedule =>
           schedule.cancel()
           monitoring.scheduleDone()
           log.info(s"Cancelled $scheduleId")
         }
-        schedules -= scheduleId
+        scheduled -= scheduleId
     }
 
-    stop orElse {
+    streamStartedOrFailed orElse {
       handleSchedulingMessage andThen (_ => sender ! Ack)
     }
   }
@@ -70,10 +70,12 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
       publisher ! PublisherActor.Trigger(scheduleId, schedule)
     }
 
-  private val stop: Receive = {
+  private val streamStartedOrFailed: Receive = {
     case UpstreamFailure(t) =>
       log.error(t, "Reader stream has died")
       context stop self
+    case StreamStarted =>
+      sender ! Ack
   }
 }
 
@@ -84,6 +86,8 @@ object SchedulingActor {
   case class CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) extends SchedulingMessage
 
   case class Cancel(scheduleId: ScheduleId) extends SchedulingMessage
+
+  case object StreamStarted
 
   case object Initialised
 

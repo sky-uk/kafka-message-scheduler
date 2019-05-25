@@ -2,7 +2,6 @@ package com.sky.kms.config
 
 import cats.data.{NonEmptyList, Reader}
 import com.sky.kms.kafka.Topic
-import com.sky.map.commons.akka.streams.BackoffRestartStrategy
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.Positive
 
@@ -16,10 +15,7 @@ object SchedulerConfig {
   def configure: Configured[SchedulerConfig] = Reader(_.scheduler)
 }
 
-case class ReaderConfig(scheduleTopics: NonEmptyList[Topic],
-                        restartStrategy: BackoffRestartStrategy,
-                        offsetBatch: OffsetBatchConfig,
-                        timeouts: ReaderConfig.TimeoutConfig)
+case class ReaderConfig(scheduleTopics: NonEmptyList[Topic], timeouts: ReaderConfig.TimeoutConfig)
 
 object ReaderConfig {
   def configure: Configured[ReaderConfig] = SchedulerConfig.configure.map(_.reader)

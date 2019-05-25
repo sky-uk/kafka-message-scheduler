@@ -2,36 +2,42 @@ package com.sky.kms.unit
 
 import java.util.UUID
 
-import cats.Eval
-import com.sky.kms.base.AkkaStreamSpecBase
-import com.sky.kms.utils.TestDataUtils._
+import com.sky.kms.base.SpecBase
+import com.sky.kms.domain.PublishableMessage.ScheduleDeletion
 import com.sky.kms.domain._
-import com.sky.kms.kafka.KafkaStream
 import com.sky.kms.streams.ScheduledMessagePublisher
-import org.apache.kafka.clients.producer.ProducerRecord
+import com.sky.kms.utils.TestDataUtils._
 
-class ScheduledMessagePublisherSpec extends AkkaStreamSpecBase {
+class ScheduledMessagePublisherSpec extends SpecBase {
 
   val testTopic = UUID.randomUUID().toString
-  val publisher = ScheduledMessagePublisher(100, Eval.now(KafkaStream.sink))
 
-  "splitToMessageAndDeletion" should {
-    "split schedule and convert to producer records" in {
+  "toProducerRecord" should {
+    "convert scheduled message to producer record" in {
       val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent].copy(inputTopic = testTopic))
 
-      publisher.splitToMessageAndDeletion((scheduleId, schedule.toScheduledMessage)) === List(
-        new ProducerRecord(schedule.outputTopic, schedule.key, schedule.value),
-        new ProducerRecord(testTopic, scheduleId.getBytes, null)
-      )
+      val record = ScheduledMessagePublisher.toProducerRecord(schedule.toScheduledMessage)
+
+      record.key() === scheduleId
+      record.value() === schedule.value.get
+      record.topic() shouldBe schedule.outputTopic
     }
 
-    "be able to write a delete to a topic" in {
-      val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent].copy(inputTopic = testTopic, value = None))
+    "convert schedule deletion to a delete record" in {
+      val List(scheduleId, topic) = random[String](2).toList
+      val record = ScheduledMessagePublisher.toProducerRecord(ScheduleDeletion(scheduleId, topic))
 
-      publisher.splitToMessageAndDeletion((scheduleId, schedule.toScheduledMessage)) === List(
-        new ProducerRecord(schedule.outputTopic, schedule.key, null),
-        new ProducerRecord(testTopic, scheduleId.getBytes, null)
-      )
+      record.key() === scheduleId
+      record.topic() === topic
+      record.value() === null
+    }
+
+    "convert scheduled message with an empty value to a delete record" in {
+      val schedule = random[ScheduleEvent].copy(inputTopic = testTopic, value = None)
+
+      ScheduledMessagePublisher
+        .toProducerRecord(schedule.toScheduledMessage)
+        .value() === null
     }
   }
 }

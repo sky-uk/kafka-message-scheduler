@@ -13,7 +13,7 @@ import com.sky.kms.domain._
 import com.sky.kms.utils.SimpleCounterMonitoring
 import monix.execution.schedulers.TestScheduler
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 

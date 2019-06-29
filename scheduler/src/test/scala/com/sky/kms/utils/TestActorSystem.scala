@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 object TestActorSystem {
 
-  private def config(kafkaPort: Int, terminateActorSystem: Boolean, maxWakeups: Int, wakeupTimeout: Duration, akkaExpectDuration: Duration): String =
+  private def config(kafkaPort: Int, terminateActorSystem: Boolean, akkaExpectDuration: Duration): String =
     s"""
        |akka {
        | test.single-expect-default = $akkaExpectDuration
@@ -20,9 +20,12 @@ object TestActorSystem {
        | }
        |
        | kafka {
+       |  committer {
+       |    max-batch = 10
+       |    max-interval = 1s
+       |  }
        |  consumer {
-       |    max-wakeups = $maxWakeups
-       |    wakeup-timeout = $wakeupTimeout
+       |    stop-timeout = 1s
        |    kafka-clients {
        |      bootstrap.servers = "localhost:$kafkaPort"
        |      ${ConsumerConfig.AUTO_OFFSET_RESET_CONFIG} = "earliest"
@@ -35,9 +38,9 @@ object TestActorSystem {
     """.stripMargin
 
 
-  def apply(kafkaPort: Int = 9092, terminateActorSystem: Boolean = false, maxWakeups: Int = 2, wakeupTimeout: Duration = 2.seconds, akkaExpectDuration: Duration = 3.seconds): ActorSystem =
+  def apply(kafkaPort: Int = 9092, terminateActorSystem: Boolean = false, akkaExpectDuration: Duration = 3.seconds): ActorSystem =
     ActorSystem(
       name = s"test-actor-system-${UUID.randomUUID().toString}",
-      config = ConfigFactory.parseString(config(kafkaPort, terminateActorSystem, maxWakeups, wakeupTimeout, akkaExpectDuration)).withFallback(ConfigFactory.load())
+      config = ConfigFactory.parseString(config(kafkaPort, terminateActorSystem, akkaExpectDuration)).withFallback(ConfigFactory.load())
     )
 }

@@ -20,10 +20,6 @@ object TestActorSystem {
        | }
        |
        | kafka {
-       |  committer {
-       |    max-batch = 10
-       |    max-interval = 1s
-       |  }
        |  consumer {
        |    stop-timeout = 1s
        |    kafka-clients {

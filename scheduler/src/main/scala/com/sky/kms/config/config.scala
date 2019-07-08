@@ -2,8 +2,6 @@ package com.sky.kms.config
 
 import cats.data.{NonEmptyList, Reader}
 import com.sky.kms.kafka.Topic
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.numeric.Positive
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -22,8 +20,6 @@ object ReaderConfig {
 
   case class TimeoutConfig(scheduling: FiniteDuration, initialisation: FiniteDuration)
 }
-
-case class OffsetBatchConfig(commitBatchSize: Int Refined Positive, maxCommitWait: FiniteDuration)
 
 case class PublisherConfig(queueBufferSize: Int)
 

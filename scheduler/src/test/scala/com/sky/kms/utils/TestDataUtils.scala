@@ -43,14 +43,14 @@ object TestDataUtils {
   implicit class ScheduleEventOps(val schedule: ScheduleEvent) extends AnyVal {
     def toSchedule: Schedule = {
       val time = OffsetDateTime.now().toInstant.plusMillis(schedule.delay.toMillis).atOffset(ZoneOffset.UTC)
-      Schedule(time, schedule.outputTopic, schedule.key, schedule.value)
+      Schedule(time, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
     }
 
     def secondsFromNow(secondsAsLong: Long): ScheduleEvent =
       schedule.copy(delay = secondsAsLong.seconds)
 
     def toScheduledMessage: ScheduledMessage =
-      ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value)
+      ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
   }
 
   implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {

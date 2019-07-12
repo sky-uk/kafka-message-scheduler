@@ -22,8 +22,8 @@ class SchedulerSpec extends SpecBase {
       val cr = artificialConsumerRecord(ScheduleId, schedule.toSchedule.toAvro)
 
       scheduleConsumerRecordDecoder(cr) should matchPattern {
-        case Right((ScheduleId, Some(ScheduleEvent(_, schedule.inputTopic, schedule.outputTopic, k, Some(v)))))
-          if k === schedule.key && v === schedule.value.get =>
+        case Right((ScheduleId, Some(ScheduleEvent(_, schedule.inputTopic, schedule.outputTopic, k, Some(v), headers))))
+          if k === schedule.key && v === someBytes && equalHeaders(headers, schedule.headers) =>
       }
     }
 
@@ -32,8 +32,8 @@ class SchedulerSpec extends SpecBase {
       val cr = artificialConsumerRecord(ScheduleId, schedule.toSchedule.toAvro)
 
       scheduleConsumerRecordDecoder(cr) should matchPattern {
-        case Right((ScheduleId, Some(ScheduleEvent(_, schedule.inputTopic, schedule.outputTopic, k, None))))
-          if k === schedule.key && schedule.value === None =>
+        case Right((ScheduleId, Some(ScheduleEvent(_, schedule.inputTopic, schedule.outputTopic, k, None, headers))))
+          if k === schedule.key && schedule.value === None && equalHeaders(headers, schedule.headers) =>
       }
     }
 
@@ -62,4 +62,5 @@ class SchedulerSpec extends SpecBase {
     new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1l, scheduleId, avroBytes)
   }
 
+  private def equalHeaders(x: Set[Header], y: Set[Header]): Boolean = x.map(h => h.key -> h.value.toList) === y.map(h => h.key -> h.value.toList)
 }

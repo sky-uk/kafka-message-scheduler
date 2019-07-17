@@ -62,5 +62,5 @@ class SchedulerSpec extends SpecBase {
     new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1l, scheduleId, avroBytes)
   }
 
-  private def equalHeaders(x: Set[Header], y: Set[Header]): Boolean = x.map(h => h.key -> h.value.toList) === y.map(h => h.key -> h.value.toList)
+  private def equalHeaders(x: Map[String, Array[Byte]], y: Map[String, Array[Byte]]): Boolean = x.mapValues(_.toList) === y.mapValues(_.toList)
 }

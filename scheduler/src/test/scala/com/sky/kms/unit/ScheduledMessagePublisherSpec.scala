@@ -27,7 +27,7 @@ class ScheduledMessagePublisherSpec extends SpecBase {
     "convert schedule deletion to a delete record" in {
       val List(scheduleId, topic) = random[String](2).toList
       val record = ScheduledMessagePublisher.toProducerRecord(
-        ScheduleDeletion(scheduleId, topic, Set.empty)
+        ScheduleDeletion(scheduleId, topic, Map.empty)
       )
 
       record.key() === scheduleId
@@ -50,7 +50,7 @@ class ScheduledMessagePublisherSpec extends SpecBase {
         .toProducerRecord(schedule.toScheduledMessage)
         .headers()
         .toArray
-        .map(header => Header(header.key(), header.value()))
+        .map(header => header.key() -> header.value())
 
       headers should contain theSameElementsAs schedule.headers
     }

@@ -43,7 +43,7 @@ class PublisherActor extends Actor with ActorLogging {
   }
 
   private def messageFrom(schedule: ScheduleEvent) =
-    ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value)
+    ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
 }
 
 object PublisherActor {

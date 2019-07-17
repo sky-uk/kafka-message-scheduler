@@ -34,7 +34,7 @@ case class ScheduledMessagePublisher(queueBufferSize: Int, publisherSink: Eval[S
   val splitToMessageAndDeletion: In => List[PublishableMessage] = {
     case (scheduleId, scheduledMessage) =>
       logger.info(s"Publishing scheduled message $scheduleId to ${scheduledMessage.outputTopic} and deleting it from ${scheduledMessage.inputTopic}")
-      List(scheduledMessage, ScheduleDeletion(scheduleId, scheduledMessage.inputTopic))
+      List(scheduledMessage, ScheduleDeletion(scheduleId, scheduledMessage.inputTopic, scheduledMessage.headers))
   }
 }
 
@@ -59,8 +59,9 @@ object ScheduledMessagePublisher {
   }
 
   val toProducerRecord: PublishableMessage => ProducerRecord[Array[Byte], Array[Byte]] = {
-    case ScheduledMessage(_, outputTopic, key, value) => new ProducerRecord(outputTopic, key, value.orNull)
-    case ScheduleDeletion(id, topic) => new ProducerRecord(topic, id.getBytes, null)
+    case ScheduledMessage(_, outputTopic, key, value, headers) => new ProducerRecord(outputTopic, null, key, value.orNull, headers.asKafkaHeaders)
+    case ScheduleDeletion(id, outputTopic, headers) => new ProducerRecord(
+      outputTopic, null, id.getBytes, null, headers.asKafkaHeaders)
   }
 
   def run(implicit mat: ActorMaterializer): Start[Running] =

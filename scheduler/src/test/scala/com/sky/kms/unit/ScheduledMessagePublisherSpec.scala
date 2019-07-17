@@ -16,16 +16,19 @@ class ScheduledMessagePublisherSpec extends SpecBase {
     "convert scheduled message to producer record" in {
       val (scheduleId, schedule) = (UUID.randomUUID().toString, random[ScheduleEvent].copy(inputTopic = testTopic))
 
-      val record = ScheduledMessagePublisher.toProducerRecord(schedule.toScheduledMessage)
+      val record =
+        ScheduledMessagePublisher.toProducerRecord(schedule.toScheduledMessage)
 
       record.key() === scheduleId
-      record.value() === schedule.value.get
+      Option(record.value()) === schedule.value
       record.topic() shouldBe schedule.outputTopic
     }
 
     "convert schedule deletion to a delete record" in {
       val List(scheduleId, topic) = random[String](2).toList
-      val record = ScheduledMessagePublisher.toProducerRecord(ScheduleDeletion(scheduleId, topic))
+      val record = ScheduledMessagePublisher.toProducerRecord(
+        ScheduleDeletion(scheduleId, topic, Map.empty)
+      )
 
       record.key() === scheduleId
       record.topic() === topic
@@ -33,11 +36,23 @@ class ScheduledMessagePublisherSpec extends SpecBase {
     }
 
     "convert scheduled message with an empty value to a delete record" in {
-      val schedule = random[ScheduleEvent].copy(inputTopic = testTopic, value = None)
+      val schedule =
+        random[ScheduleEvent].copy(inputTopic = testTopic, value = None)
 
       ScheduledMessagePublisher
         .toProducerRecord(schedule.toScheduledMessage)
         .value() === null
+    }
+
+    "convert scheduled message with headers to producer record with headers" in {
+      val schedule = random[ScheduleEvent]
+      val headers = ScheduledMessagePublisher
+        .toProducerRecord(schedule.toScheduledMessage)
+        .headers()
+        .toArray
+        .map(header => header.key() -> header.value())
+
+      headers should contain theSameElementsAs schedule.headers
     }
   }
 }

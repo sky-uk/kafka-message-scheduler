@@ -47,6 +47,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
         cr.key should contain theSameElementsInOrderAs schedule.key
         cr.value should contain theSameElementsInOrderAs schedule.value.get
         cr.timestamp shouldBe time.toInstant.toEpochMilli +- Tolerance.toMillis
+        cr.headers().toArray.map(h => h.key() -> h.value()).toMap should contain theSameElementsAs schedule.headers
       }
 
     def assertTombstoned(schedules: List[(ScheduleId, ScheduleEvent)]): Unit = {

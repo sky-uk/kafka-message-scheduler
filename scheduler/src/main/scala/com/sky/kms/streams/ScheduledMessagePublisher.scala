@@ -60,7 +60,8 @@ object ScheduledMessagePublisher {
 
   val toProducerRecord: PublishableMessage => ProducerRecord[Array[Byte], Array[Byte]] = {
     case ScheduledMessage(_, outputTopic, key, value, headers) => new ProducerRecord(outputTopic, null, key, value.orNull, headers.asKafkaHeaders)
-    case ScheduleDeletion(id, topic, headers) => new ProducerRecord(topic, null, id.getBytes, null, headers.asKafkaHeaders)
+    case ScheduleDeletion(id, outputTopic, headers) => new ProducerRecord(
+      outputTopic, null, id.getBytes, null, headers.asKafkaHeaders)
   }
 
   def run(implicit mat: ActorMaterializer): Start[Running] =

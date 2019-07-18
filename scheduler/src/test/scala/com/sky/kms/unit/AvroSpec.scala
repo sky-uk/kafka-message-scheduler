@@ -19,9 +19,9 @@ class AvroSpec extends SpecBase {
     }
 
     "serialize an OffsetDateTime to an Avro String type" in {
-      val timeString = "2017-07-18T16:04:54.059+01:00"
+      val timeString      = "2017-07-18T16:04:54.059+01:00"
       val timeEpochMillis = 1500390294059L
-      val testData = TestData(OffsetDateTime.parse(timeString))
+      val testData        = TestData(OffsetDateTime.parse(timeString))
 
       val genericRecord = RecordFormat[TestData].to(testData)
 
@@ -29,9 +29,9 @@ class AvroSpec extends SpecBase {
     }
 
     "deserialize an OffsetDateTime from an Avro String type" in {
-      val timeString = "2017-07-18T15:04:54.059Z"
+      val timeString      = "2017-07-18T15:04:54.059Z"
       val timeEpochMillis = 1500390294059L
-      val genericRecord = new GenericData.Record(AvroSchema[TestData])
+      val genericRecord   = new GenericData.Record(AvroSchema[TestData])
       genericRecord.put("time", timeEpochMillis)
 
       val testData = RecordFormat[TestData].from(genericRecord)

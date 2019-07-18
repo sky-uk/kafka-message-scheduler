@@ -16,7 +16,7 @@ class TerminatorActorSpec extends AkkaSpecBase with MockitoSugar {
   "A terminator actor" must {
     "trigger terminate and stop when any of the actors it is monitoring dies" in {
       val terminate = mock[Eval[Future[Done]]]
-      val probe = TestProbe()
+      val probe     = TestProbe()
 
       val terminator = TestActorRef(new TerminatorActor(terminate, probe.ref))
       watch(terminator)

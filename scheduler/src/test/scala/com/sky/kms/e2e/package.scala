@@ -10,10 +10,12 @@ package object e2e {
 
   val Tolerance = 200 millis
 
-  def withSchedulerApp[T](scenario: => T)(implicit conf: SchedulerConfig, system: ActorSystem, mat: ActorMaterializer): T =
+  def withSchedulerApp[T](
+      scenario: => T)(implicit conf: SchedulerConfig, system: ActorSystem, mat: ActorMaterializer): T =
     withRunningScheduler(SchedulerApp.configure apply AppConfig(conf))(_ => scenario)
 
-  def withRunningScheduler[T](schedulerApp: SchedulerApp)(scenario: SchedulerApp.Running => T)(implicit system: ActorSystem, mat: ActorMaterializer): T = {
+  def withRunningScheduler[T](schedulerApp: SchedulerApp)(
+      scenario: SchedulerApp.Running => T)(implicit system: ActorSystem, mat: ActorMaterializer): T = {
     val runningApp = SchedulerApp.run apply schedulerApp
 
     try {

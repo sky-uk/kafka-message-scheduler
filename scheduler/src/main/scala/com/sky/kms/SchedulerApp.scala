@@ -11,20 +11,22 @@ import kamon.jmx.collector.KamonJmxMetricCollector
 
 import scala.concurrent.Future
 
-case class SchedulerApp(reader: ScheduleReader[Future[Control]], publisher: ScheduledMessagePublisher, publisherActor: ActorRef)
+case class SchedulerApp(reader: ScheduleReader[Future[Control]],
+                        publisher: ScheduledMessagePublisher,
+                        publisherActor: ActorRef)
 
 object SchedulerApp {
 
   case class Running(reader: ScheduleReader.Running[Future[Control]], publisher: ScheduledMessagePublisher.Running)
 
   def configure(implicit system: ActorSystem): Configured[SchedulerApp] = {
-    val publisherActor = PublisherActor.create
+    val publisherActor  = PublisherActor.create
     val schedulingActor = SchedulingActor.create(publisherActor)
     TerminatorActor.create(schedulingActor, publisherActor)
 
     for {
       scheduleReader <- ScheduleReader.configure(schedulingActor)
-      publisher <- ScheduledMessagePublisher.configure
+      publisher      <- ScheduledMessagePublisher.configure
     } yield SchedulerApp(scheduleReader, publisher, publisherActor)
   }
 
@@ -34,11 +36,11 @@ object SchedulerApp {
     ShutdownTasks.forKamon
 
     for {
-      publisher <- ScheduledMessagePublisher.run
-      _ <- PublisherActor.init(publisher.materializedSource)
+      publisher     <- ScheduledMessagePublisher.run
+      _             <- PublisherActor.init(publisher.materializedSource)
       runningReader <- ScheduleReader.run
-      running = Running(runningReader, publisher)
-      _ = ShutdownTasks.forScheduler(running)
+      running       = Running(runningReader, publisher)
+      _             = ShutdownTasks.forScheduler(running)
     } yield running
   }
 

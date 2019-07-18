@@ -57,7 +57,7 @@ class PublisherActorSpec extends AkkaSpecBase with MockitoSugar {
 
   private class TestContext {
     val mockSourceQueue = mock[ScheduleQueue]
-    val publisherActor = TestActorRef(new PublisherActor)
+    val publisherActor  = TestActorRef(new PublisherActor)
 
     when(mockSourceQueue.watchCompletion()).thenReturn(Future.never)
     publisherActor ! Init(mockSourceQueue)

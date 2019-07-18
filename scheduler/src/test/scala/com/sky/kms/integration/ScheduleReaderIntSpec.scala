@@ -27,7 +27,7 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
 
   "stream" should {
     "not schedule messages that have been deleted but not compacted on startup" in withRunningKafka {
-      val schedules@firstSchedule :: _ = List.fill(numSchedules)(generateSchedule)
+      val schedules @ firstSchedule :: _ = List.fill(numSchedules)(generateSchedule)
       writeSchedulesToKafka(schedules: _*)
       deleteSchedulesInKafka(firstSchedule)
 
@@ -58,10 +58,11 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
   private def withRunningScheduleReader[T](scenario: TestProbe => T): T = {
     val probe = {
       val p = TestProbe()
-      p.setAutoPilot((sender, msg) => msg match {
-        case _ =>
-          sender ! Ack
-          TestActor.KeepRunning
+      p.setAutoPilot((sender, msg) =>
+        msg match {
+          case _ =>
+            sender ! Ack
+            TestActor.KeepRunning
       })
       p
     }
@@ -69,7 +70,8 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
     val controlF = ScheduleReader
       .configure(probe.ref)
       .apply(AppConfig(conf))
-      .stream.run()
+      .stream
+      .run()
 
     try {
       scenario(probe)
@@ -79,7 +81,9 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
   }
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
-    publishToKafka(scheduleTopic, schedules.map { case (scheduleId, scheduleEvent) => (scheduleId, scheduleEvent.toSchedule.toAvro) })
+    publishToKafka(scheduleTopic, schedules.map {
+      case (scheduleId, scheduleEvent) => (scheduleId, scheduleEvent.toSchedule.toAvro)
+    })
 
   private def scheduleShouldFlow(probe: TestProbe): SchedulingMessage = {
     writeSchedulesToKafka(generateSchedule)

@@ -12,28 +12,28 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 
 class SchedulerSpec extends SpecBase {
 
-  val ScheduleId = "scheduleId"
+  val ScheduleId   = "scheduleId"
   val TestSchedule = random[ScheduleEvent]
 
   "scheduleConsumerRecordDecoder" should {
     "decode id and schedule if present" in {
       val someBytes = random[Array[Byte]]
-      val schedule = TestSchedule.copy(value = someBytes.some, inputTopic = "scheduleTopic")
-      val cr = artificialConsumerRecord(ScheduleId, schedule.toSchedule.toAvro)
+      val schedule  = TestSchedule.copy(value = someBytes.some, inputTopic = "scheduleTopic")
+      val cr        = artificialConsumerRecord(ScheduleId, schedule.toSchedule.toAvro)
 
       scheduleConsumerRecordDecoder(cr) should matchPattern {
         case Right((ScheduleId, Some(ScheduleEvent(_, schedule.inputTopic, schedule.outputTopic, k, Some(v), headers))))
-          if k === schedule.key && v === someBytes && equalHeaders(headers, schedule.headers) =>
+            if k === schedule.key && v === someBytes && equalHeaders(headers, schedule.headers) =>
       }
     }
 
     "decode id and schedule handling a schedule with null body" in {
       val schedule = TestSchedule.copy(value = None, inputTopic = "scheduleTopic")
-      val cr = artificialConsumerRecord(ScheduleId, schedule.toSchedule.toAvro)
+      val cr       = artificialConsumerRecord(ScheduleId, schedule.toSchedule.toAvro)
 
       scheduleConsumerRecordDecoder(cr) should matchPattern {
         case Right((ScheduleId, Some(ScheduleEvent(_, schedule.inputTopic, schedule.outputTopic, k, None, headers))))
-          if k === schedule.key && schedule.value === None && equalHeaders(headers, schedule.headers) =>
+            if k === schedule.key && schedule.value === None && equalHeaders(headers, schedule.headers) =>
       }
     }
 
@@ -51,16 +51,16 @@ class SchedulerSpec extends SpecBase {
 
     "error if the duration between schedule time and now is beyond the range of FiniteDuration" in {
       val tooDistantFuture = OffsetDateTime.now().plusYears(293)
-      val schedule = TestSchedule.toSchedule.copy(time = tooDistantFuture)
-      val cr = artificialConsumerRecord(ScheduleId, schedule.toAvro)
+      val schedule         = TestSchedule.toSchedule.copy(time = tooDistantFuture)
+      val cr               = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
       scheduleConsumerRecordDecoder(cr).left.get shouldBe a[InvalidTimeError]
     }
   }
 
-  private def artificialConsumerRecord(scheduleId: ScheduleId, avroBytes: Array[Byte]) = {
+  private def artificialConsumerRecord(scheduleId: ScheduleId, avroBytes: Array[Byte]) =
     new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1l, scheduleId, avroBytes)
-  }
 
-  private def equalHeaders(x: Map[String, Array[Byte]], y: Map[String, Array[Byte]]): Boolean = x.mapValues(_.toList) === y.mapValues(_.toList)
+  private def equalHeaders(x: Map[String, Array[Byte]], y: Map[String, Array[Byte]]): Boolean =
+    x.mapValues(_.toList) === y.mapValues(_.toList)
 }

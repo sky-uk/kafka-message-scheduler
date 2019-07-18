@@ -25,14 +25,14 @@ import scala.concurrent.Future
 case class ScheduleReader[Mat](scheduleSource: Eval[Source[In, (Future[Done], Mat)]],
                                schedulingActor: ActorRef,
                                errorHandler: Sink[ApplicationError, Future[Done]],
-                               timeouts: ReaderConfig.TimeoutConfig)(
-                                implicit system: ActorSystem) {
+                               timeouts: ReaderConfig.TimeoutConfig)(implicit system: ActorSystem) {
 
   import system.dispatcher
 
   private def initSchedulingActorWhenReady(f: Future[Done]): Future[Any] =
-    f.flatMap(_ => (schedulingActor ? Initialised) (timeouts.initialisation))
-      .recover { case t => schedulingActor ! UpstreamFailure(t) }
+    f.flatMap(_ => (schedulingActor ? Initialised)(timeouts.initialisation)).recover {
+      case t => schedulingActor ! UpstreamFailure(t)
+    }
 
   def stream: RunnableGraph[Mat] =
     scheduleSource.value.mapMaterializedValue { case (initF, mat) => initSchedulingActorWhenReady(initF); mat }
@@ -46,18 +46,18 @@ object ScheduleReader extends LazyLogging {
 
   case class Running[Mat](mat: Mat)
 
-  type In = Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])]
+  type In           = Either[ApplicationError, (ScheduleId, Option[ScheduleEvent])]
   type LoadSchedule = SchedulingMessage => Future[Ack.type]
 
   def toSchedulingMessage(readResult: In): Either[ApplicationError, SchedulingMessage] =
-    readResult.map { case (scheduleId, scheduleOpt) =>
-      scheduleOpt.fold[SchedulingMessage](Cancel(scheduleId))(CreateOrUpdate(scheduleId, _))
+    readResult.map {
+      case (scheduleId, scheduleOpt) =>
+        scheduleOpt.fold[SchedulingMessage](Cancel(scheduleId))(CreateOrUpdate(scheduleId, _))
     }
 
   def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader[Future[Control]]] =
     ReaderConfig.configure.map { config =>
-
-      implicit val keyDeserializer: Deserializer[String] = new StringDeserializer()
+      implicit val keyDeserializer: Deserializer[String]        = new StringDeserializer()
       implicit val valueDeserializer: Deserializer[Array[Byte]] = new ByteArrayDeserializer()
 
       ScheduleReader(
@@ -68,7 +68,8 @@ object ScheduleReader extends LazyLogging {
         ),
         actorRef,
         logErrors,
-        config.timeouts)
+        config.timeouts
+      )
     }
 
   def run(implicit mat: ActorMaterializer): Start[Running[Future[Control]]] =

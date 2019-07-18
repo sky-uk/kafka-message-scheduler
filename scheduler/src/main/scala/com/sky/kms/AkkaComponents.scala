@@ -9,10 +9,9 @@ trait AkkaComponents extends LazyLogging {
 
   implicit lazy val system = ActorSystem("kafka-message-scheduler")
 
-  implicit lazy val materializer = ActorMaterializer(
-    ActorMaterializerSettings(system).withSupervisionStrategy(t => {
-      logger.error("Exception caught by stream supervisor", t)
-      Stop
-    }))
+  implicit lazy val materializer = ActorMaterializer(ActorMaterializerSettings(system).withSupervisionStrategy(t => {
+    logger.error("Exception caught by stream supervisor", t)
+    Stop
+  }))
 
 }

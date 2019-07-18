@@ -19,14 +19,21 @@ import scala.util.Try
 package object kms {
 
   implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[ScheduleReader.In] =
-    cr => Option(cr.value).fold[ScheduleReader.In]((cr.key, None).asRight) { bytes =>
-      for {
-        scheduleTry <- Either.fromOption(valueDecoder(bytes), InvalidSchemaError(cr.key))
-        avroSchedule <- scheduleTry.toEither.leftMap(AvroMessageFormatError(cr.key, _))
-        delay <- Either
-          .catchNonFatal(MILLIS.between(OffsetDateTime.now, avroSchedule.time).millis)
-          .leftMap(_ => InvalidTimeError(cr.key, avroSchedule.time))
-      } yield cr.key -> ScheduleEvent(delay, cr.topic, avroSchedule.topic, avroSchedule.key, avroSchedule.value, avroSchedule.headers).some
+    cr =>
+      Option(cr.value).fold[ScheduleReader.In]((cr.key, None).asRight) { bytes =>
+        for {
+          scheduleTry  <- Either.fromOption(valueDecoder(bytes), InvalidSchemaError(cr.key))
+          avroSchedule <- scheduleTry.toEither.leftMap(AvroMessageFormatError(cr.key, _))
+          delay <- Either
+                    .catchNonFatal(MILLIS.between(OffsetDateTime.now, avroSchedule.time).millis)
+                    .leftMap(_ => InvalidTimeError(cr.key, avroSchedule.time))
+        } yield
+          cr.key -> ScheduleEvent(delay,
+                                  cr.topic,
+                                  avroSchedule.topic,
+                                  avroSchedule.key,
+                                  avroSchedule.value,
+                                  avroSchedule.headers).some
     }
 
   implicit val scheduleDecoder = Decoder[Schedule]

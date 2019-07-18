@@ -16,6 +16,7 @@ package object avro {
   }
 
   implicit object DateTimeDecoder extends Decoder[OffsetDateTime] {
-    override def decode(value: Any, schema: Schema): OffsetDateTime = Instant.ofEpochMilli(value.toString.toLong).atZone(ZoneOffset.UTC).toOffsetDateTime
+    override def decode(value: Any, schema: Schema): OffsetDateTime =
+      Instant.ofEpochMilli(value.toString.toLong).atZone(ZoneOffset.UTC).toOffsetDateTime
   }
 }

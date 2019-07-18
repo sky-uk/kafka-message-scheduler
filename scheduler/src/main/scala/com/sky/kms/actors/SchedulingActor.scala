@@ -8,7 +8,9 @@ import monix.execution.{Cancelable, Scheduler => MonixScheduler}
 
 import scala.collection.mutable
 
-class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monitoring: Monitoring) extends Actor with ActorLogging {
+class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monitoring: Monitoring)
+    extends Actor
+    with ActorLogging {
 
   override def receive: Receive = initSchedules
 
@@ -27,9 +29,10 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
     val finishInitialisation: Receive = {
       case Initialised =>
         log.debug("State initialised - scheduling stored schedules")
-        val scheduled = schedules.map { case (scheduleId, schedule) =>
-          monitoring.scheduleReceived()
-          scheduleId -> scheduleOnce(scheduleId, schedule)
+        val scheduled = schedules.map {
+          case (scheduleId, schedule) =>
+            monitoring.scheduleReceived()
+            scheduleId -> scheduleOnce(scheduleId, schedule)
         }
         log.info("Reloaded state has been scheduled")
         context become receiveWithSchedules(scheduled)
@@ -46,7 +49,8 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
         scheduled.get(scheduleId).foreach(_.cancel())
         val cancellable = scheduleOnce(scheduleId, schedule)
-        log.info(s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} in ${schedule.delay.toMillis} millis")
+        log.info(
+          s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} in ${schedule.delay.toMillis} millis")
 
         monitoring.scheduleReceived()
         scheduled += (scheduleId -> cancellable)
@@ -96,5 +100,6 @@ object SchedulingActor {
   case class UpstreamFailure(t: Throwable)
 
   def create(publisherActor: ActorRef)(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher), new KamonMonitoring())), "scheduling-actor")
+    system.actorOf(Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher), new KamonMonitoring())),
+                   "scheduling-actor")
 }

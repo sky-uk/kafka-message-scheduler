@@ -13,7 +13,7 @@ class SchedulerDeleteIntSpec extends SchedulerIntSpecBase with Consumers {
     "schedule a delete message if the value of the scheduled message is empty" in withRunningKafka {
       withSchedulerApp {
         val scheduleId = random[String]
-        val schedule = random[ScheduleEvent].copy(value = None).secondsFromNow(4).toSchedule
+        val schedule   = random[ScheduleEvent].copy(value = None).secondsFromNow(4).toSchedule
 
         publishToKafka(scheduleTopic, scheduleId, schedule.toAvro)
 

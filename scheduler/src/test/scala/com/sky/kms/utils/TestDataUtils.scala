@@ -28,7 +28,7 @@ object TestDataUtils {
     Arbitrary(Gen.alphaStr.suchThat(_.nonEmpty).retryUntil(_.nonEmpty))
 
   implicit val arbNextMonthOffsetDateTime: Arbitrary[OffsetDateTime] = {
-    val from = ZonedDateTime.now()
+    val from  = ZonedDateTime.now()
     val range = Duration.ofDays(20)
     Arbitrary(genDateTimeWithinRange(from, range).map(_.withZoneSameInstant(ZoneOffset.UTC).toOffsetDateTime))
   }
@@ -55,7 +55,7 @@ object TestDataUtils {
 
   implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {
     def toAvro: Array[Byte] = {
-      val baos = new ByteArrayOutputStream()
+      val baos   = new ByteArrayOutputStream()
       val output = AvroOutputStream.binary[Schedule].to(baos).build(scheduleSchema)
       output.write(schedule)
       output.close()
@@ -66,11 +66,12 @@ object TestDataUtils {
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
-    def withReaderSource(src: Source[ScheduleReader.In, (Future[Done], Future[Control])])(implicit as: ActorSystem): SchedulerApp =
-      schedulerApp.copy(reader = schedulerApp.reader.copy(
-        scheduleSource = Eval.later(src)))
+    def withReaderSource(src: Source[ScheduleReader.In, (Future[Done], Future[Control])])(
+        implicit as: ActorSystem): SchedulerApp =
+      schedulerApp.copy(reader = schedulerApp.reader.copy(scheduleSource = Eval.later(src)))
 
-    def withPublisherSink(sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
+    def withPublisherSink(
+        sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
       schedulerApp.modifyWith[Any] {
         case pub: ScheduledMessagePublisher => pub.replace(Eval.later(sink))
       }

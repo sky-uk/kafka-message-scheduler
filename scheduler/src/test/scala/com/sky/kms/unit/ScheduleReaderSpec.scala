@@ -25,7 +25,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
   "stream" should {
     "send a scheduling message to the scheduling the actor" in new TestContext {
-      val schedule@(_, Some(scheduleEvent)) = (random[String], Some(random[ScheduleEvent]))
+      val schedule @ (_, Some(scheduleEvent)) = (random[String], Some(random[ScheduleEvent]))
 
       runReader(Source.single(schedule.asRight[ApplicationError]))
 
@@ -62,7 +62,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
 
     "signal failure to actor when source materialised future fails" in new TestContext {
       val ex = new Exception("boom!")
-      val p = Promise()
+      val p  = Promise()
 
       runReader(delayedSource, sourceMatFuture = p.future)
       probe.expectMsg(StreamStarted)
@@ -97,7 +97,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
           case _ =>
             sender ! Ack
             TestActor.KeepRunning
-        })
+      })
       p
     }
 
@@ -106,18 +106,17 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
     def runReader(in: Source[In, NotUsed],
                   errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
                   sourceMatFuture: Future[Done] = Future.never): NotUsed =
-      ScheduleReader(
-        Eval.now(in.mapMaterializedValue(nu => sourceMatFuture -> nu)),
-        probe.ref,
-        errorHandler,
-        ReaderConfig.TimeoutConfig(100.millis, 100.millis)).stream.run()
+      ScheduleReader(Eval.now(in.mapMaterializedValue(nu => sourceMatFuture -> nu)),
+                     probe.ref,
+                     errorHandler,
+                     ReaderConfig.TimeoutConfig(100.millis, 100.millis)).stream.run()
   }
 
   private trait ErrorHandler {
     this: TestContext =>
 
     val awaitingError = Promise[ApplicationError]
-    val errorHandler = Sink.foreach[ApplicationError](awaitingError.trySuccess)
+    val errorHandler  = Sink.foreach[ApplicationError](awaitingError.trySuccess)
   }
 
   private trait ProbeSource {

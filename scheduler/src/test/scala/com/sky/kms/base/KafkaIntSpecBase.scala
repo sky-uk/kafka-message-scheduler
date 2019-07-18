@@ -14,16 +14,15 @@ trait KafkaIntSpecBase extends EmbeddedKafka with WordSpecLike with Consumers {
 
   implicit lazy val kafkaConfig = EmbeddedKafkaConfig(kafkaPort = randomPort(), zooKeeperPort = randomPort())
 
-  val scheduleTopic: Topic = "scheduleTopic"
+  val scheduleTopic: Topic      = "scheduleTopic"
   val extraScheduleTopic: Topic = "extraScheduleTopic"
 
   val retryConfig = ConsumerRetryConfig(maximumAttempts = 50)
 
-  def consumeFirstFrom[T: Deserializer](topic: String): ConsumerRecord[Array[Byte], T] =
-    withConsumer[Array[Byte], T, ConsumerRecord[Array[Byte], T]](
-      _.consumeLazily(topic)(identity, retryConfig).head)
+  def consumeFirstFrom[T : Deserializer](topic: String): ConsumerRecord[Array[Byte], T] =
+    withConsumer[Array[Byte], T, ConsumerRecord[Array[Byte], T]](_.consumeLazily(topic)(identity, retryConfig).head)
 
-  def consumeSomeFrom[T: Deserializer](topic: String, numMsgs: Int): List[ConsumerRecord[String, T]] =
+  def consumeSomeFrom[T : Deserializer](topic: String, numMsgs: Int): List[ConsumerRecord[String, T]] =
     withConsumer { cr: KafkaConsumer[String, T] =>
       cr.consumeLazily(topic)(identity, retryConfig).take(numMsgs).toList
     }

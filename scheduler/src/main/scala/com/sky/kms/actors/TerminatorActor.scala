@@ -26,5 +26,6 @@ object TerminatorActor {
   case object StreamActorsTerminated extends Reason
 
   def create(actors: ActorRef*)(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props(new TerminatorActor(Eval.later(CoordinatedShutdown(system).run(StreamActorsTerminated)), actors: _*)))
+    system.actorOf(
+      Props(new TerminatorActor(Eval.later(CoordinatedShutdown(system).run(StreamActorsTerminated)), actors: _*)))
 }

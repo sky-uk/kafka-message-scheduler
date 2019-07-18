@@ -16,7 +16,7 @@ object ShutdownTasks extends LazyLogging {
 
       for {
         control <- running.reader.mat
-        done <- control.shutdown()
+        done    <- control.shutdown()
       } yield done
     }
 

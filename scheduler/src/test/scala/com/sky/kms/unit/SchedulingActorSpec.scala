@@ -120,11 +120,11 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
 
   private class TestContext {
 
-    val monitoring = new SimpleCounterMonitoring()
-    val testScheduler = TestScheduler()
-    val probe = TestProbe()
+    val monitoring      = new SimpleCounterMonitoring()
+    val testScheduler   = TestScheduler()
+    val probe           = TestProbe()
     val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, testScheduler, monitoring))
-    val now = System.currentTimeMillis()
+    val now             = System.currentTimeMillis()
 
     def advanceToTimeFrom(schedule: ScheduleEvent): Unit =
       testScheduler.tick(schedule.delay)

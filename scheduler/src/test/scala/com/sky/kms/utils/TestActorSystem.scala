@@ -33,10 +33,13 @@ object TestActorSystem {
        |}
     """.stripMargin
 
-
-  def apply(kafkaPort: Int = 9092, terminateActorSystem: Boolean = false, akkaExpectDuration: Duration = 3.seconds): ActorSystem =
+  def apply(kafkaPort: Int = 9092,
+            terminateActorSystem: Boolean = false,
+            akkaExpectDuration: Duration = 3.seconds): ActorSystem =
     ActorSystem(
       name = s"test-actor-system-${UUID.randomUUID().toString}",
-      config = ConfigFactory.parseString(config(kafkaPort, terminateActorSystem, akkaExpectDuration)).withFallback(ConfigFactory.load())
+      config = ConfigFactory
+        .parseString(config(kafkaPort, terminateActorSystem, akkaExpectDuration))
+        .withFallback(ConfigFactory.load())
     )
 }

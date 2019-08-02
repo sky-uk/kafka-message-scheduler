@@ -3,54 +3,53 @@ package com.sky.kms.e2e
 import java.io.ByteArrayOutputStream
 import java.time.OffsetDateTime
 
-import com.sksamuel.avro4s.{AvroInputStream, AvroOutputStream, AvroSchema, Encoder, SchemaFor}
+import com.danielasfregola.randomdatagenerator.RandomDataGenerator
+import com.sksamuel.avro4s.{AvroOutputStream, Encoder, SchemaFor}
 import com.sky.kms.base.SchedulerIntSpecBase
-import com.sky.kms.domain.ScheduleId
+import com.sky.kms.domain.{ScheduleEvent, ScheduleEventNoHeaders, ScheduleId}
+import com.sky.kms.utils.TestDataUtils._
+import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, Deserializer, StringDeserializer}
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import com.sky.kms._
 
-import scala.util.Success
+class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with ScalaCheckPropertyChecks with RandomDataGenerator {
 
-trait EvolvingData
-case class OldData(name: String)                                            extends EvolvingData
-case class NewData(name: String, newField: Map[String, String] = Map.empty) extends EvolvingData
-
-class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase {
+  implicit val propertyCheckConf = PropertyCheckConfiguration(minSuccessful = 100, sizeRange = 30)
 
   "scheduler schema" should {
-    "be able to decoded old schema against a new case class structure" in new TestContext {
+
+    "be able to decoded new schedule events" in new TestContext {
       withRunningKafka {
         withSchedulerApp {
+          val scheduleWithHeaders = random[ScheduleEvent]
+          val sched               = scheduleWithHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
+          println(sched)
 
-          val oldData = OldData("cupcat")
-          val newData = NewData("cupcat", Map("cup" -> "cat"))
+          publish(List(("cupcat", sched)))
 
-          publish(List(("cupcat", oldData)))
-          publish(List(("cupcat2", newData)))
+          val published = consumeSomeFrom[Array[Byte]]("cupcat", 1)
 
-          val (old :: evolved :: Nil) = consumeSomeFrom[Array[Byte]]("cupcat", 2)
+          val decoded = scheduleConsumerRecordDecoder(published.head)
 
-          println(s"evolved: $evolved")
-          val t =
-            AvroInputStream
-              .binary[NewData]
-              .from(old.value())
-              .build(oldScheduleSchema)
-              .tryIterator
-              .toSeq
-              .headOption
+          decoded.isRight shouldBe true
+        }
+      }
+    }
 
-          val u =
-            AvroInputStream
-              .binary[NewData]
-              .from(evolved.value())
-              .build(newScheduleSchema)
-              .tryIterator
-              .toSeq
-              .headOption
+    "be able to decoded old schedule events" in new TestContext {
+      withRunningKafka {
+        withSchedulerApp {
+          val scheduleNoHeaders = random[ScheduleEventNoHeaders]
+          val sched             = scheduleNoHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
 
-          t shouldBe Some(Success(NewData("cupcat", Map.empty)))
-          u shouldBe Some(Success(NewData("cupcat", Map("cup" -> "cat"))))
+          publishNoHeaders(List(("cupcat", sched)))
 
+          val publishedNoHeaders = consumeSomeFrom[Array[Byte]]("cupcat", 1)
+
+          val decoded = scheduleConsumerRecordDecoder(publishedNoHeaders.head)
+
+          decoded.right shouldBe Option(scheduleNoHeaders)
         }
       }
     }
@@ -59,20 +58,18 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase {
 
   trait TestContext {
 
-    implicit val oldScheduleSchema  = AvroSchema[OldData]
-    implicit val newScheduleSchema  = AvroSchema[NewData]
-    implicit val oldScheduleEncoder = Encoder[OldData]
-
-    implicit val ss = net.manub.embeddedkafka.Codecs.stringSerializer
-    implicit val ns = net.manub.embeddedkafka.Codecs.nullSerializer
-
-    implicit val sd = net.manub.embeddedkafka.Codecs.stringDeserializer
-    implicit val nd = net.manub.embeddedkafka.Codecs.nullDeserializer
-
-    def publish[T](l: List[(ScheduleId, T)])(implicit sf: SchemaFor[T], e: Encoder[T]): List[OffsetDateTime] = l.map {
+    def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map {
       case (id, scheduleEvent) =>
-        publishToKafka("cupcat", id, toAvro[T](scheduleEvent))
-        OffsetDateTime.now()
+        val schedule = scheduleEvent.toSchedule
+        publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
+        schedule.time
+    }
+
+    def publishNoHeaders: List[(ScheduleId, ScheduleEventNoHeaders)] => List[OffsetDateTime] = _.map {
+      case (id, scheduleEvent) =>
+        val schedule = scheduleEvent.toScheduleWithoutHeaders
+        publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
+        schedule.time
     }
 
     implicit val keyDeserializer: Deserializer[String]        = new StringDeserializer()

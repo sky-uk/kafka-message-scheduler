@@ -20,28 +20,55 @@ package object kms {
 
   implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[ScheduleReader.In] =
     cr =>
-      Option(cr.value).fold[ScheduleReader.In]((cr.key, None).asRight) { bytes =>
-        for {
-          scheduleTry  <- Either.fromOption(valueDecoder(bytes), InvalidSchemaError(cr.key))
-          avroSchedule <- scheduleTry.toEither.leftMap(AvroMessageFormatError(cr.key, _))
-          delay <- Either
-                    .catchNonFatal(MILLIS.between(OffsetDateTime.now, avroSchedule.time).millis)
-                    .leftMap(_ => InvalidTimeError(cr.key, avroSchedule.time))
-        } yield
-          cr.key -> ScheduleEvent(delay,
-                                  cr.topic,
-                                  avroSchedule.topic,
-                                  avroSchedule.key,
-                                  avroSchedule.value,
-                                  avroSchedule.headers).some
-    }
+      Option(cr.value)
+        .fold[ScheduleReader.In]((cr.key, None).asRight) { bytes =>
+          for {
+            scheduleTry <- {
+              Either.fromOption(valueDecoder(bytes), InvalidSchemaError(cr.key))
+            }
+            avroSchedule <- scheduleTry.toEither.leftMap(AvroMessageFormatError(cr.key, _))
+            delay <- Either
+                      .catchNonFatal(MILLIS.between(OffsetDateTime.now, avroSchedule.time).millis)
+                      .leftMap(_ => InvalidTimeError(cr.key, avroSchedule.time))
+          } yield
+            cr.key -> ScheduleEvent(delay,
+                                    cr.topic,
+                                    avroSchedule.topic,
+                                    avroSchedule.key,
+                                    avroSchedule.value,
+                                    avroSchedule.headers).some
+        }
+        .leftFlatMap { _ =>
+          Option(cr.value).fold[ScheduleReader.In]((cr.key, None).asRight) { bytes =>
+            for {
+              scheduleTry <- {
+                Either.fromOption(valueNoHeadersDecoder(bytes), InvalidSchemaError(cr.key))
+              }
+              avroSchedule <- scheduleTry.toEither.leftMap(AvroMessageFormatError(cr.key, _))
+              delay <- Either
+                        .catchNonFatal(MILLIS.between(OffsetDateTime.now, avroSchedule.time).millis)
+                        .leftMap(_ => InvalidTimeError(cr.key, avroSchedule.time))
+            } yield
+              cr.key -> ScheduleEvent(delay,
+                                      cr.topic,
+                                      avroSchedule.topic,
+                                      avroSchedule.key,
+                                      avroSchedule.value,
+                                      Map.empty).some
+          }
+      }
 
   implicit val scheduleDecoder = Decoder[Schedule]
 
   private val scheduleSchema = AvroSchema[Schedule]
 
+  private val scheduleNoHeadersSchema = AvroSchema[ScheduleNoHeaders]
+
   private def valueDecoder(avro: Array[Byte]): Option[Try[Schedule]] =
     AvroInputStream.binary[Schedule].from(avro).build(scheduleSchema).tryIterator.toSeq.headOption
+
+  private def valueNoHeadersDecoder(avro: Array[Byte]): Option[Try[ScheduleNoHeaders]] =
+    AvroInputStream.binary[ScheduleNoHeaders].from(avro).build(scheduleNoHeadersSchema).tryIterator.toSeq.headOption
 
   type Start[T] = Reader[SchedulerApp, T]
 

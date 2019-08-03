@@ -24,7 +24,6 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with ScalaCheckP
         withSchedulerApp {
           val scheduleWithHeaders = random[ScheduleEvent]
           val sched               = scheduleWithHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
-          println(sched)
 
           publish(List(("cupcat", sched)))
 
@@ -49,7 +48,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with ScalaCheckP
 
           val decoded = scheduleConsumerRecordDecoder(publishedNoHeaders.head)
 
-          decoded.right shouldBe Option(scheduleNoHeaders)
+          decoded.isRight shouldBe true
         }
       }
     }

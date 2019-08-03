@@ -15,11 +15,11 @@ package object domain {
 
   case class ScheduleNoHeaders(time: OffsetDateTime, topic: String, key: Array[Byte], value: Option[Array[Byte]])
 
-  case class Schedule(time: OffsetDateTime,
-                      topic: String,
-                      key: Array[Byte],
-                      value: Option[Array[Byte]],
-                      headers: Map[String, Array[Byte]])
+  case class ScheduleWithHeaders(time: OffsetDateTime,
+                                 topic: String,
+                                 key: Array[Byte],
+                                 value: Option[Array[Byte]],
+                                 headers: Map[String, Array[Byte]])
 
   case class ScheduleEventNoHeaders(delay: FiniteDuration,
                                     inputTopic: String,

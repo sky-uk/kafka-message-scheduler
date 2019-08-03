@@ -14,7 +14,7 @@ import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
-import com.sky.kms.domain.{Schedule, ScheduleEvent, ScheduleEventNoHeaders, ScheduleNoHeaders}
+import com.sky.kms.domain.{ScheduleEvent, ScheduleEventNoHeaders, ScheduleNoHeaders, ScheduleWithHeaders}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import org.scalacheck.{Arbitrary, Gen}
 import org.zalando.grafter.syntax.rewriter._
@@ -36,16 +36,16 @@ object TestDataUtils {
   implicit val arbFiniteDuration: Arbitrary[FiniteDuration] =
     Arbitrary(arbNextMonthOffsetDateTime.arbitrary.map(_.getSecond.seconds))
 
-  implicit val scheduleEncoder = Encoder[Schedule]
+  implicit val scheduleEncoder = Encoder[ScheduleWithHeaders]
 
-  private val scheduleSchema = AvroSchema[Schedule]
+  private val scheduleSchema = AvroSchema[ScheduleWithHeaders]
 
   private val scheduleNoHeadersSchema = AvroSchema[ScheduleNoHeaders]
 
   implicit class ScheduleEventOps(val schedule: ScheduleEvent) extends AnyVal {
-    def toSchedule: Schedule = {
+    def toSchedule: ScheduleWithHeaders = {
       val time = OffsetDateTime.now().toInstant.plusMillis(schedule.delay.toMillis).atOffset(ZoneOffset.UTC)
-      Schedule(time, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
+      ScheduleWithHeaders(time, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
     }
 
     def secondsFromNow(secondsAsLong: Long): ScheduleEvent =
@@ -68,10 +68,10 @@ object TestDataUtils {
       ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, Map.empty)
   }
 
-  implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {
+  implicit class ScheduleOps(val schedule: ScheduleWithHeaders) extends AnyVal {
     def toAvro: Array[Byte] = {
       val baos   = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[Schedule].to(baos).build(scheduleSchema)
+      val output = AvroOutputStream.binary[ScheduleWithHeaders].to(baos).build(scheduleSchema)
       output.write(schedule)
       output.close()
       baos.toByteArray

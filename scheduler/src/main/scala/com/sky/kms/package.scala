@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit.MILLIS
 
 import cats.data.{Nested, Reader}
 import cats.implicits._
-import com.sksamuel.avro4s.{AvroInputStream, AvroSchema, Decoder}
+import com.sksamuel.avro4s.{AvroInputStream, AvroSchema, Decoder, SchemaFor}
 import com.sky.kms.avro._
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
@@ -20,42 +20,37 @@ package object kms {
 
   implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[ScheduleReader.In] =
     (cr: ConsumerRecord[String, Array[Byte]]) =>
-      Nested(buildSchedule(cr, valueDecoder)(_.time)).map {
-        case (dur, sched) => toScheduleEvent(dur, cr.topic, sched)
-      }.value.leftFlatMap { _ =>
-        Nested(buildSchedule(cr, valueNoHeadersDecoder)(_.time)).map {
-          case (dur, sched) => toScheduleEvent(dur, cr.topic, sched)
-        }.value
+      scheduleEvent(cr, decoder[ScheduleWithHeaders])(_.time, toScheduleEvent(cr.topic, _, _)).leftFlatMap { _ =>
+        scheduleEvent(cr, decoder[ScheduleNoHeaders])(_.time, toScheduleEvent(cr.topic, _, _))
       }.map(cr.key -> _)
 
-  private def buildSchedule[A, B](cr: ConsumerRecord[String, A], f: A => Option[Try[B]])(
-      g: B => OffsetDateTime): Either[ApplicationError, Option[(FiniteDuration, B)]] =
-    Option(cr.value).fold(none[(FiniteDuration, B)].asRight[ApplicationError]) { bytes =>
-      for {
-        scheduleTry  <- Either.fromOption(f(bytes), InvalidSchemaError(cr.key))
+  private def scheduleEvent[A, B](cr: ConsumerRecord[String, Array[Byte]], decode: Array[Byte] => Option[Try[B]])(
+      scheduleDate: B => OffsetDateTime,
+      scheduleEventFrom: (FiniteDuration, B) => ScheduleEvent): Either[ApplicationError, Option[ScheduleEvent]] =
+    Option(cr.value).fold(none[ScheduleEvent].asRight[ApplicationError]) { bytes =>
+      Nested(for {
+        scheduleTry  <- Either.fromOption(decode(bytes), InvalidSchemaError(cr.key))
         avroSchedule <- scheduleTry.toEither.leftMap(AvroMessageFormatError(cr.key, _))
         delay <- Either
-                  .catchNonFatal(MILLIS.between(OffsetDateTime.now, g(avroSchedule)).millis)
-                  .leftMap(_ => InvalidTimeError(cr.key, g(avroSchedule)))
-      } yield (delay, avroSchedule).some
+                  .catchNonFatal(MILLIS.between(OffsetDateTime.now, scheduleDate(avroSchedule)).millis)
+                  .leftMap(_ => InvalidTimeError(cr.key, scheduleDate(avroSchedule)))
+      } yield (delay, avroSchedule).some).map { case (dur, t) => scheduleEventFrom(dur, t) }.value
     }
 
   implicit val scheduleDecoder = Decoder[ScheduleWithHeaders]
 
-  private val scheduleSchema = AvroSchema[ScheduleWithHeaders]
+  implicit val scheduleSchema = AvroSchema[ScheduleWithHeaders]
 
-  private val scheduleNoHeadersSchema = AvroSchema[ScheduleNoHeaders]
+  implicit val scheduleNoHeadersSchema = AvroSchema[ScheduleNoHeaders]
 
-  private val valueDecoder: Array[Byte] => Option[Try[ScheduleWithHeaders]] = avro =>
-    AvroInputStream.binary[ScheduleWithHeaders].from(avro).build(scheduleSchema).tryIterator.toSeq.headOption
+  private def decoder[T : Decoder : SchemaFor]: Array[Byte] => Option[Try[T]] = { bytes =>
+    AvroInputStream.binary[T].from(bytes).build(implicitly[SchemaFor[T]].schema).tryIterator.toSeq.headOption
+  }
 
-  private val valueNoHeadersDecoder: Array[Byte] => Option[Try[ScheduleNoHeaders]] = avro =>
-    AvroInputStream.binary[ScheduleNoHeaders].from(avro).build(scheduleNoHeadersSchema).tryIterator.toSeq.headOption
-
-  private def toScheduleEvent(dur: FiniteDuration, topic: String, sched: ScheduleNoHeaders) =
+  private def toScheduleEvent(topic: String, dur: FiniteDuration, sched: ScheduleNoHeaders) =
     ScheduleEvent(dur, topic, sched.topic, sched.key, sched.value, Map.empty)
 
-  private def toScheduleEvent(dur: FiniteDuration, topic: String, sched: ScheduleWithHeaders) =
+  private def toScheduleEvent(topic: String, dur: FiniteDuration, sched: ScheduleWithHeaders) =
     ScheduleEvent(dur, topic, sched.topic, sched.key, sched.value, Map.empty)
 
   type Start[T] = Reader[SchedulerApp, T]

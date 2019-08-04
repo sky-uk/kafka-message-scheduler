@@ -39,13 +39,10 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
           publishToKafka(sched.inputTopic, "cupcat", sched.toScheduleWithoutHeaders.toAvro)
 
           val published = consumeSomeFrom[Array[Byte]]("cupcat", 1).headOption
-
           published shouldBe defined
           scheduleConsumerRecordDecoder(published.get).isRight shouldBe true
         }
       }
     }
-
   }
-
 }

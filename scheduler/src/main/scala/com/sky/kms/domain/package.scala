@@ -21,12 +21,6 @@ package object domain {
                                  value: Option[Array[Byte]],
                                  headers: Map[String, Array[Byte]])
 
-  case class ScheduleEventNoHeaders(delay: FiniteDuration,
-                                    inputTopic: String,
-                                    outputTopic: String,
-                                    key: Array[Byte],
-                                    value: Option[Array[Byte]])
-
   case class ScheduleEvent(delay: FiniteDuration,
                            inputTopic: String,
                            outputTopic: String,

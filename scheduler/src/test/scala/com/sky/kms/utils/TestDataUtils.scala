@@ -14,8 +14,9 @@ import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
-import com.sky.kms.domain.{ScheduleEvent, ScheduleEventNoHeaders, ScheduleNoHeaders, ScheduleWithHeaders}
+import com.sky.kms.domain.{ScheduleEvent, ScheduleNoHeaders, ScheduleWithHeaders}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import org.apache.avro.Schema
 import org.scalacheck.{Arbitrary, Gen}
 import org.zalando.grafter.syntax.rewriter._
 
@@ -38,7 +39,7 @@ object TestDataUtils {
 
   implicit val scheduleEncoder = Encoder[ScheduleWithHeaders]
 
-  private val scheduleSchema = AvroSchema[ScheduleWithHeaders]
+  val scheduleSchema = AvroSchema[ScheduleWithHeaders]
 
   private val scheduleNoHeadersSchema = AvroSchema[ScheduleNoHeaders]
 
@@ -69,27 +70,21 @@ object TestDataUtils {
   }
 
   implicit class ScheduleOps(val schedule: ScheduleWithHeaders) extends AnyVal {
-    def toAvro: Array[Byte] = {
-      val baos   = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[ScheduleWithHeaders].to(baos).build(scheduleSchema)
-      output.write(schedule)
-      output.close()
-      baos.toByteArray
-    }
-
-    def timeInMillis: Long = schedule.time.toInstant.toEpochMilli
+    def toAvro: Array[Byte] = toAvroFrom(schedule, scheduleSchema)
+    def timeInMillis: Long  = schedule.time.toInstant.toEpochMilli
   }
 
   implicit class ScheduleNoHeadersOps(val schedule: ScheduleNoHeaders) extends AnyVal {
-    def toAvro: Array[Byte] = {
-      val baos   = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[ScheduleNoHeaders].to(baos).build(scheduleNoHeadersSchema)
-      output.write(schedule)
-      output.close()
-      baos.toByteArray
-    }
+    def toAvro: Array[Byte] = toAvroFrom(schedule, scheduleNoHeadersSchema)
+    def timeInMillis: Long  = schedule.time.toInstant.toEpochMilli
+  }
 
-    def timeInMillis: Long = schedule.time.toInstant.toEpochMilli
+  private def toAvroFrom[T : Encoder](t: T, s: Schema) = {
+    val baos   = new ByteArrayOutputStream()
+    val output = AvroOutputStream.binary[T].to(baos).build(s)
+    output.write(t)
+    output.close()
+    baos.toByteArray
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
@@ -103,5 +98,11 @@ object TestDataUtils {
         case pub: ScheduledMessagePublisher => pub.replace(Eval.later(sink))
       }
   }
+
+  case class ScheduleEventNoHeaders(delay: FiniteDuration,
+                                    inputTopic: String,
+                                    outputTopic: String,
+                                    key: Array[Byte],
+                                    value: Option[Array[Byte]])
 
 }

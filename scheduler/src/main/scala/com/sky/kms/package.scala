@@ -51,7 +51,7 @@ package object kms {
     ScheduleEvent(dur, topic, sched.topic, sched.key, sched.value, Map.empty)
 
   private def toScheduleEvent(topic: String, dur: FiniteDuration, sched: ScheduleWithHeaders) =
-    ScheduleEvent(dur, topic, sched.topic, sched.key, sched.value, Map.empty)
+    ScheduleEvent(dur, topic, sched.topic, sched.key, sched.value, sched.headers)
 
   type Start[T] = Reader[SchedulerApp, T]
 

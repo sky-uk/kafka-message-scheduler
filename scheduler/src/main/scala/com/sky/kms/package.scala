@@ -3,7 +3,7 @@ package com.sky
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit.MILLIS
 
-import cats.data.{Nested, Reader}
+import cats.data.Reader
 import cats.implicits._
 import com.sksamuel.avro4s.{AvroInputStream, AvroSchema, Decoder, SchemaFor}
 import com.sky.kms.avro._
@@ -28,13 +28,13 @@ package object kms {
       scheduleDate: B => OffsetDateTime,
       scheduleEventFrom: (FiniteDuration, B) => ScheduleEvent): Either[ApplicationError, Option[ScheduleEvent]] =
     Option(cr.value).fold(none[ScheduleEvent].asRight[ApplicationError]) { bytes =>
-      Nested(for {
+      for {
         scheduleTry  <- Either.fromOption(decode(bytes), InvalidSchemaError(cr.key))
         avroSchedule <- scheduleTry.toEither.leftMap(AvroMessageFormatError(cr.key, _))
         delay <- Either
                   .catchNonFatal(MILLIS.between(OffsetDateTime.now, scheduleDate(avroSchedule)).millis)
                   .leftMap(_ => InvalidTimeError(cr.key, scheduleDate(avroSchedule)))
-      } yield scheduleEventFrom(delay, avroSchedule).some).value
+      } yield scheduleEventFrom(delay, avroSchedule).some
     }
 
   implicit val scheduleDecoder = Decoder[ScheduleWithHeaders]

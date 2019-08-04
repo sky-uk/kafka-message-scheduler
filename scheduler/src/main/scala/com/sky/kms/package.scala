@@ -34,7 +34,7 @@ package object kms {
         delay <- Either
                   .catchNonFatal(MILLIS.between(OffsetDateTime.now, scheduleDate(avroSchedule)).millis)
                   .leftMap(_ => InvalidTimeError(cr.key, scheduleDate(avroSchedule)))
-      } yield (delay, avroSchedule).some).map { case (dur, t) => scheduleEventFrom(dur, t) }.value
+      } yield scheduleEventFrom(delay, avroSchedule).some).value
     }
 
   implicit val scheduleDecoder = Decoder[ScheduleWithHeaders]

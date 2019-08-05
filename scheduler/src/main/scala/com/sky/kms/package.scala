@@ -38,8 +38,6 @@ package object kms {
       } yield scheduleEventFrom(delay, avroSchedule).some
     }
 
-  implicit val scheduleDecoder = Decoder[ScheduleWithHeaders]
-
   implicit val scheduleSchema = AvroSchema[ScheduleWithHeaders]
 
   implicit val scheduleNoHeadersSchema = AvroSchema[ScheduleNoHeaders]

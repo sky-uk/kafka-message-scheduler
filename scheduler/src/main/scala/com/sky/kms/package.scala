@@ -11,6 +11,7 @@ import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
 import com.sky.kms.kafka.ConsumerRecordDecoder
 import com.sky.kms.streams.ScheduleReader
+import org.apache.avro.Schema
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
 import scala.concurrent.duration._
@@ -20,9 +21,9 @@ package object kms {
 
   implicit val scheduleConsumerRecordDecoder: ConsumerRecordDecoder[ScheduleReader.In] =
     (cr: ConsumerRecord[String, Array[Byte]]) =>
-      scheduleEvent(cr, decoder[ScheduleWithHeaders])(_.time, toScheduleEvent(cr.topic, _, _)).leftFlatMap { _ =>
-        scheduleEvent(cr, decoder[ScheduleNoHeaders])(_.time, toScheduleEvent(cr.topic, _, _))
-      }.map(cr.key -> _)
+      scheduleEvent(cr, decoder[ScheduleWithHeaders])(_.time, toScheduleEvent(cr.topic, _, _))
+        .orElse(scheduleEvent(cr, decoder[ScheduleNoHeaders])(_.time, toScheduleEvent(cr.topic, _, _)))
+        .map(cr.key -> _)
 
   private def scheduleEvent[A, B](cr: ConsumerRecord[String, Array[Byte]], decode: Array[Byte] => Option[Try[B]])(
       scheduleDate: B => OffsetDateTime,
@@ -43,9 +44,8 @@ package object kms {
 
   implicit val scheduleNoHeadersSchema = AvroSchema[ScheduleNoHeaders]
 
-  private def decoder[T : Decoder : SchemaFor]: Array[Byte] => Option[Try[T]] = { bytes =>
-    AvroInputStream.binary[T].from(bytes).build(implicitly[SchemaFor[T]].schema).tryIterator.toSeq.headOption
-  }
+  private def decoder[T : Decoder : SchemaFor]: Array[Byte] => Option[Try[T]] =
+    bytes => AvroInputStream.binary[T].from(bytes).build(GetSchema[T]).tryIterator.toSeq.headOption
 
   private def toScheduleEvent(topic: String, dur: FiniteDuration, sched: ScheduleNoHeaders) =
     ScheduleEvent(dur, topic, sched.topic, sched.key, sched.value, Map.empty)
@@ -59,4 +59,8 @@ package object kms {
     def apply[T](f: SchedulerApp => T): Start[T] = Reader(f)
   }
 
+}
+
+object GetSchema {
+  def apply[T](implicit sf: SchemaFor[T]): Schema = sf.schema
 }

@@ -17,7 +17,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
 
   "scheduler schema" should {
 
-    "be able to decode new schedule events" in new TestContext {
+    "be able to decode new schedule events" in {
       withRunningKafka {
         withSchedulerApp {
           val scheduleWithHeaders = random[ScheduleEvent]
@@ -35,7 +35,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
       }
     }
 
-    "be able to decode old schedule events" in new TestContext {
+    "be able to decode old schedule events" in {
       withRunningKafka {
         withSchedulerApp {
           val scheduleNoHeaders = random[ScheduleEventNoHeaders]
@@ -52,15 +52,13 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
       }
     }
 
-    trait TestContext {
-      implicit class HeadersFromOps(val h: ScheduleReader.In) {
-        def headers =
-          h.fold(_ => none[Map[String, Array[Byte]]], {
-            case (_, ose) => ose.fold(none[Map[String, Array[Byte]]])(_.headers.some)
-          })
-        def headerKeys   = headers.map(_.keys.toList)
-        def headerValues = headers.map(_.values.toList.map(_.toList))
-      }
+    implicit class HeadersFromOps(val h: ScheduleReader.In) {
+      def headers =
+        h.fold(_ => none[Map[String, Array[Byte]]], {
+          case (_, ose) => ose.fold(none[Map[String, Array[Byte]]])(_.headers.some)
+        })
+      def headerKeys   = headers.map(_.keys.toList)
+      def headerValues = headers.map(_.values.toList.map(_.toList))
     }
   }
 }

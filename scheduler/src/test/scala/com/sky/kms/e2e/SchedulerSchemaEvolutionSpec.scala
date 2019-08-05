@@ -17,7 +17,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
 
   "scheduler schema" should {
 
-    "be able to decoded new schedule events" in new TestContext {
+    "be able to decode new schedule events" in new TestContext {
       withRunningKafka {
         withSchedulerApp {
           val scheduleWithHeaders = random[ScheduleEvent]
@@ -35,7 +35,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
       }
     }
 
-    "be able to decoded old schedule events" in new TestContext {
+    "be able to decode old schedule events" in new TestContext {
       withRunningKafka {
         withSchedulerApp {
           val scheduleNoHeaders = random[ScheduleEventNoHeaders]

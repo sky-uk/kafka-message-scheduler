@@ -17,48 +17,54 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
 
   "scheduler schema" should {
 
-    "be able to decode new schedule events" in {
+    "be able to decode new schedule events" in new TestContext {
       withRunningKafka {
         withSchedulerApp {
           val scheduleWithHeaders = random[ScheduleEvent]
-          val sched               = scheduleWithHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
+          val schedule            = scheduleWithHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
 
-          publishToKafka(sched.inputTopic, "cupcat", sched.toSchedule.toAvro)
+          val res = publishAndGetDecoded(schedule.inputTopic, schedule.toSchedule.toAvro)
 
-          val published = consumeSomeFrom[Array[Byte]]("cupcat", 1).headOption
-
-          published shouldBe defined
-          val res = scheduleConsumerRecordDecoder(published.get)
-          res.headerKeys shouldBe Option(scheduleWithHeaders.headers.map(_._1))
-          res.headerValues shouldBe Option(scheduleWithHeaders.headers.map(_._2.toList))
+          res.headerKeys should contain theSameElementsAs scheduleWithHeaders.headerKeys
+          res.headerValues should contain theSameElementsAs scheduleWithHeaders.headerValues
         }
       }
     }
 
-    "be able to decode old schedule events" in {
+    "be able to decode old schedule events" in new TestContext {
       withRunningKafka {
         withSchedulerApp {
           val scheduleNoHeaders = random[ScheduleEventNoHeaders]
-          val sched             = scheduleNoHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
+          val schedule          = scheduleNoHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
 
-          publishToKafka(sched.inputTopic, "cupcat", sched.toScheduleWithoutHeaders.toAvro)
+          val res = publishAndGetDecoded(schedule.inputTopic, schedule.toScheduleWithoutHeaders.toAvro)
 
-          val published = consumeSomeFrom[Array[Byte]]("cupcat", 1).headOption
-
-          published shouldBe defined
-          val res = scheduleConsumerRecordDecoder(published.get)
           res.headers shouldBe Option(Map.empty)
         }
       }
     }
 
-    implicit class HeadersFromOps(val h: ScheduleReader.In) {
+    trait TestContext {
+      def publishAndGetDecoded(inputTopic: String, schedule: Array[Byte]) = {
+        publishToKafka(inputTopic, "cupcat", schedule)
+        consumeSomeFrom[Array[Byte]]("cupcat", 1).headOption.map(scheduleConsumerRecordDecoder.apply)
+      }
+    }
+
+    implicit class OptionalHeaderOps(val optionalSchedule: Option[ScheduleReader.In]) {
+      def headers      = optionalSchedule.flatMap(_.headers)
+      def headerKeys   = optionalSchedule.flatMap(_.headerKeys).getOrElse(List.empty)
+      def headerValues = optionalSchedule.flatMap(_.headerValues).getOrElse(List.empty)
+    }
+
+    implicit class HeaderOps(val schedule: ScheduleReader.In) {
       def headers =
-        h.fold(_ => none[Map[String, Array[Byte]]], {
+        schedule.fold(_ => none[Map[String, Array[Byte]]], {
           case (_, ose) => ose.fold(none[Map[String, Array[Byte]]])(_.headers.some)
         })
       def headerKeys   = headers.map(_.keys.toList)
       def headerValues = headers.map(_.values.toList.map(_.toList))
     }
+
   }
 }

@@ -14,7 +14,8 @@ import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
-import com.sky.kms.domain.{ScheduleEvent, ScheduleNoHeaders, ScheduleWithHeaders}
+import com.sky.kms.domain.Schedule.{ScheduleNoHeaders, ScheduleWithHeaders}
+import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import org.apache.avro.Schema
 import org.scalacheck.{Arbitrary, Gen}
@@ -54,6 +55,9 @@ object TestDataUtils {
 
     def toScheduledMessage: ScheduledMessage =
       ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
+
+    def headerKeys   = schedule.headers.map(_._1)
+    def headerValues = schedule.headers.map(_._2)
   }
 
   implicit class ScheduleEventNoHeadersOps(val schedule: ScheduleEventNoHeaders) extends AnyVal {

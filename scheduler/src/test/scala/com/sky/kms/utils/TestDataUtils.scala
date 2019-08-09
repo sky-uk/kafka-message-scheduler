@@ -42,10 +42,6 @@ object TestDataUtils {
   implicit val encoderForScheduleWithHeaders = Encoder[ScheduleWithHeaders]
   implicit val encoderForScheduleNoHeaders   = Encoder[ScheduleNoHeaders]
 
-  implicit val scheduleSchema = AvroSchema[ScheduleWithHeaders]
-
-  implicit val scheduleNoHeadersSchema = AvroSchema[ScheduleNoHeaders]
-
   implicit class ScheduleEventOps(val schedule: ScheduleEvent) extends AnyVal {
     def toSchedule: ScheduleWithHeaders = {
       val time = OffsetDateTime.now().toInstant.plusMillis(schedule.delay.toMillis).atOffset(ZoneOffset.UTC)

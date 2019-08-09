@@ -24,8 +24,8 @@ package object kms {
       scheduleEvent(cr, decoder[ScheduleWithHeaders])
         .orElse(scheduleEvent(cr, decoder[ScheduleNoHeaders]))
 
-  private def scheduleEvent[A, B <: Schedule](cr: ConsumerRecord[String, Array[Byte]],
-                                              decode: Array[Byte] => Option[Try[B]]): ScheduleReader.In =
+  private def scheduleEvent[A <: Schedule](cr: ConsumerRecord[String, Array[Byte]],
+                                           decode: Array[Byte] => Option[Try[A]]): ScheduleReader.In =
     Option(cr.value).fold[ScheduleReader.In]((cr.key, None).asRight[ApplicationError]) { bytes =>
       for {
         scheduleTry  <- Either.fromOption(decode(bytes), InvalidSchemaError(cr.key))

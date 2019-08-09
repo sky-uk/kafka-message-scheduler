@@ -48,14 +48,14 @@ object TestDataUtils {
       ScheduleWithHeaders(time, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
     }
 
-    def secondsFromNow(secondsAsLong: Long): ScheduleEvent =
-      schedule.copy(delay = secondsAsLong.seconds)
+    def secondsFromNow(seconds: Long): ScheduleEvent =
+      schedule.copy(delay = seconds.seconds)
 
     def toScheduledMessage: ScheduledMessage =
       ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
 
-    def headerKeys   = schedule.headers.map(_._1)
-    def headerValues = schedule.headers.map(_._2)
+    def headerKeys   = schedule.headers.keys
+    def headerValues = schedule.headers.values
   }
 
   implicit class ScheduleEventNoHeadersOps(val schedule: ScheduleEventNoHeaders) extends AnyVal {
@@ -64,8 +64,8 @@ object TestDataUtils {
       ScheduleNoHeaders(time, schedule.outputTopic, schedule.key, schedule.value)
     }
 
-    def secondsFromNow(secondsAsLong: Long): ScheduleEventNoHeaders =
-      schedule.copy(delay = secondsAsLong.seconds)
+    def secondsFromNow(seconds: Long): ScheduleEventNoHeaders =
+      schedule.copy(delay = seconds.seconds)
 
     def toScheduledMessage: ScheduledMessage =
       ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, Map.empty)

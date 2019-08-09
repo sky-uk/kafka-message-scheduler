@@ -21,7 +21,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
       withRunningKafka {
         withSchedulerApp {
           val scheduleWithHeaders = random[ScheduleEvent]
-          val schedule            = scheduleWithHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
+          val schedule            = scheduleWithHeaders.copy(inputTopic = inputTopic).secondsFromNow(delay)
 
           val res = publishAndGetDecoded(schedule.inputTopic, schedule.toSchedule.toAvro)
 
@@ -35,7 +35,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
       withRunningKafka {
         withSchedulerApp {
           val scheduleNoHeaders = random[ScheduleEventNoHeaders]
-          val schedule          = scheduleNoHeaders.copy(inputTopic = "cupcat").secondsFromNow(4)
+          val schedule          = scheduleNoHeaders.copy(inputTopic = inputTopic).secondsFromNow(delay)
 
           val res = publishAndGetDecoded(schedule.inputTopic, schedule.toScheduleWithoutHeaders.toAvro)
 
@@ -45,9 +45,13 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
     }
 
     trait TestContext {
+
+      val inputTopic = "cupcat"
+      val delay      = 4
+
       def publishAndGetDecoded(inputTopic: String, schedule: Array[Byte]) = {
-        publishToKafka(inputTopic, "cupcat", schedule)
-        consumeSomeFrom[Array[Byte]]("cupcat", 1).headOption.map(scheduleConsumerRecordDecoder.apply)
+        publishToKafka(inputTopic, inputTopic, schedule)
+        consumeSomeFrom[Array[Byte]](inputTopic, 1).headOption.map(scheduleConsumerRecordDecoder.apply)
       }
     }
 

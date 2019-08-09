@@ -1,10 +1,9 @@
 package com.sky.kms
 
 import java.lang
-import java.time.OffsetDateTime
 
-import org.apache.kafka.common.header.internals.RecordHeader
 import org.apache.kafka.common.header.Header
+import org.apache.kafka.common.header.internals.RecordHeader
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
@@ -12,12 +11,6 @@ import scala.concurrent.duration.FiniteDuration
 package object domain {
 
   type ScheduleId = String
-
-  case class Schedule(time: OffsetDateTime,
-                      topic: String,
-                      key: Array[Byte],
-                      value: Option[Array[Byte]],
-                      headers: Map[String, Array[Byte]])
 
   case class ScheduleEvent(delay: FiniteDuration,
                            inputTopic: String,

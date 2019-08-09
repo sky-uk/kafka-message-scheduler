@@ -10,10 +10,11 @@ import akka.stream.scaladsl.{Sink, Source}
 import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
-import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder}
+import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder, SchemaFor}
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
+import com.sky.kms.domain.Schedule.{ScheduleNoHeaders, ScheduleWithHeaders}
 import com.sky.kms.domain.{Schedule, ScheduleEvent}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import org.scalacheck.{Arbitrary, Gen}
@@ -36,33 +37,51 @@ object TestDataUtils {
   implicit val arbFiniteDuration: Arbitrary[FiniteDuration] =
     Arbitrary(arbNextMonthOffsetDateTime.arbitrary.map(_.getSecond.seconds))
 
-  implicit val scheduleEncoder = Encoder[Schedule]
-
-  private val scheduleSchema = AvroSchema[Schedule]
+  implicit val schemaForScheduleWithHeaders  = SchemaFor[ScheduleWithHeaders]
+  implicit val schemaForScheduleNoHeaders    = SchemaFor[ScheduleNoHeaders]
+  implicit val encoderForScheduleWithHeaders = Encoder[ScheduleWithHeaders]
+  implicit val encoderForScheduleNoHeaders   = Encoder[ScheduleNoHeaders]
 
   implicit class ScheduleEventOps(val schedule: ScheduleEvent) extends AnyVal {
-    def toSchedule: Schedule = {
+    def toSchedule: ScheduleWithHeaders = {
       val time = OffsetDateTime.now().toInstant.plusMillis(schedule.delay.toMillis).atOffset(ZoneOffset.UTC)
-      Schedule(time, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
+      ScheduleWithHeaders(time, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
     }
 
-    def secondsFromNow(secondsAsLong: Long): ScheduleEvent =
-      schedule.copy(delay = secondsAsLong.seconds)
+    def secondsFromNow(seconds: Long): ScheduleEvent =
+      schedule.copy(delay = seconds.seconds)
 
     def toScheduledMessage: ScheduledMessage =
       ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
+
+    def headerKeys   = schedule.headers.keys
+    def headerValues = schedule.headers.values
   }
 
-  implicit class ScheduleOps(val schedule: Schedule) extends AnyVal {
-    def toAvro: Array[Byte] = {
-      val baos   = new ByteArrayOutputStream()
-      val output = AvroOutputStream.binary[Schedule].to(baos).build(scheduleSchema)
-      output.write(schedule)
-      output.close()
-      baos.toByteArray
+  implicit class ScheduleEventNoHeadersOps(val schedule: ScheduleEventNoHeaders) extends AnyVal {
+    def toScheduleWithoutHeaders: ScheduleNoHeaders = {
+      val time = OffsetDateTime.now().toInstant.plusMillis(schedule.delay.toMillis).atOffset(ZoneOffset.UTC)
+      ScheduleNoHeaders(time, schedule.outputTopic, schedule.key, schedule.value)
     }
 
-    def timeInMillis: Long = schedule.time.toInstant.toEpochMilli
+    def secondsFromNow(seconds: Long): ScheduleEventNoHeaders =
+      schedule.copy(delay = seconds.seconds)
+
+    def toScheduledMessage: ScheduledMessage =
+      ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, Map.empty)
+  }
+
+  implicit class ScheduleOps[T <: Schedule](val schedule: T) extends AnyVal {
+    def toAvro(implicit sf: SchemaFor[T], e: Encoder[T]): Array[Byte] = toAvroFrom(schedule)
+    def timeInMillis: Long                                            = schedule.getTime.toInstant.toEpochMilli
+  }
+
+  private def toAvroFrom[T <: Schedule : Encoder : SchemaFor](t: T) = {
+    val baos   = new ByteArrayOutputStream()
+    val output = AvroOutputStream.binary[T].to(baos).build(AvroSchema[T])
+    output.write(t)
+    output.close()
+    baos.toByteArray
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
@@ -76,5 +95,11 @@ object TestDataUtils {
         case pub: ScheduledMessagePublisher => pub.replace(Eval.later(sink))
       }
   }
+
+  case class ScheduleEventNoHeaders(delay: FiniteDuration,
+                                    inputTopic: String,
+                                    outputTopic: String,
+                                    key: Array[Byte],
+                                    value: Option[Array[Byte]])
 
 }

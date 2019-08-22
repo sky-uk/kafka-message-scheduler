@@ -12,7 +12,7 @@ val refinedVersion    = "0.9.8"
 val pureConfigVersion = "0.11.1"
 
 val dependencies = Seq(
-  "com.sky"                    %% "kafka-topic-loader"          % "1.3.0",
+  "com.sky"                    %% "kafka-topic-loader"          % "1.3.1",
   "com.typesafe.akka"          %% "akka-actor"                  % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                  % akkaVersion,

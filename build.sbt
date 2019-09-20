@@ -12,7 +12,7 @@ val refinedVersion    = "0.9.8"
 val pureConfigVersion = "0.11.1"
 
 val dependencies = Seq(
-  "com.sky"                    %% "kafka-topic-loader"          % "1.3.1",
+  "com.sky"                    %% "kafka-topic-loader"          % "1.3.2",
   "com.typesafe.akka"          %% "akka-actor"                  % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                  % akkaVersion,
@@ -48,7 +48,7 @@ val dependencies = Seq(
 
 val commonSettings = Seq(
   organization := "com.sky",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.10",
   libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "2.0.2"
 )
 

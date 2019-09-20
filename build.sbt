@@ -48,7 +48,7 @@ val dependencies = Seq(
 
 val commonSettings = Seq(
   organization := "com.sky",
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.12.10",
   libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "2.0.2"
 )
 

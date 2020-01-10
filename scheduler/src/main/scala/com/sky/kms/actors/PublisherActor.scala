@@ -16,8 +16,8 @@ import akka.actor.Stash
 
 class PublisherActor extends Actor with ActorLogging with Stash {
 
-  implicit val ec                         = context.dispatcher
-  override def receive: Receive           = waitForQueue
+  implicit val ec               = context.dispatcher
+  override def receive: Receive = waitForQueue
 
   private def waitForQueue: Receive = {
     case Init(queue) =>

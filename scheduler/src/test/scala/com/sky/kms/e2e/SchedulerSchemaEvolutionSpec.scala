@@ -2,9 +2,9 @@ package com.sky.kms.e2e
 
 import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import cats.syntax.option._
-import com.sky.kms._
 import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.domain.ScheduleEvent
+import com.sky.kms.kafka.AvroBinary
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestDataUtils._
 import net.manub.embeddedkafka.Codecs.{
@@ -51,7 +51,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
 
       def publishAndGetDecoded(inputTopic: String, schedule: Array[Byte]) = {
         publishToKafka(inputTopic, inputTopic, schedule)
-        consumeSomeFrom[Array[Byte]](inputTopic, 1).headOption.map(scheduleConsumerRecordDecoder.apply)
+        consumeSomeFrom[Array[Byte]](inputTopic, 1).headOption.map(AvroBinary.decode)
       }
     }
 

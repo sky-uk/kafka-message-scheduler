@@ -1,7 +1,7 @@
 package com.sky.kms.config
 
 import cats.data.{NonEmptyList, Reader}
-import com.sky.kms.kafka.Topic
+import com.sky.kms.kafka.{ScheduleDecoder, Topic}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -13,7 +13,9 @@ object SchedulerConfig {
   def configure: Configured[SchedulerConfig] = Reader(_.scheduler)
 }
 
-case class ReaderConfig(scheduleTopics: NonEmptyList[Topic], timeouts: ReaderConfig.TimeoutConfig)
+case class ReaderConfig(scheduleTopics: NonEmptyList[Topic],
+                        decoder: ScheduleDecoder,
+                        timeouts: ReaderConfig.TimeoutConfig)
 
 object ReaderConfig {
   def configure: Configured[ReaderConfig] = SchedulerConfig.configure.map(_.reader)

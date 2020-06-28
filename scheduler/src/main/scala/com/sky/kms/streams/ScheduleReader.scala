@@ -64,7 +64,7 @@ object ScheduleReader extends LazyLogging {
         Eval.always(
           TopicLoader
             .loadAndRun[String, Array[Byte]](config.scheduleTopics.map(_.value))
-            .map(scheduleConsumerRecordDecoder(_))
+            .map(config.decoder.decode)
         ),
         actorRef,
         logErrors,

@@ -3,16 +3,22 @@ package com.sky.kms.base
 import com.sky.kms.kafka.Topic
 import com.sky.kms.utils.RandomPort.randomPort
 import eu.timepit.refined.auto._
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import net.manub.embeddedkafka.Codecs.{nullDeserializer, stringDeserializer}
 import net.manub.embeddedkafka.ConsumerExtensions._
-import net.manub.embeddedkafka.{Consumers, EmbeddedKafka, EmbeddedKafkaConfig}
+import net.manub.embeddedkafka.Consumers
+import net.manub.embeddedkafka.schemaregistry.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.serialization.Deserializer
 import org.scalatest.WordSpecLike
 
 trait KafkaIntSpecBase extends EmbeddedKafka with WordSpecLike with Consumers {
 
-  implicit lazy val kafkaConfig = EmbeddedKafkaConfig(kafkaPort = randomPort(), zooKeeperPort = randomPort())
+  implicit lazy val kafkaConfig =
+    EmbeddedKafkaConfig(kafkaPort = randomPort(), zooKeeperPort = randomPort(), schemaRegistryPort = randomPort())
+
+  lazy val registryUrl    = s"http://localhost:${kafkaConfig.schemaRegistryPort}"
+  lazy val registryClient = new CachedSchemaRegistryClient(registryUrl, 100)
 
   val scheduleTopic: Topic      = "scheduleTopic"
   val extraScheduleTopic: Topic = "extraScheduleTopic"

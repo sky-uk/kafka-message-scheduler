@@ -62,8 +62,9 @@ object ConfluentWireFormat {
   def decode(deserializer: KafkaAvroDeserializer): ConsumerRecord[String, Array[Byte]] => In =
     cr =>
       Option(cr.value).fold[In]((cr.key, None).asRight) { bytes =>
-        val scheduleAttempt = Either.catchNonFatal(
-          FromRecord[Schedule].from(deserializer.deserialize(cr.topic, bytes).asInstanceOf[GenericRecord]))
+        val scheduleAttempt = Either.catchNonFatal {
+          FromRecord[Schedule].from(deserializer.deserialize(cr.topic, bytes).asInstanceOf[GenericRecord])
+        }
         for {
           avroSchedule  <- scheduleAttempt.leftMap(AvroMessageFormatError(cr.key, _))
           scheduleEvent <- avroSchedule.toScheduleEvent(cr.key, cr.topic)

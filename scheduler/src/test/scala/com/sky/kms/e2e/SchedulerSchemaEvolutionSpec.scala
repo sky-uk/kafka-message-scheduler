@@ -23,7 +23,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
           val scheduleWithHeaders = random[ScheduleEvent]
           val schedule            = scheduleWithHeaders.copy(inputTopic = inputTopic).secondsFromNow(delay)
 
-          val res = publishAndGetDecoded(schedule.inputTopic, schedule.toSchedule.toAvro)
+          val res = publishAndGetDecoded(schedule.inputTopic, schedule.toSchedule.toBinaryAvro)
 
           res.headerKeys should contain theSameElementsAs scheduleWithHeaders.headerKeys
           res.headerValues should contain theSameElementsAs scheduleWithHeaders.headerValues
@@ -37,7 +37,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
           val scheduleNoHeaders = random[ScheduleEventNoHeaders]
           val schedule          = scheduleNoHeaders.copy(inputTopic = inputTopic).secondsFromNow(delay)
 
-          val res = publishAndGetDecoded(schedule.inputTopic, schedule.toScheduleWithoutHeaders.toAvro)
+          val res = publishAndGetDecoded(schedule.inputTopic, schedule.toScheduleWithoutHeaders.toBinaryAvro)
 
           res.headers shouldBe Option(Map.empty)
         }

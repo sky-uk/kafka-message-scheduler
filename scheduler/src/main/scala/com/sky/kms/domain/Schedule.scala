@@ -1,9 +1,35 @@
 package com.sky.kms.domain
 
 import java.time.OffsetDateTime
-import scala.concurrent.duration.FiniteDuration
+import java.time.temporal.ChronoUnit.MILLIS
 
-sealed trait Schedule extends Product with Serializable
+import cats.syntax.either._
+import com.sky.kms.domain.ApplicationError.InvalidTimeError
+
+import scala.concurrent.duration._
+
+sealed trait Schedule extends Product with Serializable {
+
+  def getTime: OffsetDateTime = this match {
+    case s: Schedule.ScheduleNoHeaders   => s.time
+    case s: Schedule.ScheduleWithHeaders => s.time
+  }
+
+  def toScheduleEvent(inputKey: String, inputTopic: String): Either[InvalidTimeError, ScheduleEvent] =
+    Either
+      .catchNonFatal(MILLIS.between(OffsetDateTime.now, getTime).millis)
+      .bimap(
+        _ => InvalidTimeError(inputKey, getTime),
+        delay =>
+          this match {
+            case Schedule.ScheduleNoHeaders(_, outputTopic, key, value) =>
+              ScheduleEvent(delay, inputTopic, outputTopic, key, value, Map.empty)
+            case Schedule.ScheduleWithHeaders(_, outputTopic, key, value, headers) =>
+              ScheduleEvent(delay, inputTopic, outputTopic, key, value, headers)
+        }
+      )
+
+}
 
 object Schedule {
 
@@ -17,21 +43,4 @@ object Schedule {
                                        headers: Map[String, Array[Byte]])
       extends Schedule
 
-  implicit class ScheduleOps(val s: Schedule) extends AnyVal {
-    def getTime                                                    = Schedule.getTime(s)
-    def toScheduleEvent(delay: FiniteDuration, inputTopic: String) = Schedule.toScheduleEvent(delay, inputTopic, s)
-  }
-
-  private def getTime(schedule: Schedule): OffsetDateTime = schedule match {
-    case ScheduleNoHeaders(time, _, _, _)      => time
-    case ScheduleWithHeaders(time, _, _, _, _) => time
-  }
-
-  private def toScheduleEvent(delay: FiniteDuration, inputTopic: String, schedule: Schedule): ScheduleEvent =
-    schedule match {
-      case ScheduleNoHeaders(_, outputTopic, key, value) =>
-        ScheduleEvent(delay, inputTopic, outputTopic, key, value, Map.empty)
-      case ScheduleWithHeaders(_, outputTopic, key, value, headers) =>
-        ScheduleEvent(delay, inputTopic, outputTopic, key, value, headers)
-    }
 }

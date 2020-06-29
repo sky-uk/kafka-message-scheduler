@@ -82,7 +82,7 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
     publishToKafka(scheduleTopic, schedules.map {
-      case (scheduleId, scheduleEvent) => (scheduleId, scheduleEvent.toSchedule.toAvro)
+      case (scheduleId, scheduleEvent) => (scheduleId, scheduleEvent.toSchedule.toBinaryAvro)
     })
 
   private def scheduleShouldFlow(probe: TestProbe): SchedulingMessage = {

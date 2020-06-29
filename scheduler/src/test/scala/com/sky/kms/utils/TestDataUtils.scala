@@ -72,11 +72,11 @@ object TestDataUtils {
   }
 
   implicit class ScheduleOps[T <: Schedule](val schedule: T) extends AnyVal {
-    def toAvro(implicit sf: SchemaFor[T], e: Encoder[T]): Array[Byte] = toAvroFrom(schedule)
-    def timeInMillis: Long                                            = schedule.getTime.toInstant.toEpochMilli
+    def toBinaryAvro(implicit sf: SchemaFor[T], e: Encoder[T]): Array[Byte] = toBinaryAvroFrom(schedule)
+    def timeInMillis: Long                                                  = schedule.getTime.toInstant.toEpochMilli
   }
 
-  private def toAvroFrom[T <: Schedule : Encoder : SchemaFor](t: T) = {
+  def toBinaryAvroFrom[T <: Schedule : Encoder : SchemaFor](t: T) = {
     val baos   = new ByteArrayOutputStream()
     val output = AvroOutputStream.binary[T].to(baos).build(AvroSchema[T])
     output.write(t)

@@ -15,7 +15,7 @@ class SchedulerDeleteIntSpec extends SchedulerIntSpecBase with Consumers {
         val scheduleId = random[String]
         val schedule   = random[ScheduleEvent].copy(value = None).secondsFromNow(4).toSchedule
 
-        publishToKafka(scheduleTopic, scheduleId, schedule.toAvro)
+        publishToKafka(scheduleTopic, scheduleId, schedule.toBinaryAvro)
 
         val cr = consumeFirstFrom[String](schedule.topic)
 

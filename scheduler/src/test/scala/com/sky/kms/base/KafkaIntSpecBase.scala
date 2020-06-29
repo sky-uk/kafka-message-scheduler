@@ -4,7 +4,7 @@ import com.sky.kms.kafka.Topic
 import com.sky.kms.utils.RandomPort.randomPort
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{nullDeserializer, stringDeserializer}
-import net.manub.embeddedkafka.ConsumerExtensions.{ConsumerRetryConfig, _}
+import net.manub.embeddedkafka.ConsumerExtensions._
 import net.manub.embeddedkafka.{Consumers, EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.serialization.Deserializer

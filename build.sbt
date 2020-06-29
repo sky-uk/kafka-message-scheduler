@@ -6,6 +6,7 @@ scalafmtVersion in ThisBuild := "1.2.0"
 scalafmtOnCompile in ThisBuild := true
 
 val kafkaVersion      = "2.2.0"
+val confluentVersion  = "5.2.0"
 val akkaVersion       = "2.5.23"
 val catsVersion       = "1.6.1"
 val refinedVersion    = "0.9.8"
@@ -34,6 +35,8 @@ val dependencies = Seq(
   "eu.timepit"                 %% "refined"                     % refinedVersion,
   "eu.timepit"                 %% "refined-pureconfig"          % refinedVersion,
   "eu.timepit"                 %% "refined-scalacheck"          % refinedVersion,
+  "io.confluent"               % "kafka-schema-registry-client" % confluentVersion,
+  "io.confluent"               % "kafka-avro-serializer"        % confluentVersion,
   "org.apache.kafka"           %% "kafka"                       % kafkaVersion % Test,
   "org.scalatest"              %% "scalatest"                   % "3.0.8" % Test,
   "com.typesafe.akka"          %% "akka-testkit"                % akkaVersion % Test,
@@ -49,7 +52,7 @@ val dependencies = Seq(
 val commonSettings = Seq(
   organization := "com.sky",
   scalaVersion := "2.12.10",
-  libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "2.0.2"
+  libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "3.0.9"
 )
 
 lazy val dockerSettings = Seq(
@@ -84,6 +87,7 @@ lazy val scheduler = (project in file("scheduler"))
     resolvers ++= Seq(
       "bintray-sky-uk-oss-maven" at "https://dl.bintray.com/sky-uk/oss-maven",
       "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",
+      "confluent-release" at "https://packages.confluent.io/maven/",
       Resolver.bintrayRepo("cakesolutions", "maven")
     ),
     addCompilerPlugin("org.scalamacros" % "paradise"        % "2.1.1" cross CrossVersion.full),
@@ -91,6 +95,7 @@ lazy val scheduler = (project in file("scheduler"))
     scalacOptions ++= Seq(
       "-language:implicitConversions",
       "-language:postfixOps",
+      "-language:higherKinds",
       "-Xfatal-warnings",
       "-Ywarn-dead-code",
       "-Ywarn-unused",

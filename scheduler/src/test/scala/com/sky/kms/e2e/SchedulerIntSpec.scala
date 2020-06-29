@@ -36,7 +36,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
     def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map {
       case (id, scheduleEvent) =>
         val schedule = scheduleEvent.toSchedule
-        publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
+        publishToKafka(scheduleEvent.inputTopic, id, schedule.toBinaryAvro)
         schedule.time
     }
 

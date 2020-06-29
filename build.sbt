@@ -52,7 +52,7 @@ val dependencies = Seq(
 val commonSettings = Seq(
   organization := "com.sky",
   scalaVersion := "2.12.10",
-  libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "3.0.9"
+  libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "3.1.0"
 )
 
 lazy val dockerSettings = Seq(

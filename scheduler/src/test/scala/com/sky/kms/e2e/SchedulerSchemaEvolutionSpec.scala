@@ -37,7 +37,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
           val scheduleNoHeaders = random[ScheduleEventNoHeaders]
           val schedule          = scheduleNoHeaders.copy(inputTopic = inputTopic).secondsFromNow(delay)
 
-          val res = publishAndGetDecoded(schedule.inputTopic, schedule.toScheduleWithoutHeaders.toBinaryAvro)
+          val res = publishAndGetDecoded(schedule.inputTopic, toBinaryAvroFrom(schedule.toScheduleWithoutHeaders))
 
           res.headers shouldBe Option(Map.empty)
         }

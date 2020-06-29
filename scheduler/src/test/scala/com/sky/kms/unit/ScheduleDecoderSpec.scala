@@ -4,7 +4,7 @@ import com.sksamuel.avro4s.{AvroSchema, ToRecord}
 import com.sky.kms.avro._
 import com.sky.kms.base.SpecBase
 import com.sky.kms.domain.ApplicationError.{AvroMessageFormatError, InvalidSchemaError}
-import com.sky.kms.domain.Schedule.ScheduleWithHeaders
+import com.sky.kms.domain.Schedule
 import com.sky.kms.unit.behaviour.ScheduleDecoderBehaviour
 import com.sky.kms.kafka.{AvroBinary, ConfluentWireFormat}
 import com.sky.kms.utils.TestDataUtils
@@ -30,13 +30,12 @@ class ScheduleDecoderSpec extends SpecBase with ScheduleDecoderBehaviour {
 
   "ConfluentWireFormat" should {
     val client = new MockSchemaRegistryClient
-    client.register(s"$ScheduleTopic-value", AvroSchema[ScheduleWithHeaders])
+    client.register(s"$ScheduleTopic-value", AvroSchema[Schedule])
 
     val deserializer = new KafkaAvroDeserializer(client)
     val serializer   = new KafkaAvroSerializer(client)
 
-    val serialize =
-      (schedule: ScheduleWithHeaders) => serializer.serialize(ScheduleTopic, ToRecord[ScheduleWithHeaders].to(schedule))
+    val serialize = (schedule: Schedule) => serializer.serialize(ScheduleTopic, ToRecord[Schedule].to(schedule))
 
     behave like scheduleDecoder(ConfluentWireFormat.decode(deserializer), serialize)
 

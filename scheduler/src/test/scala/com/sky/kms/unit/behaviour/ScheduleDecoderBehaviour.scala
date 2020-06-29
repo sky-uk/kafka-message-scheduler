@@ -5,7 +5,7 @@ import java.time.OffsetDateTime
 import cats.syntax.option._
 import com.sky.kms.base.SpecBase
 import com.sky.kms.domain.ApplicationError.InvalidTimeError
-import com.sky.kms.domain.Schedule.ScheduleWithHeaders
+import com.sky.kms.domain.Schedule
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestDataUtils._
@@ -14,7 +14,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 trait ScheduleDecoderBehaviour { this: SpecBase =>
 
   def scheduleDecoder(decode: ConsumerRecord[String, Array[Byte]] => ScheduleReader.In,
-                      serialize: ScheduleWithHeaders => Array[Byte]): Unit = {
+                      serialize: Schedule => Array[Byte]): Unit = {
 
     val ScheduleTopic = "scheduleTopic"
     val ScheduleId    = "scheduleId"

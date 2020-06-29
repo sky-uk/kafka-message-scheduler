@@ -7,13 +7,12 @@ import org.apache.avro.Schema
 
 package object avro {
 
-  implicit val dateTimeToSchema: SchemaFor[OffsetDateTime] = _ =>
-    Schema.create(Schema.Type.LONG)
+  implicit val dateTimeToSchema: SchemaFor[OffsetDateTime] = _ => Schema.create(Schema.Type.LONG)
 
   implicit val dateTimeEncoder: Encoder[OffsetDateTime] = (t: OffsetDateTime, _, _) =>
     Long.box(t.toInstant.toEpochMilli)
 
-  implicit val dateTimeFDecoder: Decoder[OffsetDateTime] = (value: Any, _, _) =>
+  implicit val dateTimeDecoder: Decoder[OffsetDateTime] = (value: Any, _, _) =>
     Instant.ofEpochMilli(value.toString.toLong).atZone(ZoneOffset.UTC).toOffsetDateTime
 
 }

@@ -100,6 +100,8 @@ object TestDataUtils {
                                     inputTopic: String,
                                     outputTopic: String,
                                     key: Array[Byte],
-                                    value: Option[Array[Byte]])
+                                    value: Option[Array[Byte]]) {
+    val toScheduleEvent: ScheduleEvent = ScheduleEvent(delay, inputTopic, outputTopic, key, value, Map.empty)
+  }
 
 }

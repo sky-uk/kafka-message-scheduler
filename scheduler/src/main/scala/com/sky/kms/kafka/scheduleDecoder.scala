@@ -21,7 +21,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 
 import scala.util.{Success, Try}
 
-sealed trait ScheduleDecoder extends Product with Serializable {
+sealed trait ScheduleDecoder {
   def decode(cr: ConsumerRecord[String, Array[Byte]]): ScheduleReader.In
 }
 
@@ -51,7 +51,7 @@ case object AvroBinary extends ScheduleDecoder {
 
 final case class ConfluentWireFormat(schemaRegistryUrl: String Refined Url) extends ScheduleDecoder {
 
-  private val client = new CachedSchemaRegistryClient(schemaRegistryUrl.value, 100)
+  private val client = new CachedSchemaRegistryClient(schemaRegistryUrl.value, 10)
 
   private val deserializer = new KafkaAvroDeserializer(client)
 

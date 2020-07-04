@@ -6,15 +6,18 @@ import cats.syntax.option._
 import com.sky.kms.base.SpecBase
 import com.sky.kms.domain.ApplicationError.InvalidTimeError
 import com.sky.kms.domain.Schedule
+import com.sky.kms.domain.Schedule.ScheduleNoHeaders
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
+import com.sky.kms.utils.ScheduleMatcher
 import com.sky.kms.utils.TestDataUtils._
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
-trait ScheduleDecoderBehaviour { this: SpecBase =>
+trait ScheduleDecoderBehaviour { this: SpecBase with ScheduleMatcher =>
 
   def scheduleDecoder(decode: ConsumerRecord[String, Array[Byte]] => ScheduleReader.In,
-                      serialize: Schedule => Array[Byte]): Unit = {
+                      serialize: Schedule => Array[Byte],
+                      legacySerialize: ScheduleNoHeaders => Array[Byte]): Unit = {
 
     val ScheduleTopic = "scheduleTopic"
     val ScheduleId    = "scheduleId"
@@ -26,26 +29,39 @@ trait ScheduleDecoderBehaviour { this: SpecBase =>
 
       val cr = artificialConsumerRecord(ScheduleId, serialize(schedule.toSchedule))
 
-      decode(cr) should matchPattern {
-        case Right((ScheduleId, Some(ScheduleEvent(_, schedule.inputTopic, schedule.outputTopic, k, Some(v), headers))))
-            if k === schedule.key && v === someBytes && equalHeaders(headers, schedule.headers) =>
-      }
+      val (id, event) = decode(cr).right.value
+
+      id shouldBe ScheduleId
+      event.value should matchScheduleEvent(schedule)
+    }
+
+    "be able to decode old schedule events" in {
+      val scheduleNoHeaders = random[ScheduleEventNoHeaders]
+      val schedule          = scheduleNoHeaders.copy(inputTopic = ScheduleTopic)
+
+      val cr = artificialConsumerRecord(ScheduleId, legacySerialize(schedule.toScheduleWithoutHeaders))
+
+      val (id, event) = decode(cr).right.value
+
+      id shouldBe ScheduleId
+      event.value should matchScheduleEvent(schedule.toScheduleEvent)
+
     }
 
     "decode id and schedule handling a schedule with null body" in {
       val schedule = TestSchedule.copy(value = None, inputTopic = ScheduleTopic)
       val cr       = artificialConsumerRecord(ScheduleId, serialize(schedule.toSchedule))
 
-      decode(cr) should matchPattern {
-        case Right((ScheduleId, Some(ScheduleEvent(_, schedule.inputTopic, schedule.outputTopic, k, None, headers))))
-            if k === schedule.key && schedule.value === None && equalHeaders(headers, schedule.headers) =>
-      }
+      val (id, event) = decode(cr).right.value
+
+      id shouldBe ScheduleId
+      event.value should matchScheduleEvent(schedule)
     }
 
     "decode id without schedule if null value" in {
       val cr = artificialConsumerRecord(ScheduleId, null)
 
-      decode(cr) shouldBe Right((ScheduleId, None))
+      decode(cr).right.value shouldBe (ScheduleId, None)
     }
 
     "error if the duration between schedule time and now is beyond the range of FiniteDuration" in {
@@ -53,14 +69,11 @@ trait ScheduleDecoderBehaviour { this: SpecBase =>
       val schedule         = TestSchedule.toSchedule.copy(time = tooDistantFuture)
       val cr               = artificialConsumerRecord(ScheduleId, serialize(schedule))
 
-      decode(cr).left.get shouldBe a[InvalidTimeError]
+      decode(cr).left.value shouldBe a[InvalidTimeError]
     }
   }
 
   private def artificialConsumerRecord(scheduleId: ScheduleId, bytes: Array[Byte]) =
     new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1L, scheduleId, bytes)
-
-  private def equalHeaders(x: Map[String, Array[Byte]], y: Map[String, Array[Byte]]): Boolean =
-    x.mapValues(_.toList) === y.mapValues(_.toList)
 
 }

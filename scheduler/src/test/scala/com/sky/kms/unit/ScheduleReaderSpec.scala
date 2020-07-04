@@ -13,13 +13,14 @@ import com.sky.kms.config.ReaderConfig
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.In
+import com.sky.kms.utils.ScheduleMatcher
 import com.sky.kms.utils.TestDataUtils._
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
 
-class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
+class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually with ScheduleMatcher {
 
   override implicit val patienceConfig = PatienceConfig(500.millis, 20.millis)
 
@@ -30,7 +31,7 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
       runReader(Source.single(schedule.asRight[ApplicationError]))
 
       probe.expectMsg(StreamStarted)
-      probe.expectMsgType[CreateOrUpdate].schedule shouldBe scheduleEvent
+      probe.expectMsgType[CreateOrUpdate].schedule should matchScheduleEvent(scheduleEvent)
     }
 
     "emit errors to the error handler" in new TestContext with ErrorHandler {

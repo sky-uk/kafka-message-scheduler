@@ -16,8 +16,9 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
         withSchedulerApp {
           val schedules = createSchedules(2, forTopics = List(scheduleTopic, extraScheduleTopic))
 
-          publish(schedules) andThen
-            (assertMessagesWrittenFrom(_, schedules))
+          publish(schedules)
+            .foreach(assertMessagesWrittenFrom(_, schedules))
+
           assertTombstoned(schedules)
         }
       }
@@ -46,9 +47,17 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
           val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
 
           cr.key should contain theSameElementsInOrderAs schedule.key
-          cr.value should contain theSameElementsInOrderAs schedule.value.get
+
+          schedule.value match {
+            case Some(value) => cr.value should contain theSameElementsAs value
+            case None        => cr.value shouldBe null
+          }
+
           cr.timestamp shouldBe time.toInstant.toEpochMilli +- Tolerance.toMillis
-          cr.headers().toArray.map(h => h.key() -> h.value()).toMap should contain theSameElementsAs schedule.headers
+          cr.headers().toArray.map(h => h.key() -> h.value().toList) should contain theSameElementsAs
+            schedule.headers.map {
+              case (k, v) => (k, v.toList)
+            }
       }
 
     def assertTombstoned(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =

@@ -4,26 +4,35 @@ import com.sky.kms.kafka.Topic
 import com.sky.kms.utils.RandomPort.randomPort
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{nullDeserializer, stringDeserializer}
-import net.manub.embeddedkafka.ConsumerExtensions.{ConsumerRetryConfig, _}
-import net.manub.embeddedkafka.{Consumers, EmbeddedKafka, EmbeddedKafkaConfig}
+import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.serialization.Deserializer
 import org.scalatest.WordSpecLike
 
-trait KafkaIntSpecBase extends EmbeddedKafka with WordSpecLike with Consumers {
+import collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.compat.java8.DurationConverters._
+
+trait KafkaIntSpecBase extends EmbeddedKafka with WordSpecLike {
 
   implicit lazy val kafkaConfig = EmbeddedKafkaConfig(kafkaPort = randomPort(), zooKeeperPort = randomPort())
 
   val scheduleTopic: Topic      = "scheduleTopic"
   val extraScheduleTopic: Topic = "extraScheduleTopic"
+  def kafkaConsumerTimeout: FiniteDuration = 60 seconds
 
-  val retryConfig = ConsumerRetryConfig(maximumAttempts = 50)
+  private def subscribeAndPoll[K, V](topic: String): KafkaConsumer[K, V] => Iterator[ConsumerRecord[K, V]] = { cr =>
+    cr.subscribe(List(topic).asJavaCollection)
+    cr.poll(kafkaConsumerTimeout.toJava).iterator().asScala
+  }
 
   def consumeFirstFrom[T : Deserializer](topic: String): ConsumerRecord[Array[Byte], T] =
-    withConsumer[Array[Byte], T, ConsumerRecord[Array[Byte], T]](_.consumeLazily(topic)(identity, retryConfig).head)
+    withConsumer { cr: KafkaConsumer[Array[Byte], T] =>
+      subscribeAndPoll(topic)(cr).next()
+    }
 
   def consumeSomeFrom[T : Deserializer](topic: String, numMsgs: Int): List[ConsumerRecord[String, T]] =
     withConsumer { cr: KafkaConsumer[String, T] =>
-      cr.consumeLazily(topic)(identity, retryConfig).take(numMsgs).toList
+      subscribeAndPoll(topic)(cr).toList.take(numMsgs)
     }
 }

@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 
 package object e2e {
 
-  val Tolerance = 200 millis
+  val Tolerance = 400 millis
 
   def withSchedulerApp[T](
       scenario: => T)(implicit conf: SchedulerConfig, system: ActorSystem, mat: ActorMaterializer): T =

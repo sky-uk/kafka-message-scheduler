@@ -5,9 +5,8 @@ import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain._
 import eu.timepit.refined.auto._
 import net.manub.embeddedkafka.Codecs.{stringSerializer, stringDeserializer, nullSerializer => arrayByteSerializer}
-import net.manub.embeddedkafka.Consumers
 
-class SchedulerDeleteIntSpec extends SchedulerIntSpecBase with Consumers {
+class SchedulerDeleteIntSpec extends SchedulerIntSpecBase {
 
   "Scheduler stream" should {
     "schedule a delete message if the value of the scheduled message is empty" in withRunningKafka {
@@ -21,7 +20,7 @@ class SchedulerDeleteIntSpec extends SchedulerIntSpecBase with Consumers {
 
         cr.key should contain theSameElementsInOrderAs schedule.key
         cr.value shouldBe null
-        cr.timestamp shouldBe schedule.timeInMillis +- Tolerance.toMillis
+        cr.timestamp shouldBe schedule.timeInMillis +- tolerance.toMillis
       }
     }
   }

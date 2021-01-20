@@ -4,11 +4,8 @@ import akka.actor.{ActorSystem, CoordinatedShutdown}
 import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.stream.ActorMaterializer
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
-import scala.concurrent.duration._
 
 package object e2e {
-
-  val Tolerance = 400 millis
 
   def withSchedulerApp[T](
       scenario: => T)(implicit conf: SchedulerConfig, system: ActorSystem, mat: ActorMaterializer): T =

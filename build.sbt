@@ -5,7 +5,7 @@ import Release._
 scalafmtVersion in ThisBuild := "1.2.0"
 scalafmtOnCompile in ThisBuild := true
 
-val kafkaVersion      = "2.2.0"
+val kafkaVersion      = "2.6.0"
 val akkaVersion       = "2.5.23"
 val catsVersion       = "1.6.1"
 val refinedVersion    = "0.9.8"
@@ -43,7 +43,7 @@ val dependencies = Seq(
   "com.47deg"                  %% "scalacheck-toolbox-datetime" % "0.2.5" % Test,
   "org.mockito"                % "mockito-all"                  % "1.10.19" % Test,
   "org.zalando"                %% "grafter"                     % "2.6.1" % Test,
-  "io.github.embeddedkafka"    %% "embedded-kafka"              % "2.2.0" % Test
+  "io.github.embeddedkafka"    %% "embedded-kafka"              % "2.6.0" % Test
 )
 
 val commonSettings = Seq(
@@ -79,7 +79,7 @@ lazy val scheduler = (project in file("scheduler"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= dependencies,
-    dependencyOverrides ++= Seq("org.apache.kafka" % "kafka-clients" % "2.2.0",
+    dependencyOverrides ++= Seq("org.apache.kafka" % "kafka-clients" % kafkaVersion,
                                 "org.scalacheck"   %% "scalacheck"   % "1.13.5"),
     resolvers ++= Seq(
       "bintray-sky-uk-oss-maven" at "https://dl.bintray.com/sky-uk/oss-maven",

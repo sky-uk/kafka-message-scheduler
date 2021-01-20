@@ -53,7 +53,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
             case None        => cr.value shouldBe null
           }
 
-          cr.timestamp shouldBe time.toInstant.toEpochMilli +- Tolerance.toMillis
+          cr.timestamp shouldBe time.toInstant.toEpochMilli +- tolerance.toMillis
           cr.headers().toArray.map(h => h.key() -> h.value().toList) should contain theSameElementsAs
             schedule.headers.map {
               case (k, v) => (k, v.toList)

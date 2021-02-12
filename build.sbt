@@ -60,7 +60,7 @@ lazy val dockerSettings = Seq(
   dockerUpdateLatest := updateLatest.value,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
-    Cmd("RUN", "apk update && apk add bash")
+    Cmd("RUN", "apk update && apk add bash && apk add --no-cache libc6-compat")
   )
 )
 

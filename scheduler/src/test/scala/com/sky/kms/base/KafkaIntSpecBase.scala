@@ -17,8 +17,8 @@ trait KafkaIntSpecBase extends EmbeddedKafka with WordSpecLike {
 
   implicit lazy val kafkaConfig = EmbeddedKafkaConfig(kafkaPort = randomPort(), zooKeeperPort = randomPort())
 
-  val scheduleTopic: Topic      = "scheduleTopic"
-  val extraScheduleTopic: Topic = "extraScheduleTopic"
+  val scheduleTopic: Topic                 = "scheduleTopic"
+  val extraScheduleTopic: Topic            = "extraScheduleTopic"
   def kafkaConsumerTimeout: FiniteDuration = 60 seconds
 
   private def subscribeAndPoll[K, V](topic: String): KafkaConsumer[K, V] => Iterator[ConsumerRecord[K, V]] = { cr =>

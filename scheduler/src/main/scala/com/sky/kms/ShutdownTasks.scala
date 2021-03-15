@@ -23,7 +23,7 @@ object ShutdownTasks extends LazyLogging {
   def forKamon(implicit system: ActorSystem): Unit =
     CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeActorSystemTerminate, "shutdown-kamon") { () =>
       logger.info("Shutting down Kamon")
-      Kamon.stopAllReporters().map(_ => Done)(system.dispatcher)
+      Kamon.stopModules().map(_ => Done)(system.dispatcher)
     }
 
 }

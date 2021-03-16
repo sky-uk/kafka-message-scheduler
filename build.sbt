@@ -27,9 +27,8 @@ val dependencies = Seq(
   "org.codehaus.janino"        % "janino"                       % "3.0.13" % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                  % pureConfigVersion,
   "com.github.pureconfig"      %% "pureconfig-cats"             % pureConfigVersion,
+  "io.kamon"                   %% "kamon-bundle"                % "2.1.12",
   "io.kamon"                   %% "kamon-prometheus"            % "2.1.12",
-  "io.kamon"                   %% "kamon-akka"                  % "2.1.12",
-  "io.kamon"                   %% "kamon-core"                  % "2.1.1",
   "io.kamon"                   %% "kamon-jmx-collector"         % "1.0.0-RC1",
   "eu.timepit"                 %% "refined"                     % refinedVersion,
   "eu.timepit"                 %% "refined-pureconfig"          % refinedVersion,
@@ -60,7 +59,7 @@ lazy val dockerSettings = Seq(
   dockerUpdateLatest := updateLatest.value,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
-    Cmd("RUN", "apk update && apk add bash")
+    Cmd("RUN", "apk update && apk add bash && apk add eudev")
   )
 )
 
@@ -101,8 +100,7 @@ lazy val scheduler = (project in file("scheduler"))
     ),
     fork in run := true,
     fork in Test := true,
-    javaAgents += "org.aspectj" % "aspectjweaver" % "1.9.1",
-    javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
+    javaAgents += "io.kamon" % "kanela-agent" % "1.0.7",
     buildInfoSettings,
     dockerSettings,
     releaseSettings,

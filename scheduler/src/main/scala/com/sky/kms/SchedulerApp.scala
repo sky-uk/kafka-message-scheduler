@@ -6,6 +6,7 @@ import akka.stream.ActorMaterializer
 import com.sky.kms.actors._
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import kamon.Kamon
 import kamon.jmx.collector.KamonJmxMetricCollector
 
 import scala.concurrent.Future
@@ -30,6 +31,7 @@ object SchedulerApp {
   }
 
   def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
+    Kamon.init()
     KamonJmxMetricCollector()
     ShutdownTasks.forKamon
 

@@ -30,11 +30,7 @@ object SchedulerApp {
     } yield SchedulerApp(scheduleReader, publisher, publisherActor)
   }
 
-  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] = {
-    Kamon.init()
-    KamonJmxMetricCollector()
-    ShutdownTasks.forKamon
-
+  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] =
     for {
       publisher     <- ScheduledMessagePublisher.run
       _             <- PublisherActor.init(publisher.materializedSource)
@@ -42,6 +38,11 @@ object SchedulerApp {
       running       = Running(runningReader, publisher)
       _             = ShutdownTasks.forScheduler(running)
     } yield running
+
+  def metricsInit(implicit system: ActorSystem): Unit = {
+    Kamon.init()
+    KamonJmxMetricCollector()
+    ShutdownTasks.forKamon
   }
 
 }

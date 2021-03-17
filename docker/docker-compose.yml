@@ -29,10 +29,10 @@ services:
     - "9095:9095"
 
   prometheus:
-    image: prom/prometheus:v1.7.2
+    image: prom/prometheus:v2.25.2
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
-      - '-config.file=/etc/prometheus/prometheus.yml'
+      - '--config.file=/etc/prometheus/prometheus.yml'

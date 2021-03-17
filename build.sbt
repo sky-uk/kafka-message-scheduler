@@ -10,6 +10,7 @@ val akkaVersion       = "2.5.23"
 val catsVersion       = "1.6.1"
 val refinedVersion    = "0.9.8"
 val pureConfigVersion = "0.11.1"
+val kamonVersion      = "2.1.12"
 
 val dependencies = Seq(
   "com.sky"                    %% "kafka-topic-loader"          % "1.3.2",
@@ -27,8 +28,8 @@ val dependencies = Seq(
   "org.codehaus.janino"        % "janino"                       % "3.0.13" % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                  % pureConfigVersion,
   "com.github.pureconfig"      %% "pureconfig-cats"             % pureConfigVersion,
-  "io.kamon"                   %% "kamon-bundle"                % "2.1.12",
-  "io.kamon"                   %% "kamon-prometheus"            % "2.1.12",
+  "io.kamon"                   %% "kamon-bundle"                % kamonVersion,
+  "io.kamon"                   %% "kamon-prometheus"            % kamonVersion,
   "io.kamon"                   %% "kamon-jmx-collector"         % "1.0.0-RC1",
   "eu.timepit"                 %% "refined"                     % refinedVersion,
   "eu.timepit"                 %% "refined-pureconfig"          % refinedVersion,
@@ -59,7 +60,7 @@ lazy val dockerSettings = Seq(
   dockerUpdateLatest := true,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
-    Cmd("RUN", "apk update && apk add bash && apk add eudev")
+    Cmd("RUN", "apk update && apk add bash eudev")
   )
 )
 

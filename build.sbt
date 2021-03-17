@@ -56,17 +56,12 @@ lazy val dockerSettings = Seq(
   dockerBaseImage := "openjdk:8u171-jre-alpine",
   dockerRepository := Some("skyuk"),
   dockerLabels := Map("maintainer" -> "Sky"),
-  dockerUpdateLatest := updateLatest.value,
+  dockerUpdateLatest := true,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
     Cmd("RUN", "apk update && apk add bash && apk add eudev")
   )
 )
-
-def updateLatest = Def.setting {
-  if (!version.value.contains("SNAPSHOT")) true
-  else false
-}
 
 val buildInfoSettings = Seq(
   buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
@@ -119,7 +114,7 @@ lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
   .settings(commonSettings)
   .settings(defineCommandAliases)
-  .settings(dockerImageCreationTask := (publishLocal in Docker).value)
+  .settings(dockerImageCreationTask := (scheduler / Docker / publishLocal).value)
   .aggregate(scheduler, avro)
   .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)

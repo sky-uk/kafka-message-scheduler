@@ -1,25 +1,22 @@
 # Kafka Message Scheduler
 
-This application is a scheduler for low-frequency and long-term scheduling of
-delayed messages to [Kafka](https://kafka.apache.org/) topics.
+This application is a scheduler for low-frequency and long-term scheduling of delayed messages to [Kafka](https://kafka.apache.org/) topics.
 
 ## Background
 
-This component was initially designed for Sky's metadata ingestion pipeline.
-We wanted to manage content expiry (for scheduled airings or on-demand assets)
-in one single component, instead of implementing the expiry logic on all
-consumers.
+This component was initially designed for Sky's metadata ingestion pipeline. We wanted to manage content expiry (for scheduled airings or on-demand assets) in one single component, instead of implementing the expiry logic on all consumers.
 
-Given that the pipeline is based on Kafka, it felt natural to
-use it as input, output and data store.
+Given that the pipeline is based on Kafka, it felt natural to use it as input, output and data store.
 
 ## How it works
 
-The Kafka Message Scheduler (KMS, for short) consumes messages from configured source (schedule) topics.  On this topic:
--  message keys are "Schedule IDs" - string values, with an expectation of uniqueness
--  message values are Schedule messages, encoded in Avro binary format according to the [Schema](#schema).
+The Kafka Message Scheduler (KMS for short) consumes messages from configured source (schedule) topics. On this topic:
+
+- message keys are "Schedule IDs" - string values, with an expectation of uniqueness
+- message values are Schedule messages, encoded in Avro binary format according to the [Schema](#schema).
 
 A schedule is composed of:
+
 - The topic you want to send the delayed message to
 - The timestamp telling when you want that message to be delivered
 - The actual message to be sent, both key and value
@@ -31,10 +28,7 @@ in the source topic.
 
 ### Startup logic
 
-When the KMS starts up it uses the [kafka-topic-loader](https://github.com/sky-uk/kafka-topic-loader) to consume all 
-messages from the configured `schedule-topics` and populate the scheduling actors state. Once this has completed, all 
-of the schedules loaded are scheduled and the application will start normal processing. This means that schedules that 
-have been fired and tombstoned, but not compacted yet, will not be replayed during startup.  
+When the KMS starts up it uses the [kafka-topic-loader](https://github.com/sky-uk/kafka-topic-loader) to consume all messages from the configured `schedule-topics` and populate the scheduling actors state. Once this has completed, all of the schedules loaded are scheduled and the application will start normal processing. This means that schedules that have been fired and tombstoned, but not compacted yet, will not be replayed during startup.
 
 ## Schema
 
@@ -45,7 +39,9 @@ To generate the avro schema from the Schedule case class, run `sbt schema`. The 
 
 ### Start services
 
-`docker-compose pull && docker-compose up -d`
+```bash
+docker-compose pull && docker-compose up -d
+```
 
 ### Send messages
 
@@ -54,22 +50,21 @@ above). See the [Schema](#schema) section for details of generating the Avro sch
 
 ### Monitoring
 
-Metrics are exposed and reported using Kamon. By default the [Kamon Prometheus reporter](http://kamon.io/documentation/1.x/reporters/prometheus/)
-is used for reporting, the scraping endpoint for Prometheus is exposed on port 9095 (this is configurable by setting
-the PROMETHEUS_SCRAPING_ENDPOINT_PORT environment variable).
+Metrics are exposed and reported using Kamon. By default, the [Kamon Prometheus reporter](https://kamon.io/docs/latest/reporters/prometheus/) is used for reporting and the scraping endpoint for Prometheus is exposed on port `9095` (this is configurable by setting the `PROMETHEUS_SCRAPING_ENDPOINT_PORT` environment variable).
+
+Prometheus is included as part of the docker-compose and will expose a monitoring dashboard on port `9090`.
 
 ### Topic configuration
 
-The `schedule-topics` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). 
-This is for two reasons:
+The `schedule-topics` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). This is for two reasons:
+
 1.  to allow the scheduler to delete the schedule after it has been written to its destination topic.
 2.  because the scheduler uses the `schedule-topics` to reconstruct its state - in case of a restart of the
     KMS, this ensures that schedules are not lost.
-    
+
 #### Recommended configuration
 
-It is advised that the log compaction configuration of the `schedule-topics` is quite aggressive to 
-keep the restart times low, see below for recommended configuration:
+It is advised that the log compaction configuration of the `schedule-topics` is quite aggressive to keep the restart times low, see below for recommended configuration:
 
 ```
 cleanup.policy: compact
@@ -82,8 +77,4 @@ segment.bytes: 100000000
 
 ## Limitations
 
-Until [this issue](/../../issues/69) is addressed the KMS does not fully support horizontal 
-scaling. Multiple instances can be run, and Kafka will balance the partitions, however schedules are likely to be duplicated 
-as when a rebalance happens the state for the rebalanced partition will not be removed from the original instance. If there 
-is a desire to run multiple instances before that issue is addressed, it is best to not attempt dynamic scaling, 
-but to start with your desired number of instances.
+Until [this issue](/../../issues/69) is addressed the KMS does not fully support horizontal scaling. Multiple instances can be run, and Kafka will balance the partitions, however schedules are likely to be duplicated as when a rebalance happens the state for the rebalanced partition will not be removed from the original instance. If there is a desire to run multiple instances before that issue is addressed, it is best to not attempt dynamic scaling, but to start with your desired number of instances.

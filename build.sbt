@@ -10,6 +10,7 @@ val akkaVersion       = "2.5.23"
 val catsVersion       = "1.6.1"
 val refinedVersion    = "0.9.8"
 val pureConfigVersion = "0.11.1"
+val kamonVersion      = "2.1.12"
 
 val dependencies = Seq(
   "com.sky"                    %% "kafka-topic-loader"          % "1.3.2",
@@ -27,10 +28,9 @@ val dependencies = Seq(
   "org.codehaus.janino"        % "janino"                       % "3.0.13" % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                  % pureConfigVersion,
   "com.github.pureconfig"      %% "pureconfig-cats"             % pureConfigVersion,
-  "io.kamon"                   %% "kamon-prometheus"            % "1.1.2",
-  "io.kamon"                   %% "kamon-akka-2.5"              % "1.1.4",
-  "io.kamon"                   %% "kamon-core"                  % "1.1.6",
-  "io.kamon"                   %% "kamon-jmx-collector"         % "0.1.8",
+  "io.kamon"                   %% "kamon-bundle"                % kamonVersion,
+  "io.kamon"                   %% "kamon-prometheus"            % kamonVersion,
+  "io.kamon"                   %% "kamon-jmx-collector"         % "1.0.0-RC1",
   "eu.timepit"                 %% "refined"                     % refinedVersion,
   "eu.timepit"                 %% "refined-pureconfig"          % refinedVersion,
   "eu.timepit"                 %% "refined-scalacheck"          % refinedVersion,
@@ -57,17 +57,12 @@ lazy val dockerSettings = Seq(
   dockerBaseImage := "openjdk:8u171-jre-alpine",
   dockerRepository := Some("skyuk"),
   dockerLabels := Map("maintainer" -> "Sky"),
-  dockerUpdateLatest := updateLatest.value,
+  dockerUpdateLatest := true,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
-    Cmd("RUN", "apk update && apk add bash")
+    Cmd("RUN", "apk update && apk add bash eudev")
   )
 )
-
-def updateLatest = Def.setting {
-  if (!version.value.contains("SNAPSHOT")) true
-  else false
-}
 
 val buildInfoSettings = Seq(
   buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
@@ -101,8 +96,7 @@ lazy val scheduler = (project in file("scheduler"))
     ),
     fork in run := true,
     fork in Test := true,
-    javaAgents += "org.aspectj" % "aspectjweaver" % "1.9.1",
-    javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
+    javaAgents += "io.kamon" % "kanela-agent" % "1.0.7",
     buildInfoSettings,
     dockerSettings,
     releaseSettings,
@@ -121,7 +115,7 @@ lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
   .settings(commonSettings)
   .settings(defineCommandAliases)
-  .settings(dockerImageCreationTask := (publishLocal in Docker).value)
+  .settings(dockerImageCreationTask := (scheduler / Docker / publishLocal).value)
   .aggregate(scheduler, avro)
   .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)

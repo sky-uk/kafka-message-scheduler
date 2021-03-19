@@ -9,10 +9,11 @@ import pureconfig.loadConfigOrThrow
 import pureconfig.module.cats._
 
 object Main extends App with LazyLogging with AkkaComponents {
+  logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")
 
   val conf = loadConfigOrThrow[AppConfig]
 
-  logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")
+  SchedulerApp.metricsInit
 
   val app = SchedulerApp.configure apply conf
 

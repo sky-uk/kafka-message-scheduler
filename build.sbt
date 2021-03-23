@@ -54,13 +54,13 @@ val commonSettings = Seq(
 
 lazy val dockerSettings = Seq(
   packageName in Docker := "kafka-message-scheduler",
-  dockerBaseImage := "openjdk:8u171-jre-alpine",
+  dockerBaseImage := "alpine:3.13.2",
   dockerRepository := Some("skyuk"),
   dockerLabels := Map("maintainer" -> "Sky"),
   dockerUpdateLatest := true,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
-    Cmd("RUN", "apk update && apk add bash eudev")
+    Cmd("RUN", "apk add --no-cache bash eudev openjdk11-jre")
   )
 )
 

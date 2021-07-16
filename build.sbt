@@ -13,7 +13,7 @@ val pureConfigVersion = "0.11.1"
 val kamonVersion      = "2.1.12"
 
 val dependencies = Seq(
-  "com.sky"                    %% "kafka-topic-loader"          % "1.3.2",
+  "com.github.sky-uk"          % "kafka-topic-loader"           % "v1.3.2",
   "com.typesafe.akka"          %% "akka-actor"                  % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                  % akkaVersion,
@@ -77,7 +77,7 @@ lazy val scheduler = (project in file("scheduler"))
     dependencyOverrides ++= Seq("org.apache.kafka" % "kafka-clients" % kafkaVersion,
                                 "org.scalacheck"   %% "scalacheck"   % "1.13.5"),
     resolvers ++= Seq(
-      "bintray-sky-uk-oss-maven" at "https://dl.bintray.com/sky-uk/oss-maven",
+      "jitpack" at "https://jitpack.io",
       "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",
       Resolver.bintrayRepo("cakesolutions", "maven")
     ),

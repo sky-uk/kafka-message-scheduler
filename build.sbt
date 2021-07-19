@@ -31,7 +31,6 @@ val dependencies = Seq(
   "io.kamon"                   %% "kamon-core"                  % kamonVersion,
   "io.kamon"                   %% "kamon-akka"                  % kamonVersion,
   "io.kamon"                   %% "kamon-prometheus"            % kamonVersion,
-  "io.kamon"                   %% "kamon-jmx-collector"         % "1.0.0-RC1",
   "eu.timepit"                 %% "refined"                     % refinedVersion,
   "eu.timepit"                 %% "refined-pureconfig"          % refinedVersion,
   "eu.timepit"                 %% "refined-scalacheck"          % refinedVersion,
@@ -79,7 +78,6 @@ lazy val scheduler = (project in file("scheduler"))
                                 "org.scalacheck"   %% "scalacheck"   % "1.13.5"),
     resolvers ++= Seq(
       "jitpack" at "https://jitpack.io",
-      "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",
       Resolver.bintrayRepo("cakesolutions", "maven")
     ),
     addCompilerPlugin("org.scalamacros" % "paradise"        % "2.1.1" cross CrossVersion.full),

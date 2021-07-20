@@ -10,10 +10,10 @@ val akkaVersion       = "2.5.23"
 val catsVersion       = "1.6.1"
 val refinedVersion    = "0.9.8"
 val pureConfigVersion = "0.11.1"
-val kamonVersion      = "2.1.12"
+val kamonVersion      = "2.2.2"
 
 val dependencies = Seq(
-  "com.sky"                    %% "kafka-topic-loader"          % "1.3.2",
+  "com.github.sky-uk"          % "kafka-topic-loader"           % "v1.3.2",
   "com.typesafe.akka"          %% "akka-actor"                  % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                  % akkaVersion,
@@ -28,9 +28,9 @@ val dependencies = Seq(
   "org.codehaus.janino"        % "janino"                       % "3.0.13" % Runtime,
   "com.github.pureconfig"      %% "pureconfig"                  % pureConfigVersion,
   "com.github.pureconfig"      %% "pureconfig-cats"             % pureConfigVersion,
-  "io.kamon"                   %% "kamon-bundle"                % kamonVersion,
+  "io.kamon"                   %% "kamon-core"                  % kamonVersion,
+  "io.kamon"                   %% "kamon-akka"                  % kamonVersion,
   "io.kamon"                   %% "kamon-prometheus"            % kamonVersion,
-  "io.kamon"                   %% "kamon-jmx-collector"         % "1.0.0-RC1",
   "eu.timepit"                 %% "refined"                     % refinedVersion,
   "eu.timepit"                 %% "refined-pureconfig"          % refinedVersion,
   "eu.timepit"                 %% "refined-scalacheck"          % refinedVersion,
@@ -77,8 +77,7 @@ lazy val scheduler = (project in file("scheduler"))
     dependencyOverrides ++= Seq("org.apache.kafka" % "kafka-clients" % kafkaVersion,
                                 "org.scalacheck"   %% "scalacheck"   % "1.13.5"),
     resolvers ++= Seq(
-      "bintray-sky-uk-oss-maven" at "https://dl.bintray.com/sky-uk/oss-maven",
-      "segence" at "https://dl.bintray.com/segence/maven-oss-releases/",
+      "jitpack" at "https://jitpack.io",
       Resolver.bintrayRepo("cakesolutions", "maven")
     ),
     addCompilerPlugin("org.scalamacros" % "paradise"        % "2.1.1" cross CrossVersion.full),

@@ -10,7 +10,7 @@ val akkaVersion       = "2.5.23"
 val catsVersion       = "1.6.1"
 val refinedVersion    = "0.9.8"
 val pureConfigVersion = "0.11.1"
-val kamonVersion      = "2.2.2"
+val kamonVersion      = "2.4.2"
 
 val dependencies = Seq(
   "com.github.sky-uk"          % "kafka-topic-loader"           % "v1.3.2",

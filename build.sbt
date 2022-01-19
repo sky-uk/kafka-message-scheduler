@@ -13,7 +13,7 @@ val pureConfigVersion = "0.11.1"
 val kamonVersion      = "2.4.2"
 
 val dependencies = Seq(
-  "com.github.sky-uk"          % "kafka-topic-loader"           % "v1.3.2",
+  "uk.sky"                     %% "kafka-topic-loader"          % "1.5.3",
   "com.typesafe.akka"          %% "akka-actor"                  % akkaVersion,
   "com.typesafe.akka"          %% "akka-stream"                 % akkaVersion,
   "com.typesafe.akka"          %% "akka-slf4j"                  % akkaVersion,

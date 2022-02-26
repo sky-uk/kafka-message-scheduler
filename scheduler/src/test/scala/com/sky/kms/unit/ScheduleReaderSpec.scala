@@ -97,19 +97,24 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
           case _ =>
             sender ! Ack
             TestActor.KeepRunning
-      })
+        }
+      )
       p
     }
 
     def delayedSource = Source.tick(100.millis, 100.millis, msg).mapMaterializedValue(_ => NotUsed)
 
-    def runReader(in: Source[In, NotUsed],
-                  errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
-                  sourceMatFuture: Future[Done] = Future.never): NotUsed =
-      ScheduleReader(Eval.now(in.mapMaterializedValue(nu => sourceMatFuture -> nu)),
-                     probe.ref,
-                     errorHandler,
-                     ReaderConfig.TimeoutConfig(100.millis, 100.millis)).stream.run()
+    def runReader(
+        in: Source[In, NotUsed],
+        errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
+        sourceMatFuture: Future[Done] = Future.never
+    ): NotUsed =
+      ScheduleReader(
+        Eval.now(in.mapMaterializedValue(nu => sourceMatFuture -> nu)),
+        probe.ref,
+        errorHandler,
+        ReaderConfig.TimeoutConfig(100.millis, 100.millis)
+      ).stream.run()
   }
 
   private trait ErrorHandler {

@@ -8,9 +8,9 @@ import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestDataUtils._
 import net.manub.embeddedkafka.Codecs.{
-  stringSerializer,
   nullDeserializer => arrayByteDeserializer,
-  nullSerializer => arrayByteSerializer
+  nullSerializer => arrayByteSerializer,
+  stringSerializer
 }
 
 class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataGenerator {
@@ -62,10 +62,13 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
     }
 
     implicit class HeaderOps(val schedule: ScheduleReader.In) {
-      def headers =
-        schedule.fold(_ => none[Map[String, Array[Byte]]], {
-          case (_, ose) => ose.fold(none[Map[String, Array[Byte]]])(_.headers.some)
-        })
+      def headers      =
+        schedule.fold(
+          _ => none[Map[String, Array[Byte]]],
+          { case (_, ose) =>
+            ose.fold(none[Map[String, Array[Byte]]])(_.headers.some)
+          }
+        )
       def headerKeys   = headers.map(_.keys.toList)
       def headerValues = headers.map(_.values.toList.map(_.toList))
     }

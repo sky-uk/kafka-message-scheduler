@@ -8,18 +8,19 @@ import com.sky.kms.config.{AppConfig, SchedulerConfig}
 package object e2e {
 
   def withSchedulerApp[T](
-      scenario: => T)(implicit conf: SchedulerConfig, system: ActorSystem, mat: ActorMaterializer): T =
+      scenario: => T
+  )(implicit conf: SchedulerConfig, system: ActorSystem, mat: ActorMaterializer): T =
     withRunningScheduler(SchedulerApp.configure apply AppConfig(conf))(_ => scenario)
 
-  def withRunningScheduler[T](schedulerApp: SchedulerApp)(
-      scenario: SchedulerApp.Running => T)(implicit system: ActorSystem, mat: ActorMaterializer): T = {
+  def withRunningScheduler[T](
+      schedulerApp: SchedulerApp
+  )(scenario: SchedulerApp.Running => T)(implicit system: ActorSystem, mat: ActorMaterializer): T = {
     val runningApp = SchedulerApp.run apply schedulerApp
 
-    try {
+    try
       scenario(runningApp)
-    } finally {
+    finally
       CoordinatedShutdown(system).run(UnknownReason)
-    }
   }
 
 }

@@ -51,8 +51,8 @@ class SchedulerResiliencySpec extends SpecBase {
     }
 
     "terminate when the queue buffer becomes full" in new TestContext with IteratingSource with AkkaComponents {
-      val sameTimeSchedules = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
-      val probe             = TestProbe()
+      val sameTimeSchedules           = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
+      val probe                       = TestProbe()
       val sinkThatWillNotSignalDemand = Sink
         .actorRefWithAck[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "")
         .mapMaterializedValue(_ => Future.never)
@@ -85,7 +85,8 @@ class SchedulerResiliencySpec extends SpecBase {
     val sourceThatWillFail: Source[ScheduleReader.In, (Future[Done], Future[Control])] =
       Source
         .fromIterator(() =>
-          Iterator(("someId" -> none[ScheduleEvent]).asRight[ApplicationError]) ++ (throw new Exception("boom!")))
+          Iterator(("someId" -> none[ScheduleEvent]).asRight[ApplicationError]) ++ (throw new Exception("boom!"))
+        )
         .mapMaterializedValue(_ => Future.successful(Done) -> Future.successful(StubControl()))
   }
 

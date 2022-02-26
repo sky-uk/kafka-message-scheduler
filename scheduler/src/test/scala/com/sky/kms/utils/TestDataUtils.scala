@@ -85,21 +85,25 @@ object TestDataUtils {
   }
 
   implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
-    def withReaderSource(src: Source[ScheduleReader.In, (Future[Done], Future[Control])])(
-        implicit as: ActorSystem): SchedulerApp =
+    def withReaderSource(src: Source[ScheduleReader.In, (Future[Done], Future[Control])])(implicit
+        as: ActorSystem
+    ): SchedulerApp =
       schedulerApp.copy(reader = schedulerApp.reader.copy(scheduleSource = Eval.later(src)))
 
     def withPublisherSink(
-        sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]): SchedulerApp =
-      schedulerApp.modifyWith[Any] {
-        case pub: ScheduledMessagePublisher => pub.replace(Eval.later(sink))
+        sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]
+    ): SchedulerApp =
+      schedulerApp.modifyWith[Any] { case pub: ScheduledMessagePublisher =>
+        pub.replace(Eval.later(sink))
       }
   }
 
-  case class ScheduleEventNoHeaders(delay: FiniteDuration,
-                                    inputTopic: String,
-                                    outputTopic: String,
-                                    key: Array[Byte],
-                                    value: Option[Array[Byte]])
+  case class ScheduleEventNoHeaders(
+      delay: FiniteDuration,
+      inputTopic: String,
+      outputTopic: String,
+      key: Array[Byte],
+      value: Option[Array[Byte]]
+  )
 
 }

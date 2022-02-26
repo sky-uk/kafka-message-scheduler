@@ -13,7 +13,7 @@ import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestActorSystem
 import com.sky.kms.utils.TestDataUtils._
 import eu.timepit.refined.auto._
-import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
+import net.manub.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringSerializer}
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Await
@@ -63,7 +63,8 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
           case _ =>
             sender ! Ack
             TestActor.KeepRunning
-      })
+        }
+      )
       p
     }
 
@@ -73,17 +74,19 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
       .stream
       .run()
 
-    try {
+    try
       scenario(probe)
-    } finally {
+    finally
       Await.ready(controlF.flatMap(_.shutdown())(system.dispatcher), 5 seconds)
-    }
   }
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
-    publishToKafka(scheduleTopic, schedules.map {
-      case (scheduleId, scheduleEvent) => (scheduleId, scheduleEvent.toSchedule.toAvro)
-    })
+    publishToKafka(
+      scheduleTopic,
+      schedules.map { case (scheduleId, scheduleEvent) =>
+        (scheduleId, scheduleEvent.toSchedule.toAvro)
+      }
+    )
 
   private def scheduleShouldFlow(probe: TestProbe): SchedulingMessage = {
     writeSchedulesToKafka(generateSchedule)

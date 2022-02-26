@@ -10,13 +10,13 @@ case class ScheduleQueueOfferResult(scheduleId: ScheduleId, queueOfferResult: Qu
 object ScheduleQueueOfferResult {
 
   implicit val queueOfferResultShow: Show[ScheduleQueueOfferResult] = show {
-    case ScheduleQueueOfferResult(scheduleId, Enqueued) =>
+    case ScheduleQueueOfferResult(scheduleId, Enqueued)                    =>
       s"$scheduleId enqueued successfully"
-    case ScheduleQueueOfferResult(scheduleId, Dropped) =>
+    case ScheduleQueueOfferResult(scheduleId, Dropped)                     =>
       s"$scheduleId was dropped from queue, check the chosen overflow strategy"
     case ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Failure(t)) =>
       s"An error occurred when attempting to enqueue the $scheduleId: ${t.getMessage}"
-    case ScheduleQueueOfferResult(scheduleId, QueueClosed) =>
+    case ScheduleQueueOfferResult(scheduleId, QueueClosed)                 =>
       s"Unable to enqueue $scheduleId because the downstream source queue has been completed/closed"
   }
 

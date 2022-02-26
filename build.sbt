@@ -54,8 +54,7 @@ lazy val scheduler = (project in file("scheduler"))
       "-Ypartial-unification",
       "-encoding",
       "utf-8",
-      "-feature",
-      "-Ywarn-unused"
+      "-feature"
     ),
     run / fork               := true,
     Test / fork              := true,

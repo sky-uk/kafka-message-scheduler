@@ -63,12 +63,13 @@ object Dependencies {
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1"  % Runtime
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.6"  % Runtime
 
-  val scalaTest           = "org.scalatest"           %% "scalatest"                   % "3.2.9"   % Test
-  val randomDataGenerator = "com.danielasfregola"     %% "random-data-generator"       % "2.9"     % Test
-  val scalaCheckDatetime  = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"   % Test
-  val mockito             = "org.mockito"              % "mockito-all"                 % "1.10.19" % Test
-  val grafter             = "org.zalando"             %% "grafter"                     % "2.6.1"   % Test
-  val embeddedKafka       = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.1.0"   % Test
+  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.9"    % Test
+  val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
+  val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"    % Test
+  val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
+  val mockito              = "org.mockito"              % "mockito-all"                 % "1.10.19"  % Test
+  val grafter              = "org.zalando"             %% "grafter"                     % "2.6.1"    % Test
+  val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.1.0"    % Test
 
   val core: Seq[ModuleID]    = Akka.base ++ Cats.all ++ Kamon.all ++ PureConfig.all ++ Refined.all ++ Seq(
     kafkaTopicLoader,
@@ -82,6 +83,7 @@ object Dependencies {
   )
   val test: Seq[ModuleID]    = Akka.test ++ Kafka.test ++ Seq(
     scalaTest,
+    scalaTestPlusMockito,
     randomDataGenerator,
     scalaCheckDatetime,
     mockito,

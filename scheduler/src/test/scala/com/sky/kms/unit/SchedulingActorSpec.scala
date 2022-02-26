@@ -8,9 +8,9 @@ import com.sky.kms.actors.PublisherActor.Trigger
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaSpecBase
-import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain._
 import com.sky.kms.utils.SimpleCounterMonitoring
+import com.sky.kms.utils.TestDataUtils._
 import monix.execution.schedulers.TestScheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar

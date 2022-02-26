@@ -20,9 +20,9 @@ import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import org.scalacheck.{Arbitrary, Gen}
 import org.zalando.grafter.syntax.rewriter._
 
-import scala.language.higherKinds
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.language.higherKinds
 
 object TestDataUtils {
 
@@ -43,7 +43,7 @@ object TestDataUtils {
   implicit val encoderForScheduleWithHeaders = Encoder[ScheduleWithHeaders]
   implicit val encoderForScheduleNoHeaders   = Encoder[ScheduleNoHeaders]
 
-  implicit class ScheduleEventOps(val schedule: ScheduleEvent) extends AnyVal {
+  implicit class ScheduleEventOps(private val schedule: ScheduleEvent) extends AnyVal {
     def toSchedule: ScheduleWithHeaders = {
       val time = OffsetDateTime.now().toInstant.plusMillis(schedule.delay.toMillis).atOffset(ZoneOffset.UTC)
       ScheduleWithHeaders(time, schedule.outputTopic, schedule.key, schedule.value, schedule.headers)
@@ -59,7 +59,7 @@ object TestDataUtils {
     def headerValues = schedule.headers.values
   }
 
-  implicit class ScheduleEventNoHeadersOps(val schedule: ScheduleEventNoHeaders) extends AnyVal {
+  implicit class ScheduleEventNoHeadersOps(private val schedule: ScheduleEventNoHeaders) extends AnyVal {
     def toScheduleWithoutHeaders: ScheduleNoHeaders = {
       val time = OffsetDateTime.now().toInstant.plusMillis(schedule.delay.toMillis).atOffset(ZoneOffset.UTC)
       ScheduleNoHeaders(time, schedule.outputTopic, schedule.key, schedule.value)
@@ -72,7 +72,7 @@ object TestDataUtils {
       ScheduledMessage(schedule.inputTopic, schedule.outputTopic, schedule.key, schedule.value, Map.empty)
   }
 
-  implicit class ScheduleOps[T <: Schedule](val schedule: T) extends AnyVal {
+  implicit class ScheduleOps[T <: Schedule](private val schedule: T) extends AnyVal {
     def toAvro(implicit sf: SchemaFor[T], e: Encoder[T]): Array[Byte] = toAvroFrom(schedule)
     def timeInMillis: Long                                            = schedule.getTime.toInstant.toEpochMilli
   }
@@ -85,7 +85,7 @@ object TestDataUtils {
     baos.toByteArray
   }
 
-  implicit class SchedulerAppOps(val schedulerApp: SchedulerApp) extends AnyVal {
+  implicit class SchedulerAppOps(private val schedulerApp: SchedulerApp) extends AnyVal {
     def withReaderSource(src: Source[ScheduleReader.In, (Future[Done], Future[Control])])(implicit
         as: ActorSystem
     ): SchedulerApp =

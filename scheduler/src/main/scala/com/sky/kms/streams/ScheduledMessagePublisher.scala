@@ -4,8 +4,8 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.kafka.ProducerSettings
 import akka.kafka.scaladsl.Producer
-import akka.stream.scaladsl._
 import akka.stream.OverflowStrategy
+import akka.stream.scaladsl._
 import cats.Eval
 import com.sky.kms.Start
 import com.sky.kms.actors.PublisherActor.ScheduleQueue

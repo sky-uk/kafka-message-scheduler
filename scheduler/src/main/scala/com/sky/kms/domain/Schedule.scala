@@ -1,6 +1,7 @@
 package com.sky.kms.domain
 
 import java.time.OffsetDateTime
+
 import scala.concurrent.duration.FiniteDuration
 
 sealed trait Schedule extends Product with Serializable
@@ -18,7 +19,7 @@ object Schedule {
       headers: Map[String, Array[Byte]]
   ) extends Schedule
 
-  implicit class ScheduleOps(val s: Schedule) extends AnyVal {
+  implicit class ScheduleOps(private val s: Schedule) extends AnyVal {
     def getTime                                                    = Schedule.getTime(s)
     def toScheduleEvent(delay: FiniteDuration, inputTopic: String) = Schedule.toScheduleEvent(delay, inputTopic, s)
   }

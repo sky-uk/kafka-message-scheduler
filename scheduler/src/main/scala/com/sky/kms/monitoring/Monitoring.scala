@@ -2,7 +2,7 @@ package com.sky.kms.monitoring
 
 trait Monitoring {
 
-  def scheduleReceived()
+  def scheduleReceived(): Unit
 
-  def scheduleDone()
+  def scheduleDone(): Unit
 }

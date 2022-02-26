@@ -21,7 +21,7 @@ package object domain {
       headers: Map[String, Array[Byte]]
   )
 
-  implicit class HeadersOps(val headers: Map[String, Array[Byte]]) extends AnyVal {
+  implicit class HeadersOps(private val headers: Map[String, Array[Byte]]) extends AnyVal {
     def asKafkaHeaders: lang.Iterable[Header] = headers.map { case (k, v) => new RecordHeader(k, v): Header }.asJava
   }
 

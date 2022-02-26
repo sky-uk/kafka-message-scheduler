@@ -1,7 +1,7 @@
 package com.sky.kms.e2e
 
-import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import cats.syntax.option._
+import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.sky.kms._
 import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.domain.ScheduleEvent

@@ -16,7 +16,7 @@ object Release {
     releaseVersionBump := sbtrelease.Version.Bump.Minor,
     releaseTagName := s"${name.value}-${version.value}",
     releaseTagComment := s"Releasing ${version.value} of module: ${name.value}",
-    releasePublishArtifactsAction:= (publish in Universal).value,
+    releasePublishArtifactsAction:= (Universal / publish).value,
     releaseProcess := Seq[ReleaseStep](
       runClean,
       checkSnapshotDependencies,
@@ -26,7 +26,7 @@ object Release {
       runTest,
       commitReleaseVersion,
       tagRelease,
-      ReleaseStep(releaseStepTask(publish in docker)),
+      ReleaseStep(releaseStepTask(docker / publish)),
       setNextVersion,
       commitNextVersion,
       pushChanges

@@ -3,7 +3,6 @@ package com.sky.kms.integration
 import java.util.UUID
 
 import akka.testkit.{TestActor, TestProbe}
-import cats.instances.tuple._
 import cats.syntax.functor._
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.SchedulerIntSpecBase
@@ -13,7 +12,7 @@ import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestActorSystem
 import com.sky.kms.utils.TestDataUtils._
 import eu.timepit.refined.auto._
-import net.manub.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringSerializer}
+import io.github.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringSerializer}
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Await

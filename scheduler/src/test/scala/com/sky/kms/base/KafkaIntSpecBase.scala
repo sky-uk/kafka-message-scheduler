@@ -3,17 +3,17 @@ package com.sky.kms.base
 import com.sky.kms.kafka.Topic
 import com.sky.kms.utils.RandomPort.randomPort
 import eu.timepit.refined.auto._
-import net.manub.embeddedkafka.Codecs.{nullDeserializer, stringDeserializer}
-import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
+import io.github.embeddedkafka.Codecs.{nullDeserializer, stringDeserializer}
+import io.github.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.serialization.Deserializer
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpec
 
 import collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.compat.java8.DurationConverters._
 
-trait KafkaIntSpecBase extends EmbeddedKafka with WordSpecLike {
+trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
 
   implicit lazy val kafkaConfig = EmbeddedKafkaConfig(kafkaPort = randomPort(), zooKeeperPort = randomPort())
 

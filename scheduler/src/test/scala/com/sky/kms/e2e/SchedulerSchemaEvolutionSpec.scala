@@ -7,7 +7,7 @@ import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestDataUtils._
-import net.manub.embeddedkafka.Codecs.{
+import io.github.embeddedkafka.Codecs.{
   nullDeserializer => arrayByteDeserializer,
   nullSerializer => arrayByteSerializer,
   stringSerializer

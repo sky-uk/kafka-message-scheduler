@@ -10,7 +10,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
-import com.sksamuel.avro4s.{AvroOutputStream, AvroSchema, Encoder, SchemaFor}
+import com.sksamuel.avro4s.{AvroOutputStream, Encoder, SchemaFor}
 import com.sky.kms.SchedulerApp
 import com.sky.kms.avro._
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
@@ -20,6 +20,7 @@ import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import org.scalacheck.{Arbitrary, Gen}
 import org.zalando.grafter.syntax.rewriter._
 
+import scala.language.higherKinds
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -78,7 +79,7 @@ object TestDataUtils {
 
   private def toAvroFrom[T <: Schedule : Encoder : SchemaFor](t: T) = {
     val baos   = new ByteArrayOutputStream()
-    val output = AvroOutputStream.binary[T].to(baos).build(AvroSchema[T])
+    val output = AvroOutputStream.binary[T].to(baos).build()
     output.write(t)
     output.close()
     baos.toByteArray

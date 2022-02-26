@@ -1,7 +1,6 @@
 package com.sky.kms.e2e
 
 import java.util.UUID
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
@@ -10,11 +9,12 @@ import akka.testkit.TestProbe
 import cats.data.NonEmptyList
 import cats.syntax.either._
 import cats.syntax.option._
+import com.sky.kms.actors.SchedulingActor.UpstreamFailure
 import com.sky.kms.base.SpecBase
 import com.sky.kms.config._
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.Topic
-import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.utils.{StubControl, TestConfig}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
@@ -54,7 +54,7 @@ class SchedulerResiliencySpec extends SpecBase {
       val sameTimeSchedules           = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
       val probe                       = TestProbe()
       val sinkThatWillNotSignalDemand = Sink
-        .actorRefWithAck[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "")
+        .actorRefWithBackpressure(probe.ref, "", "", "", UpstreamFailure) // TODO - check added arg works
         .mapMaterializedValue(_ => Future.never)
 
       val app =

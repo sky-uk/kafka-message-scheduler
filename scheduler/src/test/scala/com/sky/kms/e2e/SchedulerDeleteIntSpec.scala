@@ -4,7 +4,7 @@ import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.domain._
 import eu.timepit.refined.auto._
-import net.manub.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringDeserializer, stringSerializer}
+import io.github.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringDeserializer, stringSerializer}
 
 class SchedulerDeleteIntSpec extends SchedulerIntSpecBase {
 

@@ -8,6 +8,8 @@ import com.sky.kms.avro._
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 
+import scala.language.higherKinds
+
 class AvroSpec extends SpecBase {
 
   private case class TestData(time: OffsetDateTime)

@@ -2,8 +2,10 @@ import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
 import Release._
 
-//scalafmtVersion in ThisBuild := "1.2.0"
-ThisBuild / scalafmtOnCompile := true
+ThisBuild / scalafmtOnCompile                              := true
+ThisBuild / semanticdbEnabled                              := true
+ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 val commonSettings = Seq(
   organization                                 := "com.sky",
@@ -52,7 +54,8 @@ lazy val scheduler = (project in file("scheduler"))
       "-Ypartial-unification",
       "-encoding",
       "utf-8",
-      "-feature"
+      "-feature",
+      "-Ywarn-unused"
     ),
     run / fork               := true,
     Test / fork              := true,
@@ -68,6 +71,11 @@ val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule sche
 lazy val avro = (project in file("avro"))
   .settings(commonSettings)
   .settings(schema := (Compile / run).toTask("").value)
+  .settings(
+    scalacOptions ++= Seq(
+      "-Ywarn-unused"
+    )
+  )
   .dependsOn(scheduler % "compile->compile")
   .disablePlugins(ReleasePlugin)
 

@@ -9,6 +9,8 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
+Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
+
 val commonSettings = Seq(
   organization                                 := "com.sky",
   scalaVersion                                 := "2.13.8",

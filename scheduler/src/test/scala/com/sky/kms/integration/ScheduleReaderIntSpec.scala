@@ -1,7 +1,8 @@
 package com.sky.kms.integration
 
-import java.util.UUID
+import akka.actor.ActorSystem
 
+import java.util.UUID
 import akka.testkit.{TestActor, TestProbe}
 import cats.syntax.functor._
 import com.sky.kms.actors.SchedulingActor._
@@ -13,14 +14,14 @@ import com.sky.kms.utils.TestActorSystem
 import com.sky.kms.utils.TestDataUtils._
 import eu.timepit.refined.auto._
 import io.github.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringSerializer}
-import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
+class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
 
-  override implicit lazy val system = TestActorSystem(kafkaConfig.kafkaPort, akkaExpectDuration = 20.seconds)
+  override implicit lazy val system: ActorSystem =
+    TestActorSystem(kafkaConfig.kafkaPort, akkaExpectDuration = 20.seconds)
 
   val numSchedules = 3
 
@@ -40,6 +41,7 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
       }
     }
 
+    // TODO - fails only when running with the suite, passes on its own
     "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
       withRunningKafka {
         probe.expectMsg(StreamStarted)

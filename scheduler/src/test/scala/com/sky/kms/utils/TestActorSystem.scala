@@ -1,7 +1,6 @@
 package com.sky.kms.utils
 
 import java.util.UUID
-
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -16,6 +15,7 @@ object TestActorSystem {
        | test.single-expect-default = $akkaExpectDuration
        | coordinated-shutdown {
        |  terminate-actor-system = $terminateActorSystem
+       |  run-by-actor-system-terminate = off
        |  run-by-jvm-shutdown-hook = off
        | }
        |

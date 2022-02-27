@@ -2,12 +2,12 @@ version: '3.3'
 services:
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:3.3.0
+    image: confluentinc/cp-zookeeper:7.0.1
     environment:
       ZOOKEEPER_CLIENT_PORT: '2181'
 
   kafka:
-    image: confluentinc/cp-kafka:3.3.0
+    image: confluentinc/cp-kafka:7.0.1
     ports:
     - "9093:9093"
     depends_on:
@@ -29,7 +29,7 @@ services:
     - "9095:9095"
 
   prometheus:
-    image: prom/prometheus:v2.25.2
+    image: prom/prometheus:v2.33.4
     ports:
       - "9090:9090"
     volumes:

@@ -61,6 +61,10 @@ class SchedulerSpec extends SpecBase {
   private def artificialConsumerRecord(scheduleId: ScheduleId, avroBytes: Array[Byte]) =
     new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1L, scheduleId, avroBytes)
 
-  private def equalHeaders(x: Map[String, Array[Byte]], y: Map[String, Array[Byte]]): Boolean =
-    x === y
+  // TODO - this has stopped working
+  private def equalHeaders(x: Map[String, Array[Byte]], y: Map[String, Array[Byte]]): Boolean = {
+    println(s"x: ${x.values.toList}")
+    println(s"y: ${y.values.toList}")
+    x.equals(y)
+  }
 }

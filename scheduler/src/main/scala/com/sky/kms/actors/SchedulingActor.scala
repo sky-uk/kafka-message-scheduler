@@ -37,7 +37,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
     }
 
     streamStartedOrFailed orElse {
-      (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender ! Ack)
+      (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender() ! Ack)
     }
   }
 
@@ -64,7 +64,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
     }
 
     streamStartedOrFailed orElse {
-      handleSchedulingMessage andThen (_ => sender ! Ack)
+      handleSchedulingMessage andThen (_ => sender() ! Ack)
     }
   }
 
@@ -78,7 +78,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
       log.error(t, "Reader stream has died")
       context stop self
     case StreamStarted      =>
-      sender ! Ack
+      sender() ! Ack
   }
 }
 

@@ -1,8 +1,8 @@
 package com.sky.kms.integration
 
-import akka.actor.ActorSystem
-
 import java.util.UUID
+
+import akka.actor.ActorSystem
 import akka.testkit.{TestActor, TestProbe}
 import cats.syntax.functor._
 import com.sky.kms.actors.SchedulingActor._

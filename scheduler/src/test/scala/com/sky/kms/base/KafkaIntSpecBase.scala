@@ -9,9 +9,9 @@ import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.serialization.Deserializer
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.JavaConverters._
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 
 trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
 

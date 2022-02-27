@@ -119,7 +119,7 @@ class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
   private trait ErrorHandler {
     this: TestContext =>
 
-    val awaitingError = Promise[ApplicationError]
+    val awaitingError = Promise[ApplicationError]()
     val errorHandler  = Sink.foreach[ApplicationError](awaitingError.trySuccess)
   }
 

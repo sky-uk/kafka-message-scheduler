@@ -54,7 +54,7 @@ class SchedulerSpec extends SpecBase {
       val schedule         = TestSchedule.toSchedule.copy(time = tooDistantFuture)
       val cr               = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
-      scheduleConsumerRecordDecoder(cr).left.get shouldBe a[InvalidTimeError]
+      scheduleConsumerRecordDecoder(cr).left.toOption.get shouldBe a[InvalidTimeError]
     }
   }
 
@@ -62,5 +62,5 @@ class SchedulerSpec extends SpecBase {
     new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1L, scheduleId, avroBytes)
 
   private def equalHeaders(x: Map[String, Array[Byte]], y: Map[String, Array[Byte]]): Boolean =
-    x.mapValues(_.toList) === y.mapValues(_.toList)
+    x === y
 }

@@ -15,7 +15,6 @@ import com.sky.kms.streams.ScheduleReader
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
 import scala.concurrent.duration._
-import scala.language.higherKinds
 import scala.util.Try
 
 package object kms {

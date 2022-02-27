@@ -54,7 +54,7 @@ object PublisherActor {
   case class DownstreamFailure(t: Throwable)
 
   def create(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props[PublisherActor], "publisher-actor")
+    system.actorOf(Props[PublisherActor](), "publisher-actor")
 
   def init(queue: ScheduleQueue): Start[Unit] =
     Start(_.publisherActor ! Init(queue))

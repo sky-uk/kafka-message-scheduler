@@ -18,11 +18,9 @@ import com.sky.kms.domain.Schedule.{ScheduleNoHeaders, ScheduleWithHeaders}
 import com.sky.kms.domain.{Schedule, ScheduleEvent}
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import org.scalacheck.{Arbitrary, Gen}
-import org.zalando.grafter.syntax.rewriter._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.higherKinds
 
 object TestDataUtils {
 
@@ -73,11 +71,11 @@ object TestDataUtils {
   }
 
   implicit class ScheduleOps[T <: Schedule](private val schedule: T) extends AnyVal {
-    def toAvro(implicit sf: SchemaFor[T], e: Encoder[T]): Array[Byte] = toAvroFrom(schedule)
-    def timeInMillis: Long                                            = schedule.getTime.toInstant.toEpochMilli
+    def toAvro(implicit e: Encoder[T]): Array[Byte] = toAvroFrom(schedule)
+    def timeInMillis: Long                          = schedule.getTime.toInstant.toEpochMilli
   }
 
-  private def toAvroFrom[T <: Schedule : Encoder : SchemaFor](t: T) = {
+  private def toAvroFrom[T <: Schedule : Encoder](t: T) = {
     val baos   = new ByteArrayOutputStream()
     val output = AvroOutputStream.binary[T].to(baos).build()
     output.write(t)
@@ -92,11 +90,12 @@ object TestDataUtils {
       schedulerApp.copy(reader = schedulerApp.reader.copy(scheduleSource = Eval.later(src)))
 
     def withPublisherSink(
-        sink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]
+        newSink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]
     ): SchedulerApp =
-      schedulerApp.modifyWith[Any] { case pub: ScheduledMessagePublisher =>
-        pub.replace(Eval.later(sink))
-      }
+      schedulerApp.copy(publisher = schedulerApp.publisher.copy(publisherSink = Eval.later(newSink))) // TODO - check this works
+//      schedulerApp.modifyWith[Any] { case pub: ScheduledMessagePublisher =>
+//        pub.replace(Eval.later(sink))
+//      }
   }
 
   case class ScheduleEventNoHeaders(

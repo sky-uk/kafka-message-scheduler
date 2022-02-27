@@ -28,7 +28,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
   private class TestContext {
     def createSchedules(numSchedules: Int, forTopics: List[String]): List[(ScheduleId, ScheduleEvent)] =
       random[(ScheduleId, ScheduleEvent)](numSchedules).toList
-        .zip(Stream.continually(forTopics.toStream).flatten.take(numSchedules).toList)
+        .zip(LazyList.continually(forTopics.to(LazyList)).flatten.take(numSchedules).toList)
         .map { case ((id, schedule), topic) =>
           id -> schedule.copy(inputTopic = topic).secondsFromNow(4)
         }

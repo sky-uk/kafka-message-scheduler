@@ -26,6 +26,17 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
   val numSchedules = 3
 
   "stream" should {
+    "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
+      withRunningKafka {
+        probe.expectMsg(StreamStarted)
+        probe.expectMsg(Initialised)
+        scheduleShouldFlow(probe)
+      }
+      withRunningKafka {
+        scheduleShouldFlow(probe)
+      }
+    }
+
     "not schedule messages that have been deleted but not compacted on startup" in withRunningKafka {
       val schedules @ firstSchedule :: _ = List.fill(numSchedules)(generateSchedule)
       writeSchedulesToKafka(schedules: _*)
@@ -38,18 +49,6 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
         receivedScheduleIds should contain theSameElementsAs schedules.map(_._1)
         probe.expectMsgType[Cancel].scheduleId shouldBe firstSchedule._1
         probe.expectMsg(Initialised)
-      }
-    }
-
-    // TODO - fails only when running with the suite, passes on its own
-    "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
-      withRunningKafka {
-        probe.expectMsg(StreamStarted)
-        probe.expectMsg(Initialised)
-        scheduleShouldFlow(probe)
-      }
-      withRunningKafka {
-        scheduleShouldFlow(probe)
       }
     }
   }

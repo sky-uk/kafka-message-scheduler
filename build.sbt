@@ -7,9 +7,11 @@ ThisBuild / semanticdbEnabled                              := true
 ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
 val commonSettings = Seq(
   organization                                 := "com.sky",
-  scalaVersion                                 := "2.12.10",
+  scalaVersion                                 := "2.13.8",
   libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "4.0.12"
 )
 
@@ -42,8 +44,7 @@ lazy val scheduler = (project in file("scheduler"))
     resolvers ++= Seq(
       "jitpack" at "https://jitpack.io"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise"       % "2.1.1" cross CrossVersion.full),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10"),
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
     scalacOptions ++= Seq(
       "-language:implicitConversions",
       "-language:postfixOps",
@@ -51,10 +52,10 @@ lazy val scheduler = (project in file("scheduler"))
       "-Ywarn-dead-code",
       "-Ywarn-unused",
       "-deprecation",
-      "-Ypartial-unification",
       "-encoding",
       "utf-8",
-      "-feature"
+      "-feature",
+      "-Ymacro-annotations"
     ),
     run / fork               := true,
     Test / fork              := true,

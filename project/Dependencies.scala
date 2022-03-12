@@ -6,12 +6,11 @@ object Dependencies {
     private val version = "2.6.18"
     val actor           = "com.typesafe.akka" %% "akka-actor"          % version
     val stream          = "com.typesafe.akka" %% "akka-stream"         % version
-    val streamKafka     = "com.typesafe.akka" %% "akka-stream-kafka"   % "2.1.1"
+    val streamKafka     = "com.typesafe.akka" %% "akka-stream-kafka"   % "3.0.0"
     val slf4j           = "com.typesafe.akka" %% "akka-slf4j"          % version
-    val streamContrib   = "com.typesafe.akka" %% "akka-stream-contrib" % "0.11"
     val testKit         = "com.typesafe.akka" %% "akka-testkit"        % version % Test
     val streamTestKit   = "com.typesafe.akka" %% "akka-stream-testkit" % version % Test
-    val base            = Seq(actor, stream, streamKafka, slf4j, streamContrib)
+    val base            = Seq(actor, stream, streamKafka, slf4j)
     val test            = Seq(testKit, streamTestKit)
   }
 
@@ -32,7 +31,7 @@ object Dependencies {
   }
 
   object Kamon {
-    private val version = "2.4.6"
+    private val version = "2.4.8"
     val core            = "io.kamon" %% "kamon-core"       % version
     val akka            = "io.kamon" %% "kamon-akka"       % version
     val prometheus      = "io.kamon" %% "kamon-prometheus" % version
@@ -54,16 +53,16 @@ object Dependencies {
     val all             = Seq(refined, pureconfig, scalaCheck)
   }
 
-  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.4"
+  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.5"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.0"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.4"
   val scalaCheck       = "org.scalacheck"             %% "scalacheck"         % "1.15.4" // TODO - only in build.sbt
 
-  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.2.10" % Runtime
+  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.2.11" % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1"  % Runtime
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.6"  % Runtime
 
-  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.9"    % Test
+  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.11"   % Test
   val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
   val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"    % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test

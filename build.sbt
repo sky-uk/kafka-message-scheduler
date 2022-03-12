@@ -46,7 +46,7 @@ lazy val scheduler = (project in file("scheduler"))
     resolvers ++= Seq(
       "jitpack" at "https://jitpack.io"
     ),
-    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
+    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
     scalacOptions ++= Seq(
       "-deprecation",
       "-Ymacro-annotations"

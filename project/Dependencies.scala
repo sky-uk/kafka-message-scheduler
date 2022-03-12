@@ -23,7 +23,7 @@ object Dependencies {
 
   object Kafka {
     private val version = "3.1.0"
-    val kafkaClients    = "org.apache.kafka"  % "kafka-clients" % version // TODO - only in build.sbt
+    val kafkaClients    = "org.apache.kafka"  % "kafka-clients" % version
     val kafka           = "org.apache.kafka" %% "kafka"         % version % Test
     val base            = Seq(kafkaClients)
     val test            = Seq(kafka)
@@ -56,7 +56,7 @@ object Dependencies {
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.5"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.0"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.4"
-  val scalaCheck       = "org.scalacheck"             %% "scalacheck"         % "1.15.4" // TODO - only in build.sbt
+  val scalaCheck       = "org.scalacheck"             %% "scalacheck"         % "1.15.4"
 
   val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.2.11" % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1"  % Runtime

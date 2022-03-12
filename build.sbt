@@ -25,7 +25,7 @@ lazy val dockerSettings = Seq(
   dockerUpdateLatest   := true,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
-    Cmd("RUN", "apk add --no-cache bash eudev openjdk11-jre")
+    Cmd("RUN", "apk add --no-cache bash eudev openjdk17-jre")
   )
 )
 

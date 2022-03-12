@@ -31,7 +31,7 @@ object Dependencies {
   }
 
   object Kamon {
-    private val version = "2.4.8"
+    private val version = "2.5.0"
     val core            = "io.kamon" %% "kamon-core"       % version
     val akka            = "io.kamon" %% "kamon-akka"       % version
     val prometheus      = "io.kamon" %% "kamon-prometheus" % version

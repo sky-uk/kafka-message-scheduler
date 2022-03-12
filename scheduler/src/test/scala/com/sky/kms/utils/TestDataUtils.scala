@@ -92,10 +92,7 @@ object TestDataUtils {
     def withPublisherSink(
         newSink: Sink[ScheduledMessagePublisher.SinkIn, ScheduledMessagePublisher.SinkMat]
     ): SchedulerApp =
-      schedulerApp.copy(publisher =
-        schedulerApp.publisher.copy(publisherSink = Eval.later(newSink))
-      ) // TODO - check this works
-//      }
+      schedulerApp.copy(publisher = schedulerApp.publisher.copy(publisherSink = Eval.later(newSink)))
   }
 
   case class ScheduleEventNoHeaders(

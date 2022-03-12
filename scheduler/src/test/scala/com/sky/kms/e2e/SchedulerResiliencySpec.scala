@@ -55,7 +55,7 @@ class SchedulerResiliencySpec extends SpecBase {
       val sameTimeSchedules           = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
       val probe                       = TestProbe()
       val sinkThatWillNotSignalDemand = Sink
-        .actorRefWithBackpressure(probe.ref, "", "", "", UpstreamFailure) // TODO - check added arg works
+        .actorRefWithBackpressure(probe.ref, "", "", "", UpstreamFailure)
         .mapMaterializedValue(_ => Future.never)
 
       val app =

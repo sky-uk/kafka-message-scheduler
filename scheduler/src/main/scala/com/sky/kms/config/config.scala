@@ -1,11 +1,16 @@
 package com.sky.kms.config
 
+import cats.Show
 import cats.data.{NonEmptyList, Reader}
 import com.sky.kms.kafka.Topic
 
 import scala.concurrent.duration.FiniteDuration
 
 case class AppConfig(scheduler: SchedulerConfig)
+
+object AppConfig {
+  implicit val show: Show[AppConfig] = Show.show(_.toString)
+}
 
 case class SchedulerConfig(reader: ReaderConfig, publisher: PublisherConfig)
 

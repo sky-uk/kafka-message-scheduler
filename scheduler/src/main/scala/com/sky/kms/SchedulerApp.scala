@@ -42,7 +42,7 @@ object SchedulerApp {
 
   def metricsInit(implicit system: ActorSystem): Unit = {
     Kamon.init()
-    KamonJmxMetricCollector() // TODO - update jmx-collector lib
+    KamonJmxMetricCollector()
     ShutdownTasks.forKamon
   }
 

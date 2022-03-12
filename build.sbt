@@ -48,17 +48,10 @@ lazy val scheduler = (project in file("scheduler"))
     ),
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
     scalacOptions ++= Seq(
-      "-language:implicitConversions",
-      "-language:postfixOps",
-      "-Xfatal-warnings",
-      "-Ywarn-dead-code",
-      "-Ywarn-unused",
       "-deprecation",
-      "-encoding",
-      "utf-8",
-      "-feature",
       "-Ymacro-annotations"
     ),
+    scalacOptions -= "-Wvalue-discard",
     run / fork               := true,
     Test / fork              := true,
     javaAgents += "io.kamon"  % "kanela-agent" % "1.0.14",
@@ -75,7 +68,7 @@ lazy val avro = (project in file("avro"))
   .settings(schema := (Compile / run).toTask("").value)
   .settings(
     scalacOptions ++= Seq(
-      "-Ywarn-unused"
+      "-Wunused"
     )
   )
   .dependsOn(scheduler % "compile->compile")

@@ -19,7 +19,7 @@ val commonSettings = Seq(
 
 lazy val dockerSettings = Seq(
   Docker / packageName := "kafka-message-scheduler",
-  dockerBaseImage      := "alpine:3.13.2",
+  dockerBaseImage      := "alpine:3.15.0",
   dockerRepository     := Some("skyuk"),
   dockerLabels         := Map("maintainer" -> "Sky"),
   dockerUpdateLatest   := true,

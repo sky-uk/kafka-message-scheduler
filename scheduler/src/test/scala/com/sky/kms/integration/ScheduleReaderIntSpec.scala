@@ -77,7 +77,7 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
     try
       scenario(probe)
     finally
-      Await.ready(controlF.flatMap(_.shutdown())(system.dispatcher), 5 seconds)
+      Await.ready(controlF.flatMap(_.shutdown())(system.dispatcher), 5.seconds)
   }
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =

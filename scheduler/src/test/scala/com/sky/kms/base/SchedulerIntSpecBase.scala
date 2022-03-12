@@ -8,5 +8,5 @@ import scala.concurrent.duration._
 
 abstract class SchedulerIntSpecBase extends AkkaKafkaSpecBase {
   implicit val conf: SchedulerConfig = TestConfig(NonEmptyList.of(scheduleTopic, extraScheduleTopic))
-  val tolerance: FiniteDuration      = 1300 milliseconds
+  val tolerance: FiniteDuration      = 1300.milliseconds
 }

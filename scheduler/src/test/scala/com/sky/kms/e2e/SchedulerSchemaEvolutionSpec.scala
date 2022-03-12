@@ -47,7 +47,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
     trait TestContext {
 
       val inputTopic = "cupcat"
-      val delay      = 4
+      val delay      = 4L
 
       def publishAndGetDecoded(inputTopic: String, schedule: Array[Byte]) = {
         publishToKafka(inputTopic, inputTopic, schedule)

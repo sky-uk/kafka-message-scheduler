@@ -19,7 +19,7 @@ import scala.concurrent.duration._
 
 class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoSugar with Eventually {
 
-  val NoMsgTimeout = 2 seconds
+  val NoMsgTimeout = 2.seconds
 
   "A scheduling actor" must {
 

@@ -26,7 +26,7 @@ import scala.concurrent.{Await, Future}
 
 class SchedulerResiliencySpec extends SpecBase {
 
-  override implicit val patienceConfig = PatienceConfig(10 seconds, 500 millis)
+  override implicit val patienceConfig = PatienceConfig(10.seconds, 500.millis)
 
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource with AkkaComponents {
@@ -77,7 +77,7 @@ class SchedulerResiliencySpec extends SpecBase {
       SchedulerApp.configure apply AppConfig(config)
 
     def hasActorSystemTerminated(implicit system: ActorSystem): Boolean =
-      Await.ready(system.whenTerminated, 10 seconds).isCompleted
+      Await.ready(system.whenTerminated, 10.seconds).isCompleted
   }
 
   private trait FailingSource {

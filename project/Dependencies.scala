@@ -66,7 +66,7 @@ object Dependencies {
   val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
   val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"    % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
-  val mockito              = "org.mockito"              % "mockito-all"                 % "1.10.19"  % Test
+  val mockito              = "org.mockito"              % "mockito-core"                % "4.4.0"    % Test
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.1.0"    % Test
 
   val core: Seq[ModuleID]    = Akka.base ++ Cats.all ++ Kamon.all ++ PureConfig.all ++ Refined.all ++ Seq(

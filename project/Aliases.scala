@@ -3,7 +3,7 @@ import sbt._
 object Aliases {
 
   lazy val defineCommandAliases =
-    addCommandAlias("ciBuild", "clean; test; schema") ++
+    addCommandAlias("ciBuild", "checkFmt; checkFix; test; schema") ++
       addCommandAlias("ciRelease", "clean; schema; project scheduler; release with-defaults") ++
       addCommandAlias("checkFix", "scalafixAll --check OrganizeImports; scalafixAll --check") ++
       addCommandAlias("runFix", "scalafixAll OrganizeImports; scalafixAll") ++

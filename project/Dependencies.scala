@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
 
   object Akka {
-    private val version = "2.6.18"
+    private val version = "2.6.19"
     val actor           = "com.typesafe.akka" %% "akka-actor"          % version
     val stream          = "com.typesafe.akka" %% "akka-stream"         % version
     val streamKafka     = "com.typesafe.akka" %% "akka-stream-kafka"   % "3.0.0"
@@ -53,7 +53,7 @@ object Dependencies {
     val all             = Seq(refined, pureconfig, scalaCheck)
   }
 
-  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.5"
+  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.0"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.4"
   val scalaCheck       = "org.scalacheck"             %% "scalacheck"         % "1.15.4"

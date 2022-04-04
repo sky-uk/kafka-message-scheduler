@@ -54,7 +54,7 @@ class SchedulerSpec extends SpecBase {
       val schedule         = TestSchedule.toSchedule.copy(time = tooDistantFuture)
       val cr               = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
-      scheduleConsumerRecordDecoder(cr).left.toOption.get shouldBe a[InvalidTimeError]
+      scheduleConsumerRecordDecoder(cr).leftValue shouldBe a[InvalidTimeError]
     }
   }
 

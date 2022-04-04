@@ -16,9 +16,12 @@ object Dependencies {
 
   object Cats {
     private val version = "2.7.0"
-    val core            = "org.typelevel" %% "cats-core"    % version
-    val testKit         = "org.typelevel" %% "cats-testkit" % version
-    val all             = Seq(core, testKit)
+    val core            = "org.typelevel"    %% "cats-core"      % version
+    val testKit         = "org.typelevel"    %% "cats-testkit"   % version
+    val scalatest       = "com.ironcorelabs" %% "cats-scalatest" % "3.1.1"
+    val base            = Seq(core, testKit)
+    val test            = Seq(scalatest)
+    val all             = base ++ test
   }
 
   object Kafka {
@@ -69,7 +72,7 @@ object Dependencies {
   val mockito              = "org.mockito"              % "mockito-core"                % "4.4.0"    % Test
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.1.0"    % Test
 
-  val core: Seq[ModuleID]    = Akka.base ++ Cats.all ++ Kamon.all ++ PureConfig.all ++ Refined.all ++ Seq(
+  val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kamon.all ++ PureConfig.all ++ Refined.all ++ Seq(
     kafkaTopicLoader,
     monix,
     scalaLogging
@@ -79,7 +82,7 @@ object Dependencies {
     logbackEncoder,
     janino
   )
-  val test: Seq[ModuleID]    = Akka.test ++ Kafka.test ++ Seq(
+  val test: Seq[ModuleID]    = Akka.test ++ Cats.test ++ Kafka.test ++ Seq(
     scalaTest,
     scalaTestPlusMockito,
     randomDataGenerator,

@@ -27,13 +27,17 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
 
   "stream" should {
     "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
-      withRunningKafka {
-        probe.expectMsg(StreamStarted)
-        probe.expectMsg(Initialised)
-        scheduleShouldFlow(probe)
+      eventually {
+        withRunningKafka {
+          probe.expectMsg(StreamStarted)
+          probe.expectMsg(Initialised)
+          scheduleShouldFlow(probe)
+        }
       }
-      withRunningKafka {
-        scheduleShouldFlow(probe)
+      eventually {
+        withRunningKafka {
+          scheduleShouldFlow(probe)
+        }
       }
     }
 

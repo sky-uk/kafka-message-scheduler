@@ -20,8 +20,9 @@ object Schedule {
   ) extends Schedule
 
   implicit class ScheduleOps(private val s: Schedule) extends AnyVal {
-    def getTime                                                    = Schedule.getTime(s)
-    def toScheduleEvent(delay: FiniteDuration, inputTopic: String) = Schedule.toScheduleEvent(delay, inputTopic, s)
+    def getTime: OffsetDateTime                                                   = Schedule.getTime(s)
+    def toScheduleEvent(delay: FiniteDuration, inputTopic: String): ScheduleEvent =
+      Schedule.toScheduleEvent(delay, inputTopic, s)
   }
 
   private def getTime(schedule: Schedule): OffsetDateTime = schedule match {

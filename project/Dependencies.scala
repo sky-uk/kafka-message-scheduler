@@ -56,39 +56,42 @@ object Dependencies {
     val all             = Seq(refined, pureconfig, scalaCheck)
   }
 
+  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.0.12"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.0"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.4"
-  val scalaCheck       = "org.scalacheck"             %% "scalacheck"         % "1.15.4"
 
+  val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.6"  % Runtime
   val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.2.11" % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1"  % Runtime
-  val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.6"  % Runtime
 
-  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.11"   % Test
-  val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
-  val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"    % Test
-  val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
-  val mockito              = "org.mockito"              % "mockito-core"                % "4.4.0"    % Test
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.1.0"    % Test
+  val mockito              = "org.mockito"              % "mockito-core"                % "4.4.0"    % Test
+  val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
+  val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.15.4"   % Test
+  val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"    % Test
+  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.11"   % Test
+  val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
   val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kamon.all ++ PureConfig.all ++ Refined.all ++ Seq(
+    avro4s,
     kafkaTopicLoader,
     monix,
     scalaLogging
   )
   val runtime: Seq[ModuleID] = Seq(
+    janino,
     logbackClassic,
-    logbackEncoder,
-    janino
+    logbackEncoder
   )
   val test: Seq[ModuleID]    = Akka.test ++ Cats.test ++ Kafka.test ++ Seq(
-    scalaTest,
-    scalaTestPlusMockito,
-    randomDataGenerator,
-    scalaCheckDatetime,
+    embeddedKafka,
     mockito,
-    embeddedKafka
+    randomDataGenerator,
+    scalaCheck,
+    scalaCheckDatetime,
+    scalaTest,
+    scalaTestPlusMockito
   )
   val all: Seq[sbt.ModuleID] = core ++ runtime ++ test
 }

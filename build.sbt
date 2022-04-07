@@ -1,6 +1,5 @@
 import Aliases._
 import Release._
-import com.typesafe.sbt.packager.docker.Cmd
 
 ThisBuild / scalafmtOnCompile                              := true
 ThisBuild / semanticdbEnabled                              := true
@@ -24,14 +23,10 @@ val compilerSettings = Seq(
 
 lazy val dockerSettings = Seq(
   Docker / packageName := "kafka-message-scheduler",
-  dockerBaseImage      := "alpine:3.15.0",
+  dockerBaseImage      := "gcr.io/distroless/java17-debian11:nonroot",
   dockerRepository     := Some("skyuk"),
   dockerLabels         := Map("maintainer" -> "Sky"),
-  dockerUpdateLatest   := true,
-  dockerCommands ++= Seq(
-    Cmd("USER", "root"),
-    Cmd("RUN", "apk add --no-cache bash openjdk17-jre")
-  )
+  dockerUpdateLatest   := true
 )
 
 val buildInfoSettings = Seq(

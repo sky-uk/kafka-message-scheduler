@@ -15,10 +15,12 @@ val commonSettings = Seq(
   scalaVersion := "2.13.8"
 )
 
-// Everything else is provided by tpolecat
 val compilerSettings = Seq(
+  // Compiler option not provided by sbt-tpolecat
   scalacOptions += "-Ymacro-annotations",
-  scalacOptions -= "-Wvalue-discard"
+  tpolecatScalacOptions ~= { opts =>
+    opts.filterNot(Set(ScalacOptions.warnValueDiscard))
+  }
 )
 
 lazy val dockerSettings = Seq(

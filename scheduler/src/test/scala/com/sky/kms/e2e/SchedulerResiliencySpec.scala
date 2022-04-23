@@ -97,7 +97,7 @@ class SchedulerResiliencySpec extends SpecBase {
     def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, (Future[Done], Future[Control])] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
-      val elements = scheduleIds.lazyZip(schedules.map(_.some)).iterator.map(_.asRight[ApplicationError]).toList
+      val elements = scheduleIds.zip(schedules.map(_.some)).map(_.asRight[ApplicationError])
 
       Source(elements).mapMaterializedValue(_ => Future.successful(Done) -> Future.successful(StubControl()))
     }

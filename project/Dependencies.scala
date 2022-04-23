@@ -21,7 +21,6 @@ object Dependencies {
     val scalatest       = "com.ironcorelabs" %% "cats-scalatest" % "3.1.1"
     val base            = Seq(core, testKit)
     val test            = Seq(scalatest)
-    val all             = base ++ test
   }
 
   object Kafka {
@@ -30,7 +29,6 @@ object Dependencies {
     val kafka           = "org.apache.kafka" %% "kafka"         % version % Test
     val base            = Seq(kafkaClients)
     val test            = Seq(kafka)
-
   }
 
   object Kamon {
@@ -73,7 +71,7 @@ object Dependencies {
   val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.11"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
-  val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kamon.all ++ PureConfig.all ++ Refined.all ++ Seq(
+  val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.all ++ Seq(
     avro4s,
     kafkaTopicLoader,
     monix,

@@ -42,10 +42,6 @@ lazy val scheduler = (project in file("scheduler"))
   .settings(compilerSettings)
   .settings(
     libraryDependencies ++= Dependencies.all,
-    dependencyOverrides ++= Seq(
-      Dependencies.Kafka.kafkaClients,
-      Dependencies.scalaCheck
-    ),
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
     run / fork               := true,
     Test / fork              := true,

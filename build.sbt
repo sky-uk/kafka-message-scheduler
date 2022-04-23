@@ -46,7 +46,6 @@ lazy val scheduler = (project in file("scheduler"))
       Dependencies.Kafka.kafkaClients,
       Dependencies.scalaCheck
     ),
-    resolvers += "jitpack" at "https://jitpack.io",
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
     run / fork               := true,
     Test / fork              := true,

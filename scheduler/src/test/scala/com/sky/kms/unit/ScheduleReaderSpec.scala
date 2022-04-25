@@ -8,7 +8,7 @@ import cats.Eval
 import cats.syntax.either._
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
-import com.sky.kms.base.AkkaStreamSpecBase
+import com.sky.kms.base.AkkaSpecBase
 import com.sky.kms.config.ReaderConfig
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
@@ -19,7 +19,7 @@ import org.scalatest.concurrent.Eventually
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
 
-class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
+class ScheduleReaderSpec extends AkkaSpecBase with Eventually {
 
   override implicit val patienceConfig = PatienceConfig(500.millis, 20.millis)
 

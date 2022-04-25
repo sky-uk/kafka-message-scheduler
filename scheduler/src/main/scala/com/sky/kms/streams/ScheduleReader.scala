@@ -4,7 +4,6 @@ import akka.Done
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.kafka.scaladsl.Consumer.Control
 import akka.pattern.ask
-import akka.stream._
 import akka.stream.scaladsl._
 import cats.Eval
 import com.sky.kafka.topicloader._
@@ -39,7 +38,7 @@ case class ScheduleReader[Mat](scheduleSource: Eval[Source[In, (Future[Done], Ma
       .map(ScheduleReader.toSchedulingMessage)
       .alsoTo(extractError.to(errorHandler))
       .collect { case Right(msg) => msg }
-      .to(Sink.actorRefWithAck(schedulingActor, StreamStarted, Ack, PoisonPill, UpstreamFailure))
+      .to(Sink.actorRefWithBackpressure(schedulingActor, StreamStarted, Ack, PoisonPill, UpstreamFailure))
 }
 
 object ScheduleReader extends LazyLogging {
@@ -72,7 +71,7 @@ object ScheduleReader extends LazyLogging {
       )
     }
 
-  def run(implicit mat: ActorMaterializer): Start[Running[Future[Control]]] =
+  def run(implicit system: ActorSystem): Start[Running[Future[Control]]] =
     Start { app =>
       Running(app.reader.stream.run())
     }

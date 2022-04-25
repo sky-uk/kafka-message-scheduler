@@ -2,7 +2,6 @@ package com.sky.kms
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.kafka.scaladsl.Consumer.Control
-import akka.stream.ActorMaterializer
 import com.sky.kms.actors._
 import com.sky.kms.config.Configured
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
@@ -30,7 +29,7 @@ object SchedulerApp {
     } yield SchedulerApp(scheduleReader, publisher, publisherActor)
   }
 
-  def run(implicit system: ActorSystem, mat: ActorMaterializer): Start[Running] =
+  def run(implicit system: ActorSystem): Start[Running] =
     for {
       publisher     <- ScheduledMessagePublisher.run
       _             <- PublisherActor.init(publisher.materializedSource)

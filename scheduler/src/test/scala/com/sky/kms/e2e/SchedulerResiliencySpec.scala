@@ -4,6 +4,7 @@ import java.util.UUID
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.actor.Status
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
@@ -54,7 +55,7 @@ class SchedulerResiliencySpec extends SpecBase {
       val sameTimeSchedules = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
       val probe             = TestProbe()
       val sinkThatWillNotSignalDemand = Sink
-        .actorRefWithAck[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "")
+        .actorRefWithBackpressure[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "", Status.Failure)
         .mapMaterializedValue(_ => Future.never)
 
       val app =

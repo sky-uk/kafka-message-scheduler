@@ -5,7 +5,8 @@ import akka.actor.ActorSystem
 import akka.kafka.ProducerSettings
 import akka.kafka.scaladsl.Producer
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.{ActorAttributes, OverflowStrategy}
+import akka.stream.Supervision.Stop
 import cats.Eval
 import com.sky.kms.Start
 import com.sky.kms.actors.PublisherActor.ScheduleQueue
@@ -32,6 +33,10 @@ case class ScheduledMessagePublisher(queueBufferSize: Int, publisherSink: Eval[S
       .queue[In](queueBufferSize, OverflowStrategy.backpressure)
       .mapConcat(splitToMessageAndDeletion)
       .toMat(publisherSink.value)(Keep.both)
+      .withAttributes(ActorAttributes.supervisionStrategy { t =>
+        logger.error("Exception caught by stream supervisor", t)
+        Stop
+      })
 
   val splitToMessageAndDeletion: In => List[PublishableMessage] = {
     case (scheduleId, scheduledMessage) =>
@@ -69,7 +74,7 @@ object ScheduledMessagePublisher {
       new ProducerRecord(outputTopic, null, id.getBytes, null, headers.asKafkaHeaders)
   }
 
-  def run(implicit mat: ActorMaterializer): Start[Running] =
+  def run(implicit system: ActorSystem): Start[Running] =
     Start { app =>
       val (sourceMat, sinkMat) = app.publisher.stream.run()
       Running(sourceMat, sinkMat)

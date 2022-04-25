@@ -5,11 +5,11 @@ import Release._
 scalafmtVersion in ThisBuild := "1.2.0"
 scalafmtOnCompile in ThisBuild := true
 
-val kafkaVersion      = "2.6.0"
-val akkaVersion       = "2.5.23"
+val kafkaVersion      = "2.7.2"
+val akkaVersion       = "2.6.16"
 val catsVersion       = "1.6.1"
 val refinedVersion    = "0.9.8"
-val pureConfigVersion = "0.11.1"
+val pureConfigVersion = "0.17.1"
 val kamonVersion      = "2.4.2"
 
 val dependencies = Seq(
@@ -47,7 +47,7 @@ val dependencies = Seq(
 
 val commonSettings = Seq(
   organization := "com.sky",
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.12.15",
   libraryDependencies += "com.sksamuel.avro4s" %% "avro4s-core" % "2.0.2"
 )
 

@@ -3,7 +3,6 @@ package com.sky.kms.integration
 import java.util.UUID
 
 import akka.testkit.{TestActor, TestProbe}
-import cats.instances.tuple._
 import cats.syntax.functor._
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.SchedulerIntSpecBase

@@ -10,12 +10,13 @@ import scala.concurrent.duration._
 
 object TestActorSystem {
 
-  private def config(kafkaPort: Int, terminateActorSystem: Boolean, akkaExpectDuration: Duration): String =
+  private def config(kafkaPort: Int, akkaExpectDuration: Duration): String =
     s"""
        |akka {
        | test.single-expect-default = $akkaExpectDuration
        | coordinated-shutdown {
-       |  terminate-actor-system = $terminateActorSystem
+       |  terminate-actor-system = off
+       |  run-by-actor-system-terminate = off
        |  run-by-jvm-shutdown-hook = off
        | }
        |
@@ -33,13 +34,11 @@ object TestActorSystem {
        |}
     """.stripMargin
 
-  def apply(kafkaPort: Int = 9092,
-            terminateActorSystem: Boolean = false,
-            akkaExpectDuration: Duration = 3.seconds): ActorSystem =
+  def apply(kafkaPort: Int = 9092, akkaExpectDuration: Duration = 3.seconds): ActorSystem =
     ActorSystem(
       name = s"test-actor-system-${UUID.randomUUID().toString}",
       config = ConfigFactory
-        .parseString(config(kafkaPort, terminateActorSystem, akkaExpectDuration))
+        .parseString(config(kafkaPort, akkaExpectDuration))
         .withFallback(ConfigFactory.load())
     )
 }

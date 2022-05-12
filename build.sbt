@@ -1,4 +1,3 @@
-import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
 import Release._
 

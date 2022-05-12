@@ -17,10 +17,10 @@ object Dependencies {
   object Cats {
     private val version = "2.7.0"
     val core            = "org.typelevel"    %% "cats-core"      % version
-    val testKit         = "org.typelevel"    %% "cats-testkit"   % version
-    val scalatest       = "com.ironcorelabs" %% "cats-scalatest" % "3.1.1"
-    val base            = Seq(core, testKit)
-    val test            = Seq(scalatest)
+    val testKit         = "org.typelevel"    %% "cats-testkit"   % version % Test
+    val scalatest       = "com.ironcorelabs" %% "cats-scalatest" % "3.1.1" % Test
+    val base            = Seq(core)
+    val test            = Seq(testKit, scalatest)
   }
 
   object Kafka {
@@ -50,8 +50,9 @@ object Dependencies {
     private val version = "0.9.28"
     val refined         = "eu.timepit" %% "refined"            % version
     val pureconfig      = "eu.timepit" %% "refined-pureconfig" % version
-    val scalaCheck      = "eu.timepit" %% "refined-scalacheck" % version
-    val all             = Seq(refined, pureconfig, scalaCheck)
+    val scalaCheck      = "eu.timepit" %% "refined-scalacheck" % version % Test
+    val base            = Seq(refined, pureconfig)
+    val test            = Seq(scalaCheck)
   }
 
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.0.12"
@@ -71,7 +72,7 @@ object Dependencies {
   val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.11"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
-  val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.all ++ Seq(
+  val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(
     avro4s,
     kafkaTopicLoader,
     monix,
@@ -82,7 +83,7 @@ object Dependencies {
     logbackClassic,
     logbackEncoder
   )
-  val test: Seq[ModuleID]    = Akka.test ++ Cats.test ++ Kafka.test ++ Seq(
+  val test: Seq[ModuleID]    = Akka.test ++ Cats.test ++ Kafka.test ++ Refined.test ++ Seq(
     embeddedKafka,
     mockito,
     randomDataGenerator,

@@ -1,3 +1,4 @@
+import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
 import Release._
 
@@ -28,7 +29,11 @@ lazy val dockerSettings = Seq(
   dockerBaseImage      := "eclipse-temurin:17-jdk-alpine",
   dockerRepository     := Some("skyuk"),
   dockerLabels         := Map("maintainer" -> "Sky"),
-  dockerUpdateLatest   := true
+  dockerUpdateLatest   := true,
+  dockerCommands ++= Seq(
+    Cmd("USER", "root"),
+    Cmd("RUN", "apk add --no-cache bash")
+  )
 )
 
 val buildInfoSettings = Seq(

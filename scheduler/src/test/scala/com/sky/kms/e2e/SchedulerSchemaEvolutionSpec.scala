@@ -1,16 +1,16 @@
 package com.sky.kms.e2e
 
-import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import cats.syntax.option._
+import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.sky.kms._
 import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestDataUtils._
-import net.manub.embeddedkafka.Codecs.{
-  stringSerializer,
+import io.github.embeddedkafka.Codecs.{
   nullDeserializer => arrayByteDeserializer,
-  nullSerializer => arrayByteSerializer
+  nullSerializer => arrayByteSerializer,
+  stringSerializer
 }
 
 class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataGenerator {
@@ -47,7 +47,7 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
     trait TestContext {
 
       val inputTopic = "cupcat"
-      val delay      = 4
+      val delay      = 4L
 
       def publishAndGetDecoded(inputTopic: String, schedule: Array[Byte]) = {
         publishToKafka(inputTopic, inputTopic, schedule)
@@ -62,10 +62,13 @@ class SchedulerSchemaEvolutionSpec extends SchedulerIntSpecBase with RandomDataG
     }
 
     implicit class HeaderOps(val schedule: ScheduleReader.In) {
-      def headers =
-        schedule.fold(_ => none[Map[String, Array[Byte]]], {
-          case (_, ose) => ose.fold(none[Map[String, Array[Byte]]])(_.headers.some)
-        })
+      def headers      =
+        schedule.fold(
+          _ => none[Map[String, Array[Byte]]],
+          { case (_, ose) =>
+            ose.fold(none[Map[String, Array[Byte]]])(_.headers.some)
+          }
+        )
       def headerKeys   = headers.map(_.keys.toList)
       def headerValues = headers.map(_.values.toList.map(_.toList))
     }

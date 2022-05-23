@@ -2,8 +2,8 @@ package com.sky.kms.integration
 
 import java.util.UUID
 
+import akka.actor.ActorSystem
 import akka.testkit.{TestActor, TestProbe}
-import cats.instances.tuple._
 import cats.syntax.functor._
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.SchedulerIntSpecBase
@@ -13,19 +13,32 @@ import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestActorSystem
 import com.sky.kms.utils.TestDataUtils._
 import eu.timepit.refined.auto._
-import net.manub.embeddedkafka.Codecs.{stringSerializer, nullSerializer => arrayByteSerializer}
-import org.scalatest.concurrent.Eventually
+import io.github.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringSerializer}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
+class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
 
-  override implicit lazy val system = TestActorSystem(kafkaConfig.kafkaPort, akkaExpectDuration = 20.seconds)
+  override implicit lazy val system: ActorSystem =
+    TestActorSystem(kafkaConfig.kafkaPort, akkaExpectDuration = 20.seconds)
 
   val numSchedules = 3
 
   "stream" should {
+    "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
+      withRunningKafka {
+        probe.expectMsg(StreamStarted)
+        probe.expectMsg(Initialised)
+        scheduleShouldFlow(probe)
+      }
+      // Wait 5 seconds. Embedded Kafka causes issues if you restart too quickly on the same ports.
+      Thread.sleep(5000)
+      withRunningKafka {
+        scheduleShouldFlow(probe)
+      }
+    }
+
     "not schedule messages that have been deleted but not compacted on startup" in withRunningKafka {
       val schedules @ firstSchedule :: _ = List.fill(numSchedules)(generateSchedule)
       writeSchedulesToKafka(schedules: _*)
@@ -40,17 +53,6 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
         probe.expectMsg(Initialised)
       }
     }
-
-    "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
-      withRunningKafka {
-        probe.expectMsg(StreamStarted)
-        probe.expectMsg(Initialised)
-        scheduleShouldFlow(probe)
-      }
-      withRunningKafka {
-        scheduleShouldFlow(probe)
-      }
-    }
   }
 
   private def generateSchedule: (ScheduleId, ScheduleEvent) = UUID.randomUUID().toString -> random[ScheduleEvent]
@@ -63,7 +65,8 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
           case _ =>
             sender ! Ack
             TestActor.KeepRunning
-      })
+        }
+      )
       p
     }
 
@@ -73,17 +76,19 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with Eventually {
       .stream
       .run()
 
-    try {
+    try
       scenario(probe)
-    } finally {
-      Await.ready(controlF.flatMap(_.shutdown())(system.dispatcher), 5 seconds)
-    }
+    finally
+      Await.ready(controlF.flatMap(_.shutdown())(system.dispatcher), 5.seconds)
   }
 
   private def writeSchedulesToKafka(schedules: (ScheduleId, ScheduleEvent)*): Unit =
-    publishToKafka(scheduleTopic, schedules.map {
-      case (scheduleId, scheduleEvent) => (scheduleId, scheduleEvent.toSchedule.toAvro)
-    })
+    publishToKafka(
+      scheduleTopic,
+      schedules.map { case (scheduleId, scheduleEvent) =>
+        (scheduleId, scheduleEvent.toSchedule.toAvro)
+      }
+    )
 
   private def scheduleShouldFlow(probe: TestProbe): SchedulingMessage = {
     writeSchedulesToKafka(generateSchedule)

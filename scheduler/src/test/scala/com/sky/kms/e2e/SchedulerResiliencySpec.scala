@@ -10,11 +10,12 @@ import akka.testkit.TestProbe
 import cats.data.NonEmptyList
 import cats.syntax.either._
 import cats.syntax.option._
+import com.sky.kms.actors.SchedulingActor.UpstreamFailure
 import com.sky.kms.base.SpecBase
 import com.sky.kms.config._
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.Topic
-import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
+import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestDataUtils._
 import com.sky.kms.utils.{StubControl, TestConfig}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
@@ -25,7 +26,7 @@ import scala.concurrent.{Await, Future}
 
 class SchedulerResiliencySpec extends SpecBase {
 
-  override implicit val patienceConfig = PatienceConfig(10 seconds, 500 millis)
+  override implicit val patienceConfig = PatienceConfig(10.seconds, 500.millis)
 
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource with AkkaComponents {
@@ -51,10 +52,10 @@ class SchedulerResiliencySpec extends SpecBase {
     }
 
     "terminate when the queue buffer becomes full" in new TestContext with IteratingSource with AkkaComponents {
-      val sameTimeSchedules = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
-      val probe             = TestProbe()
+      val sameTimeSchedules           = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
+      val probe                       = TestProbe()
       val sinkThatWillNotSignalDemand = Sink
-        .actorRefWithAck[ScheduledMessagePublisher.SinkIn](probe.ref, "", "", "")
+        .actorRefWithBackpressure(probe.ref, "", "", "", UpstreamFailure)
         .mapMaterializedValue(_ => Future.never)
 
       val app =
@@ -76,7 +77,7 @@ class SchedulerResiliencySpec extends SpecBase {
       SchedulerApp.configure apply AppConfig(config)
 
     def hasActorSystemTerminated(implicit system: ActorSystem): Boolean =
-      Await.ready(system.whenTerminated, 10 seconds).isCompleted
+      Await.ready(system.whenTerminated, 10.seconds).isCompleted
   }
 
   private trait FailingSource {
@@ -85,7 +86,8 @@ class SchedulerResiliencySpec extends SpecBase {
     val sourceThatWillFail: Source[ScheduleReader.In, (Future[Done], Future[Control])] =
       Source
         .fromIterator(() =>
-          Iterator(("someId" -> none[ScheduleEvent]).asRight[ApplicationError]) ++ (throw new Exception("boom!")))
+          Iterator(("someId" -> none[ScheduleEvent]).asRight[ApplicationError]) ++ (throw new Exception("boom!"))
+        )
         .mapMaterializedValue(_ => Future.successful(Done) -> Future.successful(StubControl()))
   }
 
@@ -95,7 +97,7 @@ class SchedulerResiliencySpec extends SpecBase {
     def sourceWith(schedules: Seq[ScheduleEvent]): Source[ScheduleReader.In, (Future[Done], Future[Control])] = {
       val scheduleIds = List.fill(schedules.size)(UUID.randomUUID().toString)
 
-      val elements = (scheduleIds, schedules.map(_.some)).zipped.toIterator.map(_.asRight[ApplicationError]).toList
+      val elements = scheduleIds.zip(schedules.map(_.some)).map(_.asRight[ApplicationError])
 
       Source(elements).mapMaterializedValue(_ => Future.successful(Done) -> Future.successful(StubControl()))
     }

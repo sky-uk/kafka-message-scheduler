@@ -44,7 +44,7 @@ class SchedulerSpec extends SpecBase {
     }
 
     "error if message does not adhere to our schema" in {
-      val cr = new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1l, ScheduleId, Array.emptyByteArray)
+      val cr = new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1L, ScheduleId, Array.emptyByteArray)
 
       scheduleConsumerRecordDecoder(cr) shouldBe Left(InvalidSchemaError(ScheduleId))
     }
@@ -54,13 +54,13 @@ class SchedulerSpec extends SpecBase {
       val schedule         = TestSchedule.toSchedule.copy(time = tooDistantFuture)
       val cr               = artificialConsumerRecord(ScheduleId, schedule.toAvro)
 
-      scheduleConsumerRecordDecoder(cr).left.get shouldBe a[InvalidTimeError]
+      scheduleConsumerRecordDecoder(cr).leftValue shouldBe a[InvalidTimeError]
     }
   }
 
   private def artificialConsumerRecord(scheduleId: ScheduleId, avroBytes: Array[Byte]) =
-    new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1l, scheduleId, avroBytes)
+    new ConsumerRecord[String, Array[Byte]]("scheduleTopic", 1, 1L, scheduleId, avroBytes)
 
   private def equalHeaders(x: Map[String, Array[Byte]], y: Map[String, Array[Byte]]): Boolean =
-    x.mapValues(_.toList) === y.mapValues(_.toList)
+    x.view.mapValues(_.toList).toMap === y.view.mapValues(_.toList).toMap
 }

@@ -10,6 +10,6 @@ object TestConfig {
   def apply(topics: NonEmptyList[Topic]): SchedulerConfig =
     SchedulerConfig(
       ReaderConfig(topics, timeouts = ReaderConfig.TimeoutConfig(100.millis, 100.millis)),
-      PublisherConfig(queueBufferSize = 100),
+      PublisherConfig(queueBufferSize = 100)
     )
 }

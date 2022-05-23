@@ -17,29 +17,26 @@ class PublisherActor extends Actor with ActorLogging {
 
   override def receive: Receive = waitForQueue
 
-  private def waitForQueue: Receive = {
-    case Init(queue) =>
-      queue.watchCompletion().failed.foreach(t => self ! DownstreamFailure(t))
-      context become (receiveWithQueue(queue) orElse stopOnError)
+  private def waitForQueue: Receive = { case Init(queue) =>
+    queue.watchCompletion().failed.foreach(t => self ! DownstreamFailure(t))
+    context become (receiveWithQueue(queue) orElse stopOnError)
   }
 
-  private def receiveWithQueue(queue: ScheduleQueue): Receive = {
-    case Trigger(scheduleId, schedule) =>
-      queue.offer((scheduleId, messageFrom(schedule))) onComplete {
-        case Success(QueueOfferResult.Enqueued) =>
-          log.debug(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
-        case Success(res) =>
-          log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
-        case Failure(t) =>
-          log.error(t, s"Failed to enqueue $scheduleId")
-          self ! DownstreamFailure(t)
-      }
+  private def receiveWithQueue(queue: ScheduleQueue): Receive = { case Trigger(scheduleId, schedule) =>
+    queue.offer((scheduleId, messageFrom(schedule))) onComplete {
+      case Success(QueueOfferResult.Enqueued) =>
+        log.debug(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
+      case Success(res)                       =>
+        log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
+      case Failure(t)                         =>
+        log.error(t, s"Failed to enqueue $scheduleId")
+        self ! DownstreamFailure(t)
+    }
   }
 
-  private def stopOnError: Receive = {
-    case DownstreamFailure(t) =>
-      log.error(t, "Publisher stream has died")
-      context stop self
+  private def stopOnError: Receive = { case DownstreamFailure(t) =>
+    log.error(t, "Publisher stream has died")
+    context stop self
   }
 
   private def messageFrom(schedule: ScheduleEvent) =
@@ -57,7 +54,7 @@ object PublisherActor {
   case class DownstreamFailure(t: Throwable)
 
   def create(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props[PublisherActor], "publisher-actor")
+    system.actorOf(Props[PublisherActor](), "publisher-actor")
 
   def init(queue: ScheduleQueue): Start[Unit] =
     Start(_.publisherActor ! Init(queue))

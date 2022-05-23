@@ -16,6 +16,7 @@ object TestActorSystem {
        | test.single-expect-default = $akkaExpectDuration
        | coordinated-shutdown {
        |  terminate-actor-system = $terminateActorSystem
+       |  run-by-actor-system-terminate = off
        |  run-by-jvm-shutdown-hook = off
        | }
        |
@@ -33,9 +34,11 @@ object TestActorSystem {
        |}
     """.stripMargin
 
-  def apply(kafkaPort: Int = 9092,
-            terminateActorSystem: Boolean = false,
-            akkaExpectDuration: Duration = 3.seconds): ActorSystem =
+  def apply(
+      kafkaPort: Int = 9092,
+      terminateActorSystem: Boolean = false,
+      akkaExpectDuration: Duration = 3.seconds
+  ): ActorSystem =
     ActorSystem(
       name = s"test-actor-system-${UUID.randomUUID().toString}",
       config = ConfigFactory

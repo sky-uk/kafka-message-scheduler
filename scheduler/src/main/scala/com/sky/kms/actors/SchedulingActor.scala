@@ -26,20 +26,18 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         schedules -= scheduleId
     }
 
-    val finishInitialisation: Receive = {
-      case Initialised =>
-        log.debug("State initialised - scheduling stored schedules")
-        val scheduled = schedules.map {
-          case (scheduleId, schedule) =>
-            monitoring.scheduleReceived()
-            scheduleId -> scheduleOnce(scheduleId, schedule)
-        }
-        log.info("Reloaded state has been scheduled")
-        context become receiveWithSchedules(scheduled)
+    val finishInitialisation: Receive = { case Initialised =>
+      log.debug("State initialised - scheduling stored schedules")
+      val scheduled = schedules.map { case (scheduleId, schedule) =>
+        monitoring.scheduleReceived()
+        scheduleId -> scheduleOnce(scheduleId, schedule)
+      }
+      log.info("Reloaded state has been scheduled")
+      context become receiveWithSchedules(scheduled)
     }
 
     streamStartedOrFailed orElse {
-      (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender ! Ack)
+      (handleSchedulingMessage orElse finishInitialisation) andThen (_ => sender() ! Ack)
     }
   }
 
@@ -50,7 +48,8 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
         scheduled.get(scheduleId).foreach(_.cancel())
         val cancellable = scheduleOnce(scheduleId, schedule)
         log.info(
-          s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} in ${schedule.delay.toMillis} millis")
+          s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} in ${schedule.delay.toMillis} millis"
+        )
 
         monitoring.scheduleReceived()
         scheduled += (scheduleId -> cancellable)
@@ -65,7 +64,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
     }
 
     streamStartedOrFailed orElse {
-      handleSchedulingMessage andThen (_ => sender ! Ack)
+      handleSchedulingMessage andThen (_ => sender() ! Ack)
     }
   }
 
@@ -78,8 +77,8 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
     case UpstreamFailure(t) =>
       log.error(t, "Reader stream has died")
       context stop self
-    case StreamStarted =>
-      sender ! Ack
+    case StreamStarted      =>
+      sender() ! Ack
   }
 }
 
@@ -100,6 +99,8 @@ object SchedulingActor {
   case class UpstreamFailure(t: Throwable)
 
   def create(publisherActor: ActorRef)(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher), new KamonMonitoring())),
-                   "scheduling-actor")
+    system.actorOf(
+      Props(new SchedulingActor(publisherActor, MonixScheduler(system.dispatcher), new KamonMonitoring())),
+      "scheduling-actor"
+    )
 }

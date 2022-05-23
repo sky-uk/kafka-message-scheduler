@@ -8,18 +8,17 @@ import cats.Eval
 import cats.syntax.either._
 import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
-import com.sky.kms.base.AkkaStreamSpecBase
+import com.sky.kms.base.{AkkaSpecBase, SpecBase}
 import com.sky.kms.config.ReaderConfig
 import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.In
 import com.sky.kms.utils.TestDataUtils._
-import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
 
-class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
+class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
 
   override implicit val patienceConfig = PatienceConfig(500.millis, 20.millis)
 
@@ -97,25 +96,30 @@ class ScheduleReaderSpec extends AkkaStreamSpecBase with Eventually {
           case _ =>
             sender ! Ack
             TestActor.KeepRunning
-      })
+        }
+      )
       p
     }
 
     def delayedSource = Source.tick(100.millis, 100.millis, msg).mapMaterializedValue(_ => NotUsed)
 
-    def runReader(in: Source[In, NotUsed],
-                  errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
-                  sourceMatFuture: Future[Done] = Future.never): NotUsed =
-      ScheduleReader(Eval.now(in.mapMaterializedValue(nu => sourceMatFuture -> nu)),
-                     probe.ref,
-                     errorHandler,
-                     ReaderConfig.TimeoutConfig(100.millis, 100.millis)).stream.run()
+    def runReader(
+        in: Source[In, NotUsed],
+        errorHandler: Sink[ApplicationError, Future[Done]] = Sink.ignore,
+        sourceMatFuture: Future[Done] = Future.never
+    ): NotUsed =
+      ScheduleReader(
+        Eval.now(in.mapMaterializedValue(nu => sourceMatFuture -> nu)),
+        probe.ref,
+        errorHandler,
+        ReaderConfig.TimeoutConfig(100.millis, 100.millis)
+      ).stream.run()
   }
 
   private trait ErrorHandler {
     this: TestContext =>
 
-    val awaitingError = Promise[ApplicationError]
+    val awaitingError = Promise[ApplicationError]()
     val errorHandler  = Sink.foreach[ApplicationError](awaitingError.trySuccess)
   }
 

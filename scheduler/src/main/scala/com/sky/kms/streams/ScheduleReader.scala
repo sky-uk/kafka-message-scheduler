@@ -6,7 +6,6 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.pattern.ask
 import akka.stream.scaladsl._
 import cats.Eval
-import com.sky.kafka.topicloader._
 import com.sky.kms._
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.config._
@@ -15,6 +14,7 @@ import com.sky.kms.domain._
 import com.sky.kms.streams.ScheduleReader.In
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, Deserializer, StringDeserializer}
+import uk.sky.kafka.topicloader.TopicLoader.loadAndRun
 
 import scala.concurrent.Future
 
@@ -61,8 +61,7 @@ object ScheduleReader extends LazyLogging {
 
       ScheduleReader(
         Eval.always(
-          TopicLoader
-            .loadAndRun[String, Array[Byte]](config.scheduleTopics.map(_.value))
+          loadAndRun[String, Array[Byte]](config.scheduleTopics.map(_.value))
             .map(scheduleConsumerRecordDecoder(_))
         ),
         actorRef,

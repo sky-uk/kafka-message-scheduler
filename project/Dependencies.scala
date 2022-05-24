@@ -56,7 +56,7 @@ object Dependencies {
   }
 
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.0.12"
-  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
+  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "2.0.0"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.0"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.4"
 

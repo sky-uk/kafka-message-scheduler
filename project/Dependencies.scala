@@ -24,7 +24,7 @@ object Dependencies {
   }
 
   object Kafka {
-    private val version = "3.1.0"
+    private val version = "3.2.0"
     val kafkaClients    = "org.apache.kafka"  % "kafka-clients" % version
     val kafka           = "org.apache.kafka" %% "kafka"         % version % Test
     val base            = Seq(kafkaClients)
@@ -64,7 +64,7 @@ object Dependencies {
   val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.2.11" % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1"  % Runtime
 
-  val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.1.0"    % Test
+  val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.2.0"    % Test
   val mockito              = "org.mockito"              % "mockito-core"                % "4.4.0"    % Test
   val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
   val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.15.4"   % Test

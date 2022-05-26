@@ -62,7 +62,7 @@ object Dependencies {
 
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.7"  % Runtime
   val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.2.11" % Runtime
-  val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.0.1"  % Runtime
+  val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.2"    % Runtime
 
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.2.0"    % Test
   val mockito              = "org.mockito"              % "mockito-core"                % "4.4.0"    % Test

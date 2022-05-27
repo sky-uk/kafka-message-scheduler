@@ -1,6 +1,5 @@
 import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
-import Release._
 
 ThisBuild / scalafmtOnCompile                              := true
 ThisBuild / semanticdbEnabled                              := true
@@ -53,7 +52,6 @@ lazy val scheduler = (project in file("scheduler"))
     javaAgents += "io.kamon"  % "kanela-agent" % "1.0.14",
     buildInfoSettings,
     dockerSettings,
-    releaseSettings,
     Test / parallelExecution := false
   )
 
@@ -65,7 +63,6 @@ lazy val avro = (project in file("avro"))
   .settings(libraryDependencies += Dependencies.avro4s)
   .settings(schema := (Compile / run).toTask("").value)
   .dependsOn(scheduler % "compile->compile")
-  .disablePlugins(ReleasePlugin)
 
 lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
@@ -74,4 +71,3 @@ lazy val root = (project in file("."))
   .settings(dockerImageCreationTask := (scheduler / Docker / publishLocal).value)
   .aggregate(scheduler, avro)
   .enablePlugins(DockerComposePlugin)
-  .disablePlugins(ReleasePlugin)

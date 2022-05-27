@@ -5,6 +5,7 @@ ThisBuild / scalafmtOnCompile                              := true
 ThisBuild / semanticdbEnabled                              := true
 ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+ThisBuild / dynverSeparator                                := "-"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -24,11 +25,11 @@ val compilerSettings = Seq(
 )
 
 lazy val dockerSettings = Seq(
-  Docker / packageName := "kafka-message-scheduler",
+  Docker / packageName := "sky-uk/kafka-message-scheduler",
   dockerBaseImage      := "eclipse-temurin:17-jdk-alpine",
-  dockerRepository     := Some("skyuk"),
+  dockerRepository     := Some("ghcr.io"),
   dockerLabels         := Map("maintainer" -> "Sky"),
-  dockerUpdateLatest   := true,
+  dockerUpdateLatest   := !isSnapshot.value,
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
     Cmd("RUN", "apk add --no-cache bash")

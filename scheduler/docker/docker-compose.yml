@@ -9,7 +9,9 @@ services:
       - zookeeper
     environment:
       KAFKA_BROKERS: kafka:9092
-      SCHEDULE_TOPICS: schedules
+      JAVA_TOOL_OPTIONS:
+        -Dscheduler.reader.schedule-topics.0=schedules
+        -Dscheduler.reader.schedule-topics.1=extraSchedules
     ports:
       - "9095:9095"
 

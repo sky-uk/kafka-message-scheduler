@@ -1,29 +1,82 @@
 package integration
 
 import base.IntegrationBase
-import com.sky.kms.domain.Schedule.ScheduleWithHeaders
-import io.github.embeddedkafka.Codecs.{nullSerializer, stringSerializer}
+import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
+import io.github.embeddedkafka.Codecs.{nullDeserializer, nullSerializer, stringDeserializer, stringSerializer}
 import io.github.embeddedkafka.EmbeddedKafka.publishToKafka
 import utils._
 
 import java.time.OffsetDateTime
-import java.util.UUID
 
 class SchedulerFeature extends IntegrationBase {
 
-  Feature("Schedule messages") {
-    Scenario("Schedule a message with a value at a specific time") { _ =>
-      val messageKey: String                  = UUID.randomUUID().toString
-      val in10Seconds                         = OffsetDateTime.now().plusSeconds(10)
-      val randomSchedule: ScheduleWithHeaders =
-        random[ScheduleWithHeaders].copy(key = messageKey.getBytes, time = in10Seconds, topic = outputTopic)
-      println(s"Schedule: $randomSchedule")
+  Feature("Scheduler stream") {
+    Scenario("schedule a message to be sent to Kafka and delete it after it has been emitted") { _ =>
+      new TestContext {
+        val schedules: List[(ScheduleId, ScheduleEvent)] =
+          createSchedules(2, forTopics = List(scheduleTopic, extraScheduleTopic))
 
-      publishToKafka("schedules", messageKey, randomSchedule.toAvro)
-      pending
+        publish(schedules)
+          .foreach(assertMessagesWrittenFrom(_, schedules))
+
+        assertTombstoned(schedules)
+      }
     }
 
-    Scenario("Schedule a message with a delete at a specific time")(_ => pending)
+    Scenario("schedule a delete message if the value of the scheduled message is empty")(_ =>
+      new TestContext {
+        val scheduleId = random[String]
+        val schedule   = random[ScheduleEvent].copy(value = None).secondsFromNow(4).toSchedule
 
+        publishToKafka(scheduleTopic, scheduleId, schedule.toAvro)
+
+        val cr = consumeFirstFrom[String](schedule.topic)
+
+        cr.key should contain theSameElementsInOrderAs schedule.key
+        cr.value shouldBe null
+        cr.timestamp shouldBe schedule.timeInMillis +- tolerance.toMillis
+      }
+    )
+
+  }
+
+  private trait TestContext {
+    def createSchedules(numSchedules: Int, forTopics: List[String]): List[(ScheduleId, ScheduleEvent)] =
+      random[(ScheduleId, ScheduleEvent)](numSchedules).toList
+        .zip(LazyList.continually(forTopics.to(LazyList)).flatten.take(numSchedules).toList)
+        .map { case ((id, schedule), topic) =>
+          id -> schedule.copy(inputTopic = topic).secondsFromNow(4)
+        }
+
+    def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map { case (id, scheduleEvent) =>
+      val schedule = scheduleEvent.toSchedule
+      publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
+      schedule.time
+    }
+
+    def assertMessagesWrittenFrom(time: OffsetDateTime, schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
+      schedules.foreach { case (_, schedule) =>
+        val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
+
+        cr.key should contain theSameElementsInOrderAs schedule.key
+
+        schedule.value match {
+          case Some(value) => cr.value should contain theSameElementsAs value
+          case None        => cr.value shouldBe null
+        }
+
+        cr.timestamp shouldBe time.toInstant.toEpochMilli +- tolerance.toMillis
+        cr.headers().toArray.map(h => h.key() -> h.value().toList) should contain theSameElementsAs
+          schedule.headers.map { case (k, v) =>
+            (k, v.toList)
+          }
+      }
+
+    def assertTombstoned(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
+      schedules.groupBy(_._2.inputTopic).foreach { case (topic, schedulesByInputTopic) =>
+        val tombstones = consumeSomeFrom[String](topic, schedulesByInputTopic.size * 2).filter(_.value == null)
+        tombstones.size shouldBe schedulesByInputTopic.size
+        tombstones.map(_.key) shouldBe schedulesByInputTopic.map(_._1).distinct
+      }
   }
 }

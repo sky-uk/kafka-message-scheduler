@@ -24,15 +24,23 @@ val compilerSettings = Seq(
   }
 )
 
+lazy val integrationTestSettings = Defaults.itSettings ++ Seq(
+  testCasesPackageTask    := (IntegrationTest / sbt.Keys.packageBin).value,
+  testCasesJar            := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
+  dockerImageCreationTask := (Docker / publishLocal).value
+)
+
 val buildInfoSettings = Seq(
   buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
   buildInfoPackage := "com.sky"
 )
 
 lazy val scheduler = (project in file("scheduler"))
-  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin, DockerComposePlugin)
   .settings(commonSettings)
   .settings(compilerSettings)
+  .settings(integrationTestSettings)
+  .configs(IntegrationTest)
   .settings(
     libraryDependencies ++= Dependencies.all,
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),

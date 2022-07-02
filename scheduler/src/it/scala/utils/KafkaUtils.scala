@@ -11,10 +11,7 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
 trait KafkaUtils {
-  implicit val kafkaConfig: EmbeddedKafkaConfig = EmbeddedKafkaConfig(
-    kafkaPort = 9093
-//    customConsumerProperties = Map(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG -> true.toString)
-  )
+  implicit val kafkaConfig: EmbeddedKafkaConfig = EmbeddedKafkaConfig(kafkaPort = 9093)
   val scheduleTopic                             = "schedules"
   val extraScheduleTopic                        = "extraSchedules"
   val outputTopic                               = "output.topic"

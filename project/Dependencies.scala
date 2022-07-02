@@ -8,8 +8,8 @@ object Dependencies {
     val stream          = "com.typesafe.akka" %% "akka-stream"         % version
     val streamKafka     = "com.typesafe.akka" %% "akka-stream-kafka"   % "3.0.1"
     val slf4j           = "com.typesafe.akka" %% "akka-slf4j"          % version
-    val testKit         = "com.typesafe.akka" %% "akka-testkit"        % version % Test
-    val streamTestKit   = "com.typesafe.akka" %% "akka-stream-testkit" % version % Test
+    val testKit         = "com.typesafe.akka" %% "akka-testkit"        % version % "test,it"
+    val streamTestKit   = "com.typesafe.akka" %% "akka-stream-testkit" % version % "test,it"
     val base            = Seq(actor, stream, streamKafka, slf4j)
     val test            = Seq(testKit, streamTestKit)
   }
@@ -17,8 +17,8 @@ object Dependencies {
   object Cats {
     private val version = "2.7.0"
     val core            = "org.typelevel"    %% "cats-core"      % version
-    val testKit         = "org.typelevel"    %% "cats-testkit"   % version % Test
-    val scalatest       = "com.ironcorelabs" %% "cats-scalatest" % "3.1.1" % Test
+    val testKit         = "org.typelevel"    %% "cats-testkit"   % version % "test,it"
+    val scalatest       = "com.ironcorelabs" %% "cats-scalatest" % "3.1.1" % "test,it"
     val base            = Seq(core)
     val test            = Seq(testKit, scalatest)
   }
@@ -26,7 +26,7 @@ object Dependencies {
   object Kafka {
     private val version = "3.1.0"
     val kafkaClients    = "org.apache.kafka"  % "kafka-clients" % version
-    val kafka           = "org.apache.kafka" %% "kafka"         % version % Test
+    val kafka           = "org.apache.kafka" %% "kafka"         % version % "test,it"
     val base            = Seq(kafkaClients)
     val test            = Seq(kafka)
   }
@@ -50,7 +50,7 @@ object Dependencies {
     private val version = "0.9.28"
     val refined         = "eu.timepit" %% "refined"            % version
     val pureconfig      = "eu.timepit" %% "refined-pureconfig" % version
-    val scalaCheck      = "eu.timepit" %% "refined-scalacheck" % version % Test
+    val scalaCheck      = "eu.timepit" %% "refined-scalacheck" % version % "test,it"
     val base            = Seq(refined, pureconfig)
     val test            = Seq(scalaCheck)
   }
@@ -64,13 +64,13 @@ object Dependencies {
   val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.4.5" % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.3"   % Runtime
 
-  val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.4.0"    % Test
-  val mockito              = "org.mockito"              % "mockito-core"                % "5.1.1"    % Test
-  val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
-  val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.17.0"   % Test
-  val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.7.0"    % Test
-  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.15"   % Test
-  val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
+  val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.4.0"    % "test,it"
+  val mockito              = "org.mockito"              % "mockito-core"                % "5.1.1"    % "test,it"
+  val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % "test,it"
+  val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.17.0"   % "test,it"
+  val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.7.0"    % "test,it"
+  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.15"   % "test,it"
+  val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % "test,it"
 
   val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(
     avro4s,

@@ -55,7 +55,7 @@ object Dependencies {
     val test            = Seq(scalaCheck)
   }
 
-  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.0.13"
+  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.0"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
@@ -65,7 +65,7 @@ object Dependencies {
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.2"    % Runtime
 
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.2.0"    % Test
-  val mockito              = "org.mockito"              % "mockito-core"                % "4.5.1"    % Test
+  val mockito              = "org.mockito"              % "mockito-core"                % "4.6.1"    % Test
   val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
   val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.16.0"   % Test
   val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"    % Test

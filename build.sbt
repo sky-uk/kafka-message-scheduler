@@ -29,7 +29,10 @@ lazy val dockerSettings = Seq(
   dockerBaseImage      := "eclipse-temurin:17-jdk-alpine",
   dockerRepository     := Some("ghcr.io"),
   dockerLabels         := Map("maintainer" -> "Sky"),
-  dockerUpdateLatest   := !isSnapshot.value,
+  dockerAliases ++= {
+    lazy val dockerTag = (tag: String) => Seq(dockerAlias.value.withTag(Some(tag)))
+    if (isSnapshot.value) dockerTag("snapshot") else dockerTag("latest")
+  },
   dockerCommands ++= Seq(
     Cmd("USER", "root"),
     Cmd("RUN", "apk add --no-cache bash")

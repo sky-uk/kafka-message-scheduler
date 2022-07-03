@@ -16,7 +16,7 @@ trait KafkaUtils {
   val extraScheduleTopic                        = "extraSchedules"
   val outputTopic                               = "output.topic"
   val kafkaConsumerTimeout: FiniteDuration      = 60.seconds
-  val tolerance: FiniteDuration                 = 1300.milliseconds
+  val tolerance: FiniteDuration                 = 2000.milliseconds
 
   private def subscribeAndPoll[K, V](topic: String): KafkaConsumer[K, V] => Iterator[ConsumerRecord[K, V]] = { cr =>
     cr.subscribe(List(topic).asJavaCollection)

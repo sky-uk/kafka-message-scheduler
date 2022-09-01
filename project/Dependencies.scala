@@ -60,9 +60,9 @@ object Dependencies {
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
 
-  val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.8"  % Runtime
-  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.2.11" % Runtime
-  val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.2"    % Runtime
+  val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.8" % Runtime
+  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.4.0" % Runtime
+  val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.2"   % Runtime
 
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.2.1"    % Test
   val mockito              = "org.mockito"              % "mockito-core"                % "4.7.0"    % Test

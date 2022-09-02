@@ -6,7 +6,7 @@ object Dependencies {
     private val version = "2.6.19"
     val actor           = "com.typesafe.akka" %% "akka-actor"          % version
     val stream          = "com.typesafe.akka" %% "akka-stream"         % version
-    val streamKafka     = "com.typesafe.akka" %% "akka-stream-kafka"   % "3.0.0"
+    val streamKafka     = "com.typesafe.akka" %% "akka-stream-kafka"   % "3.0.1"
     val slf4j           = "com.typesafe.akka" %% "akka-slf4j"          % version
     val testKit         = "com.typesafe.akka" %% "akka-testkit"        % version % Test
     val streamTestKit   = "com.typesafe.akka" %% "akka-stream-testkit" % version % Test

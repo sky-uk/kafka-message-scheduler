@@ -1,4 +1,4 @@
-import com.typesafe.sbt.packager.docker.Cmd
+import com.typesafe.sbt.packager.docker.{Cmd, DockerAlias}
 import Aliases._
 
 ThisBuild / scalafmtOnCompile                              := true
@@ -30,7 +30,7 @@ lazy val dockerSettings = Seq(
   dockerRepository     := Some("ghcr.io"),
   dockerLabels         := Map("maintainer" -> "Sky"),
   dockerAliases ++= {
-    lazy val dockerTag = (tag: String) => Seq(dockerAlias.value.withTag(Some(tag)))
+    lazy val dockerTag: String => Seq[DockerAlias] = tag => Seq(dockerAlias.value.withTag(Some(tag)))
     if (isSnapshot.value) dockerTag("snapshot") else dockerTag("latest")
   },
   dockerCommands ++= Seq(

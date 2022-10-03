@@ -13,7 +13,7 @@ Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 
 val commonSettings = Seq(
   organization := "com.sky",
-  scalaVersion := "2.13.8"
+  scalaVersion := "2.13.9"
 )
 
 val compilerSettings = Seq(

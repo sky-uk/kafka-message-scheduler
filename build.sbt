@@ -50,7 +50,7 @@ lazy val scheduler = (project in file("scheduler"))
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
     run / fork               := true,
     Test / fork              := true,
-    javaAgents += "io.kamon"  % "kanela-agent" % "1.0.15",
+    javaAgents += "io.kamon"  % "kanela-agent" % "1.0.16",
     buildInfoSettings,
     dockerSettings,
     releaseSettings,

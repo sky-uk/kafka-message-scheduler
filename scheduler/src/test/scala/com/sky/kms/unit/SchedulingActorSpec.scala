@@ -9,7 +9,7 @@ import com.sky.kms.actors.SchedulingActor
 import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.AkkaSpecBase
 import com.sky.kms.domain._
-import com.sky.kms.utils.SimpleCounterMonitoring
+import com.sky.kms.utils.MockGauge
 import com.sky.kms.utils.TestDataUtils._
 import monix.execution.schedulers.TestScheduler
 import org.scalatest.concurrent.Eventually
@@ -96,35 +96,60 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       expectTerminated(schedulingActor)
     }
 
-    "update monitoring when new schedule is received" in new Initialised {
+    "increment schedule counter when new schedule is received" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
 
       createSchedule(scheduleId, schedule)
 
       eventually {
-        scheduleReceivedCounter shouldBe 1L
+        mockGauge.counter.get() shouldBe 1L
       }
     }
 
-    "update monitoring when a cancel message is received" in new Initialised {
+    "keep the schedule counter the same when updating a previous schedule" in new Initialised {
       val (scheduleId, schedule) = generateSchedule
       createSchedule(scheduleId, schedule)
+
+      val updatedSchedule = schedule.copy(delay = schedule.delay + 5.minutes)
+      createSchedule(scheduleId, updatedSchedule)
+
+      eventually {
+        mockGauge.counter.get() shouldBe 1L
+      }
+
+      advanceToTimeFrom(schedule)
+      probe.expectNoMessage(NoMsgTimeout)
+
+      advanceToTimeFrom(updatedSchedule)
+      probe.expectMsg(Trigger(scheduleId, updatedSchedule))
+
+      eventually {
+        mockGauge.counter.get() shouldBe 1L
+      }
+    }
+
+    "decrement schedule counter when a cancel message is received" in new Initialised {
+      val (scheduleId, schedule) = generateSchedule
+      createSchedule(scheduleId, schedule)
+
+      eventually {
+        mockGauge.counter.get() shouldBe 1L
+      }
 
       cancelSchedule(scheduleId)
 
       eventually {
-        scheduleDoneCounter shouldBe 1L
+        mockGauge.counter.get() shouldBe 0L
       }
     }
   }
 
   private class TestContext {
 
-    val monitoring      = new SimpleCounterMonitoring()
+    val mockGauge       = new MockGauge()
     val testScheduler   = TestScheduler()
     val probe           = TestProbe()
-    val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, testScheduler, monitoring))
-    val now             = System.currentTimeMillis()
+    val schedulingActor = TestActorRef(new SchedulingActor(probe.ref, testScheduler, mockGauge))
 
     def advanceToTimeFrom(schedule: ScheduleEvent): Unit =
       testScheduler.tick(schedule.delay)
@@ -138,10 +163,6 @@ class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoS
       schedulingActor ! Cancel(scheduleId)
       expectMsg(Ack)
     }
-
-    def scheduleReceivedCounter: Long = monitoring.scheduleReceivedCounter.get()
-
-    def scheduleDoneCounter: Long = monitoring.scheduleDoneCounter.get()
   }
 
   private class Initialised extends TestContext {

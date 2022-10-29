@@ -12,6 +12,7 @@ import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.config._
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
+import com.sky.kms.monitoring.{StartupGauge, StartupState}
 import com.sky.kms.streams.ScheduleReader.In
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, Deserializer, StringDeserializer}
@@ -24,18 +25,27 @@ case class ScheduleReader[Mat](
     scheduleSource: Eval[Source[In, (Future[Done], Mat)]],
     schedulingActor: ActorRef,
     errorHandler: Sink[ApplicationError, Future[Done]],
-    timeouts: ReaderConfig.TimeoutConfig
+    timeouts: ReaderConfig.TimeoutConfig,
+    startupGauge: StartupGauge
 )(implicit system: ActorSystem) {
 
   import system.dispatcher
 
   private def initSchedulingActorWhenReady(f: Future[Done]): Future[Any] =
-    f.flatMap(_ => (schedulingActor ? Initialised)(timeouts.initialisation)).recover { case t =>
+    f.flatMap { _ =>
+      startupGauge.onStateChange(StartupState.Ready)
+      (schedulingActor ? Initialised)(timeouts.initialisation)
+    }.recover { case t =>
+      startupGauge.onStateChange(StartupState.Failed)
       schedulingActor ! UpstreamFailure(t)
     }
 
   def stream: RunnableGraph[Mat] =
-    scheduleSource.value.mapMaterializedValue { case (initF, mat) => initSchedulingActorWhenReady(initF); mat }
+    scheduleSource.value.mapMaterializedValue { case (initF, mat) =>
+      startupGauge.onStateChange(StartupState.Loading)
+      initSchedulingActorWhenReady(initF)
+      mat
+    }
       .map(ScheduleReader.toSchedulingMessage)
       .alsoTo(extractError.to(errorHandler))
       .collect { case Right(msg) => msg }
@@ -59,6 +69,8 @@ object ScheduleReader extends LazyLogging {
       implicit val keyDeserializer: Deserializer[String]        = new StringDeserializer()
       implicit val valueDeserializer: Deserializer[Array[Byte]] = new ByteArrayDeserializer()
 
+      val startupGauge: StartupGauge = StartupGauge.kamon()
+
       ScheduleReader(
         Eval.always(
           TopicLoader
@@ -67,7 +79,8 @@ object ScheduleReader extends LazyLogging {
         ),
         actorRef,
         logErrors,
-        config.timeouts
+        config.timeouts,
+        startupGauge
       )
     }
 

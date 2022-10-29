@@ -7,10 +7,8 @@ import com.sky.kms.domain._
 import com.sky.kms.utils.TestDataUtils._
 import eu.timepit.refined.auto._
 import io.github.embeddedkafka.Codecs._
-import kamon.Kamon
-import kamon.testkit.{InstrumentInspection, MetricInspection}
 
-class SchedulerIntSpec extends SchedulerIntSpecBase with MetricInspection.Syntax with InstrumentInspection.Syntax {
+class SchedulerIntSpec extends SchedulerIntSpecBase {
 
   "Scheduler stream" should {
     "schedule a message to be sent to Kafka and delete it after it has been emitted" in new TestContext {
@@ -25,39 +23,14 @@ class SchedulerIntSpec extends SchedulerIntSpecBase with MetricInspection.Syntax
         }
       }
     }
-
-    "increment the internal store when a message is scheduled and remove it when it emits the scheduled message" in new TestContext {
-      withRunningKafka {
-        withSchedulerApp {
-          val schedules = createSchedules(1, forTopics = List(scheduleTopic), 10L)
-
-          publish(schedules)
-
-          eventually {
-            val g = Kamon.gauge("foobar").withoutTags()
-            gaugeInstrumentInspection(g)
-
-          }
-
-//          publish(schedules)
-//            .foreach(assertMessagesWrittenFrom(_, schedules))
-
-//          assertTombstoned(schedules)
-        }
-      }
-    }
   }
 
   private class TestContext {
-    def createSchedules(
-        numSchedules: Int,
-        forTopics: List[String],
-        expireTime: Long = 4
-    ): List[(ScheduleId, ScheduleEvent)] =
+    def createSchedules(numSchedules: Int, forTopics: List[String]): List[(ScheduleId, ScheduleEvent)] =
       random[(ScheduleId, ScheduleEvent)](numSchedules).toList
         .zip(LazyList.continually(forTopics.to(LazyList)).flatten.take(numSchedules).toList)
         .map { case ((id, schedule), topic) =>
-          id -> schedule.copy(inputTopic = topic).secondsFromNow(expireTime)
+          id -> schedule.copy(inputTopic = topic).secondsFromNow(4)
         }
 
     def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map { case (id, scheduleEvent) =>

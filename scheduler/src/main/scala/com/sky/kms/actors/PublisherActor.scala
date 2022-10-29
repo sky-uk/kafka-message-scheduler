@@ -8,10 +8,11 @@ import com.sky.kms.Start
 import com.sky.kms.actors.PublisherActor.{DownstreamFailure, Init, ScheduleQueue, Trigger}
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId, ScheduleQueueOfferResult}
+import com.sky.kms.monitoring.ScheduleGauge
 
 import scala.util.{Failure, Success}
 
-class PublisherActor extends Actor with ActorLogging {
+class PublisherActor(scheduleGauge: ScheduleGauge) extends Actor with ActorLogging {
 
   implicit val ec = context.dispatcher
 
@@ -25,8 +26,10 @@ class PublisherActor extends Actor with ActorLogging {
   private def receiveWithQueue(queue: ScheduleQueue): Receive = { case Trigger(scheduleId, schedule) =>
     queue.offer((scheduleId, messageFrom(schedule))) onComplete {
       case Success(QueueOfferResult.Enqueued) =>
+        scheduleGauge.onDelete()
         log.debug(ScheduleQueueOfferResult(scheduleId, QueueOfferResult.Enqueued).show)
       case Success(res)                       =>
+        scheduleGauge.onDelete()
         log.warning(ScheduleQueueOfferResult(scheduleId, res).show)
       case Failure(t)                         =>
         log.error(t, s"Failed to enqueue $scheduleId")
@@ -53,8 +56,8 @@ object PublisherActor {
 
   case class DownstreamFailure(t: Throwable)
 
-  def create(implicit system: ActorSystem): ActorRef =
-    system.actorOf(Props[PublisherActor](), "publisher-actor")
+  def create(scheduleGauge: ScheduleGauge)(implicit system: ActorSystem): ActorRef =
+    system.actorOf(Props(new PublisherActor(scheduleGauge)), "publisher-actor")
 
   def init(queue: ScheduleQueue): Start[Unit] =
     Start(_.publisherActor ! Init(queue))

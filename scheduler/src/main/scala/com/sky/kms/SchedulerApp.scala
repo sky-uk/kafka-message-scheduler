@@ -4,6 +4,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.kafka.scaladsl.Consumer.Control
 import com.sky.kms.actors._
 import com.sky.kms.config.Configured
+import com.sky.kms.monitoring.ScheduleGauge
 import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import kamon.Kamon
 import kamon.jmx.collector.KamonJmxMetricCollector
@@ -21,8 +22,9 @@ object SchedulerApp {
   case class Running(reader: ScheduleReader.Running[Future[Control]], publisher: ScheduledMessagePublisher.Running)
 
   def configure(implicit system: ActorSystem): Configured[SchedulerApp] = {
-    val publisherActor  = PublisherActor.create
-    val schedulingActor = SchedulingActor.create(publisherActor)
+    val scheduleGauge   = ScheduleGauge.kamon()
+    val publisherActor  = PublisherActor.create(scheduleGauge)
+    val schedulingActor = SchedulingActor.create(publisherActor, scheduleGauge)
     TerminatorActor.create(schedulingActor, publisherActor)
 
     for {

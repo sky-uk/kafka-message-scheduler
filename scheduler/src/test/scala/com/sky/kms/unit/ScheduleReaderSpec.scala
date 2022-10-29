@@ -73,7 +73,7 @@ class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
       probe.expectMsg(UpstreamFailure(ex))
     }
 
-    "set the startup gauge to loading when the stream is restoring it's state" in new TestContext {
+    "set the startup gauge to loading then ready when the stream is restoring it's state" in new TestContext {
       val p = Promise[Done]()
       runReader(delayedSource, sourceMatFuture = p.future)
 

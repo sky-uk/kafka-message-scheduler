@@ -11,8 +11,10 @@ import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.{AkkaSpecBase, SpecBase}
 import com.sky.kms.config.ReaderConfig
 import com.sky.kms.domain._
+import com.sky.kms.monitoring.StartupState
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.In
+import com.sky.kms.utils.MockStartupGauge
 import com.sky.kms.utils.TestDataUtils._
 
 import scala.concurrent.duration._
@@ -70,6 +72,33 @@ class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
 
       probe.expectMsg(UpstreamFailure(ex))
     }
+
+    "set the startup gauge to loading when the stream is restoring it's state" in new TestContext {
+      val p = Promise[Done]()
+      runReader(delayedSource, sourceMatFuture = p.future)
+
+      probe.expectMsg(StreamStarted)
+      probe.expectMsgType[CreateOrUpdate]
+      mockStartupGauge.currentState.get() shouldBe StartupState.Loading
+
+      p.success(Done)
+      probe.expectMsg(Initialised)
+      mockStartupGauge.currentState.get() shouldBe StartupState.Ready
+    }
+
+    "signal failure to startup gauge when source materialised future fails" in new TestContext {
+      val ex = new Exception("boom!")
+      val p  = Promise()
+
+      runReader(delayedSource, sourceMatFuture = p.future)
+      probe.expectMsg(StreamStarted)
+      mockStartupGauge.currentState.get() shouldBe StartupState.Loading
+
+      p.failure(ex)
+
+      probe.expectMsg(UpstreamFailure(ex))
+      mockStartupGauge.currentState.get() shouldBe StartupState.Failed
+    }
   }
 
   "toSchedulingMessage" should {
@@ -101,6 +130,8 @@ class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
       p
     }
 
+    val mockStartupGauge = new MockStartupGauge()
+
     def delayedSource = Source.tick(100.millis, 100.millis, msg).mapMaterializedValue(_ => NotUsed)
 
     def runReader(
@@ -112,7 +143,8 @@ class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
         Eval.now(in.mapMaterializedValue(nu => sourceMatFuture -> nu)),
         probe.ref,
         errorHandler,
-        ReaderConfig.TimeoutConfig(100.millis, 100.millis)
+        ReaderConfig.TimeoutConfig(100.millis, 100.millis),
+        mockStartupGauge
       ).stream.run()
   }
 

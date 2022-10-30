@@ -66,8 +66,6 @@ This will be a value of 0-2 depending on the state of the startup:
 - 1 - The scheduler has finished loading
 - 2 - The scheduler failed to recreate it's state
 
-
-
 ### Topic configuration
 
 The `schedule-topics` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). This is for two reasons:

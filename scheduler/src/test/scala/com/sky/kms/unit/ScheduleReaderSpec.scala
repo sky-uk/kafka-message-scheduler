@@ -11,7 +11,7 @@ import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.base.{AkkaSpecBase, SpecBase}
 import com.sky.kms.config.ReaderConfig
 import com.sky.kms.domain._
-import com.sky.kms.monitoring.StartupState
+import com.sky.kms.monitoring.StartupGauge
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.In
 import com.sky.kms.utils.MockStartupGauge
@@ -79,11 +79,11 @@ class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
 
       probe.expectMsg(StreamStarted)
       probe.expectMsgType[CreateOrUpdate]
-      mockStartupGauge.currentState.get() shouldBe StartupState.Loading
+      mockStartupGauge.currentState.get() shouldBe StartupGauge.Loading
 
       p.success(Done)
       probe.expectMsg(Initialised)
-      mockStartupGauge.currentState.get() shouldBe StartupState.Ready
+      mockStartupGauge.currentState.get() shouldBe StartupGauge.Ready
     }
 
     "signal failure to startup gauge when source materialised future fails" in new TestContext {
@@ -92,12 +92,12 @@ class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
 
       runReader(delayedSource, sourceMatFuture = p.future)
       probe.expectMsg(StreamStarted)
-      mockStartupGauge.currentState.get() shouldBe StartupState.Loading
+      mockStartupGauge.currentState.get() shouldBe StartupGauge.Loading
 
       p.failure(ex)
 
       probe.expectMsg(UpstreamFailure(ex))
-      mockStartupGauge.currentState.get() shouldBe StartupState.Failed
+      mockStartupGauge.currentState.get() shouldBe StartupGauge.Failed
     }
   }
 

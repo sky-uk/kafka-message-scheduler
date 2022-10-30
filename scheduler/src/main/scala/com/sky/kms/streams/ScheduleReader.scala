@@ -12,7 +12,7 @@ import com.sky.kms.actors.SchedulingActor._
 import com.sky.kms.config._
 import com.sky.kms.domain.ApplicationError._
 import com.sky.kms.domain._
-import com.sky.kms.monitoring.{StartupGauge, StartupState}
+import com.sky.kms.monitoring.StartupGauge
 import com.sky.kms.streams.ScheduleReader.In
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, Deserializer, StringDeserializer}
@@ -33,16 +33,16 @@ case class ScheduleReader[Mat](
 
   private def initSchedulingActorWhenReady(f: Future[Done]): Future[Any] =
     f.flatMap { _ =>
-      startupGauge.onStateChange(StartupState.Ready)
+      startupGauge.onStateChange(StartupGauge.Ready)
       (schedulingActor ? Initialised)(timeouts.initialisation)
     }.recover { case t =>
-      startupGauge.onStateChange(StartupState.Failed)
+      startupGauge.onStateChange(StartupGauge.Failed)
       schedulingActor ! UpstreamFailure(t)
     }
 
   def stream: RunnableGraph[Mat] =
     scheduleSource.value.mapMaterializedValue { case (initF, mat) =>
-      startupGauge.onStateChange(StartupState.Loading)
+      startupGauge.onStateChange(StartupGauge.Loading)
       initSchedulingActorWhenReady(initF)
       mat
     }

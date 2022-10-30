@@ -54,6 +54,20 @@ Metrics are exposed and reported using Kamon. By default, the [Kamon Prometheus 
 
 Prometheus is included as part of the docker-compose and will expose a monitoring dashboard on port `9090`.
 
+#### Startup metrics
+
+Given the scheduler may take some time to recreate it's internal state, the following metric is available to monitor the startup process:
+
+- `scheduler_startup`
+
+This will be a value of 0-2 depending on the state of the startup:
+
+- 0 - The scheduler is loading
+- 1 - The scheduler has finished loading
+- 2 - The scheduler failed to recreate it's state
+
+
+
 ### Topic configuration
 
 The `schedule-topics` must be configured to use [log compaction](https://kafka.apache.org/documentation/#compaction). This is for two reasons:

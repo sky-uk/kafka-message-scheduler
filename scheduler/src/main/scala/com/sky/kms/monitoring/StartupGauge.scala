@@ -8,7 +8,7 @@ trait StartupGauge {
 
 object StartupGauge {
   def kamon(): StartupGauge = new StartupGauge {
-    private val gauge = Kamon.gauge("scheduler-startup").withoutTags()
+    private val gauge = Kamon.gauge("scheduler_startup").withoutTags()
 
     override def onStateChange(state: State): Unit = state match {
       case Loading => gauge.update(0)

@@ -60,7 +60,7 @@ object Dependencies {
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
 
-  val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.8" % Runtime
+  val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.9" % Runtime
   val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.4.4" % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.2"   % Runtime
 

@@ -69,7 +69,7 @@ object Dependencies {
   val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
   val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.17.0"   % Test
   val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"    % Test
-  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.14"   % Test
+  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.15"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
   val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(

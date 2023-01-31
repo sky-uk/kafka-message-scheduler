@@ -1,5 +1,8 @@
 # Kafka Message Scheduler
 
+[![Build Status](https://app.travis-ci.com/sky-uk/kafka-message-scheduler.svg?branch=master)](https://app.travis-ci.com/sky-uk/kafka-message-scheduler)
+[![Docker Pulls](https://img.shields.io/docker/pulls/skyuk/kafka-message-scheduler)](https://hub.docker.com/r/skyuk/kafka-message-scheduler)
+
 This application is a scheduler for low-frequency and long-term scheduling of delayed messages to [Kafka](https://kafka.apache.org/) topics.
 
 ## Background

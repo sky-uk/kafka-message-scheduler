@@ -25,7 +25,8 @@ object ApplicationError extends LazyLogging {
     case error: InvalidSchemaError     => s"Invalid schema used to produce message with key ${error.key}"
     case error: AvroMessageFormatError =>
       s"Error when processing message with key ${error.key}. ${error.cause.getMessage}"
-    case error: InvalidTimeError       => s"Time between now and ${error.time} is not within 292 years"
+    case error: InvalidTimeError       =>
+      s"Time between now and ${error.time} is not within 292 years on message ${error.key}"
   }
 
   def extractError[T]: Flow[Either[ApplicationError, T], ApplicationError, NotUsed] =

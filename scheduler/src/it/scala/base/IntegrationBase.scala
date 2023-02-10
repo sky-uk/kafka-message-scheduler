@@ -1,6 +1,5 @@
 package base
 
-import cats.scalatest.{EitherMatchers, EitherValues}
 import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.sky.kms.base.KafkaIntSpecBase
 import io.github.embeddedkafka.Codecs.stringDeserializer
@@ -19,20 +18,14 @@ import scala.jdk.CollectionConverters._
 abstract class IntegrationBase
     extends FixtureAnyFeatureSpec
     with fixture.ConfigMapFixture
-    with BeforeAndAfterAll
     with BeforeAndAfterEach
     with Matchers
-    with EitherValues
-    with EitherMatchers
-    with OptionValues
-    with LoneElement
     with RandomDataGenerator
     with ScalaFutures
     with Eventually
     with KafkaIntSpecBase {
 
-  val timeout: Duration                                = 60.seconds
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout, interval = 200.millis)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(kafkaConsumerTimeout, interval = 200.millis)
 
   override implicit lazy val kafkaConfig: EmbeddedKafkaConfig = EmbeddedKafkaConfig(kafkaPort = 9093)
 

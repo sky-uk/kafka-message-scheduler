@@ -43,8 +43,11 @@ trait KafkaIntSpecBase extends EmbeddedKafka {
     }
 
   def seekToEnd(consumer: KafkaConsumer[String, String], topics: List[String]): Unit = {
-    val topicPartitions =
-      topics.flatMap(topic => consumer.partitionsFor(topic).asScala.map(i => new TopicPartition(topic, i.partition)))
+    val topicPartitions = for {
+      topic         <- topics
+      partitionInfo <- consumer.partitionsFor(topic).asScala
+    } yield new TopicPartition(topic, partitionInfo.partition)
+
     consumer.assign(topicPartitions.asJava)
     consumer.seekToEnd(topicPartitions.asJava)
     topicPartitions.foreach(consumer.position)

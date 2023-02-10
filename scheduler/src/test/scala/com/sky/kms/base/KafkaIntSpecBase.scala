@@ -6,6 +6,7 @@ import eu.timepit.refined.auto._
 import io.github.embeddedkafka.Codecs.{nullDeserializer, stringDeserializer}
 import io.github.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
+import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.Deserializer
 
 import scala.compat.java8.DurationConverters._
@@ -40,4 +41,14 @@ trait KafkaIntSpecBase extends EmbeddedKafka {
     withConsumer { cr: KafkaConsumer[String, T] =>
       subscribeAndPoll(topic)(cr).toList.take(numMsgs)
     }
+
+  def seekToEnd(consumer: KafkaConsumer[String, String], topics: List[String]): Unit = {
+    val topicPartitions =
+      topics.flatMap(topic => consumer.partitionsFor(topic).asScala.map(i => new TopicPartition(topic, i.partition)))
+    consumer.assign(topicPartitions.asJava)
+    consumer.seekToEnd(topicPartitions.asJava)
+    topicPartitions.foreach(consumer.position)
+    consumer.commitSync()
+    consumer.unsubscribe()
+  }
 }

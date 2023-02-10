@@ -53,9 +53,6 @@ class SchedulerFeature extends IntegrationBase {
 
     def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map { case (id, scheduleEvent) =>
       val schedule = scheduleEvent.toSchedule
-      println(
-        s"Publishing to: ${scheduleEvent.inputTopic} with port ${kafkaConfig.kafkaPort} and zk: ${kafkaConfig.zooKeeperPort}"
-      )
       publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
       schedule.time
     }

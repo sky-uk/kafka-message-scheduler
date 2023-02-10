@@ -11,6 +11,8 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 
+lazy val IntegrationTest = config("it") extend Test
+
 val commonSettings = Seq(
   organization := "com.sky",
   scalaVersion := "2.13.10"
@@ -25,10 +27,10 @@ val compilerSettings = Seq(
 )
 
 lazy val integrationTestSettings = Defaults.itSettings ++ Seq(
-  testCasesPackageTask                   := (IntegrationTest / sbt.Keys.packageBin).value,
-  testCasesJar                           := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
-  dockerImageCreationTask                := (Docker / publishLocal).value,
-  composeContainerPauseBeforeTestSeconds := 30
+  testCasesPackageTask    := (IntegrationTest / sbt.Keys.packageBin).value,
+  testCasesJar            := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
+  dockerImageCreationTask := (Docker / publishLocal).value
+//  composeContainerPauseBeforeTestSeconds := 30
 )
 
 val buildInfoSettings = Seq(

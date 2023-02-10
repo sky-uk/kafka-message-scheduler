@@ -7,13 +7,12 @@ import io.github.embeddedkafka.Codecs.{nullDeserializer, stringDeserializer}
 import io.github.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.serialization.Deserializer
-import org.scalatest.wordspec.AnyWordSpec
 
 import scala.compat.java8.DurationConverters._
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
+trait KafkaIntSpecBase extends EmbeddedKafka {
 
   implicit lazy val kafkaConfig: EmbeddedKafkaConfig =
     EmbeddedKafkaConfig(
@@ -21,8 +20,10 @@ trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
       zooKeeperPort = randomPort()
     )
 
-  val scheduleTopic: Topic                 = "scheduleTopic"
-  val extraScheduleTopic: Topic            = "extraScheduleTopic"
+  val scheduleTopic: Topic      = "scheduleTopic"
+  val extraScheduleTopic: Topic = "extraScheduleTopic"
+  val allTopics: List[Topic]    = List(scheduleTopic, extraScheduleTopic)
+
   def kafkaConsumerTimeout: FiniteDuration = 60.seconds
 
   private def subscribeAndPoll[K, V](topic: String): KafkaConsumer[K, V] => Iterator[ConsumerRecord[K, V]] = { cr =>

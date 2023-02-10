@@ -2,11 +2,12 @@ package integration
 
 import base.IntegrationBase
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
+import com.sky.kms.kafka.Topic
 import io.github.embeddedkafka.Codecs.{nullDeserializer, nullSerializer, stringDeserializer, stringSerializer}
-import io.github.embeddedkafka.EmbeddedKafka.publishToKafka
-import utils._
+import com.sky.kms.utils.TestDataUtils._
 
 import java.time.OffsetDateTime
+import scala.concurrent.duration._
 
 class SchedulerFeature extends IntegrationBase {
 
@@ -28,7 +29,7 @@ class SchedulerFeature extends IntegrationBase {
         val scheduleId = random[String]
         val schedule   = random[ScheduleEvent].copy(value = None).secondsFromNow(4).toSchedule
 
-        publishToKafka(scheduleTopic, scheduleId, schedule.toAvro)
+        publishToKafka(scheduleTopic.value, scheduleId, schedule.toAvro)
 
         val cr = consumeFirstFrom[String](schedule.topic)
 
@@ -41,15 +42,20 @@ class SchedulerFeature extends IntegrationBase {
   }
 
   private trait TestContext {
-    def createSchedules(numSchedules: Int, forTopics: List[String]): List[(ScheduleId, ScheduleEvent)] =
+    val tolerance: FiniteDuration = 2000.milliseconds
+
+    def createSchedules(numSchedules: Int, forTopics: List[Topic]): List[(ScheduleId, ScheduleEvent)] =
       random[(ScheduleId, ScheduleEvent)](numSchedules).toList
         .zip(LazyList.continually(forTopics.to(LazyList)).flatten.take(numSchedules).toList)
         .map { case ((id, schedule), topic) =>
-          id -> schedule.copy(inputTopic = topic).secondsFromNow(4)
+          id -> schedule.copy(inputTopic = topic.value).secondsFromNow(4)
         }
 
     def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map { case (id, scheduleEvent) =>
       val schedule = scheduleEvent.toSchedule
+      println(
+        s"Publishing to: ${scheduleEvent.inputTopic} with port ${kafkaConfig.kafkaPort} and zk: ${kafkaConfig.zooKeeperPort}"
+      )
       publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
       schedule.time
     }

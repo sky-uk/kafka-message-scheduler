@@ -10,8 +10,8 @@ services:
     environment:
       KAFKA_BROKERS: kafka:9092
       JAVA_TOOL_OPTIONS:
-        -Dscheduler.reader.schedule-topics.0=schedules
-        -Dscheduler.reader.schedule-topics.1=extraSchedules
+        -Dscheduler.reader.schedule-topics.0=scheduleTopic
+        -Dscheduler.reader.schedule-topics.1=extraScheduleTopic
     ports:
       - "9095:9095"
 

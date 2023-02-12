@@ -2,7 +2,6 @@ package base
 
 import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.sky.kms.base.KafkaIntSpecBase
-import io.github.embeddedkafka.Codecs.stringDeserializer
 import io.github.embeddedkafka.EmbeddedKafkaConfig
 import org.scalatest._
 import org.scalatest.concurrent.Eventually
@@ -20,7 +19,8 @@ abstract class IntegrationBase
     with RandomDataGenerator
     with ScalaFutures
     with Eventually
-    with KafkaIntSpecBase {
+    with KafkaIntSpecBase
+    with DockerBase {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(kafkaConsumerTimeout, interval = 200.millis)
 
@@ -28,11 +28,7 @@ abstract class IntegrationBase
 
   override def afterEach(): Unit = {
     super.afterEach()
-    withConsumer[String, String, Unit] { consumer =>
-      seekToEnd(
-        consumer,
-        allTopics.map(_.value)
-      )
-    }
+    println("Seek to end")
+    seekToEnd()
   }
 }

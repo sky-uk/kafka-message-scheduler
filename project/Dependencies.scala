@@ -23,6 +23,13 @@ object Dependencies {
     val test            = Seq(testKit, scalatest)
   }
 
+  object DockerJava {
+    private val version = "3.2.14"
+    val core            = "com.github.docker-java" % "docker-java"                       % version % "test,it"
+    val httpClient      = "com.github.docker-java" % "docker-java-transport-httpclient5" % version % "test,it"
+    val test            = Seq(core, httpClient)
+  }
+
   object Kafka {
     private val version = "3.1.0"
     val kafkaClients    = "org.apache.kafka"  % "kafka-clients" % version
@@ -83,7 +90,7 @@ object Dependencies {
     logbackClassic,
     logbackEncoder
   )
-  val test: Seq[ModuleID]    = Akka.test ++ Cats.test ++ Kafka.test ++ Refined.test ++ Seq(
+  val test: Seq[ModuleID]    = Akka.test ++ Cats.test ++ DockerJava.test ++ Kafka.test ++ Refined.test ++ Seq(
     embeddedKafka,
     mockito,
     randomDataGenerator,

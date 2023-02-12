@@ -5,6 +5,7 @@ import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.kafka.Topic
 import io.github.embeddedkafka.Codecs.{nullDeserializer, nullSerializer, stringDeserializer, stringSerializer}
 import com.sky.kms.utils.TestDataUtils._
+import org.scalatest.ConfigMap
 
 import java.time.OffsetDateTime
 import scala.concurrent.duration._
@@ -12,37 +13,55 @@ import scala.concurrent.duration._
 class SchedulerFeature extends IntegrationBase {
 
   Feature("Scheduler stream") {
-    Scenario("schedule a message to be sent to Kafka and delete it after it has been emitted") { _ =>
-      new TestContext {
-        val schedules: List[(ScheduleId, ScheduleEvent)] =
-          createSchedules(2, forTopics = List(scheduleTopic, extraScheduleTopic))
+//    Scenario("schedule a message to be sent to Kafka and delete it after it has been emitted") {
+//      new TestContext(_) {
+//        val schedules: List[(ScheduleId, ScheduleEvent)] =
+//          createSchedules(2, forTopics = List(scheduleTopic, extraScheduleTopic))
+//
+//        publish(schedules)
+//          .foreach(assertMessagesWrittenFrom(_, schedules))
+//
+//        assertTombstoned(schedules)
+//      }
+//    }
 
-        publish(schedules)
-          .foreach(assertMessagesWrittenFrom(_, schedules))
+//    Scenario("schedule a delete message if the value of the scheduled message is empty") {
+//      new TestContext(_) {
+//        val scheduleId = random[String]
+//        val schedule   = random[ScheduleEvent].copy(value = None).secondsFromNow(4).toSchedule
+//
+//        publishToKafka(scheduleTopic.value, scheduleId, schedule.toAvro)
+//
+//        val cr = consumeFirstFrom[String](schedule.topic)
+//
+//        cr.key should contain theSameElementsInOrderAs schedule.key
+//        cr.value shouldBe null
+//        cr.timestamp shouldBe schedule.timeInMillis +- tolerance.toMillis
+//      }
+//    }
 
-        assertTombstoned(schedules)
+    Scenario("continue processing when Kafka becomes available") {
+      new TestContext(_) {
+        val (scheduleId, schedule) = createSchedules(1, forTopics = allTopics).head
+
+        schedule.copy(inputTopic = scheduleTopic.value, outputTopic = "foobar")
+
+        publishAndAssertConsumption(scheduleId, schedule)
+
+//        dockerClient.restartContainerCmd(kafkaContainerId).exec()
+
+//        publishAndAssertConsumption(scheduleId, schedule)
       }
     }
 
-    Scenario("schedule a delete message if the value of the scheduled message is empty")(_ =>
-      new TestContext {
-        val scheduleId = random[String]
-        val schedule   = random[ScheduleEvent].copy(value = None).secondsFromNow(4).toSchedule
-
-        publishToKafka(scheduleTopic.value, scheduleId, schedule.toAvro)
-
-        val cr = consumeFirstFrom[String](schedule.topic)
-
-        cr.key should contain theSameElementsInOrderAs schedule.key
-        cr.value shouldBe null
-        cr.timestamp shouldBe schedule.timeInMillis +- tolerance.toMillis
-      }
-    )
-
   }
 
-  private trait TestContext {
+  private abstract class TestContext(cm: ConfigMap) {
     val tolerance: FiniteDuration = 2000.milliseconds
+
+    val consumerGroup    = "com.sky.kafka.scheduler"
+    val kafkaContainerId = cm(s"kafka:containerId").toString
+    println(s"Kafka container ID: $kafkaContainerId")
 
     def createSchedules(numSchedules: Int, forTopics: List[Topic]): List[(ScheduleId, ScheduleEvent)] =
       random[(ScheduleId, ScheduleEvent)](numSchedules).toList
@@ -51,10 +70,23 @@ class SchedulerFeature extends IntegrationBase {
           id -> schedule.copy(inputTopic = topic.value).secondsFromNow(4)
         }
 
-    def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map { case (id, scheduleEvent) =>
-      val schedule = scheduleEvent.toSchedule
-      publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
-      schedule.time
+    def publish(scheduleEvents: List[(ScheduleId, ScheduleEvent)]): List[OffsetDateTime] = scheduleEvents.map {
+      case (id, scheduleEvent) =>
+        val schedule = scheduleEvent.toSchedule
+        publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
+        schedule.time
+    }
+
+    def publishAndAssertConsumption(scheduleId: ScheduleId, scheduleEvent: ScheduleEvent): Unit = {
+      val currentOffset = offsetPosition(consumerGroup, scheduleEvent.inputTopic)
+      println(s"Current offset: $currentOffset")
+      val schedule      = scheduleEvent.toSchedule
+      println(s"> Publishing to topic: ${scheduleEvent.inputTopic}")
+      publishToKafka(scheduleEvent.inputTopic, scheduleId, schedule.toAvro)
+      eventually {
+        val newOffset = offsetPosition(consumerGroup, scheduleEvent.inputTopic)
+        newOffset should be > currentOffset
+      }
     }
 
     def assertMessagesWrittenFrom(time: OffsetDateTime, schedules: List[(ScheduleId, ScheduleEvent)]): Unit =

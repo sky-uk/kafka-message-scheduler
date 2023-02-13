@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
 
@@ -17,11 +17,13 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
+    mem_limit: 512m
     environment:
       ZOOKEEPER_CLIENT_PORT: '2181'
 
   kafka:
     image: confluentinc/cp-kafka:7.0.1
+    mem_limit: 512m
     ports:
       - "9093:9093"
     depends_on:

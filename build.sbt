@@ -29,9 +29,10 @@ val compilerSettings = Seq(
 
 lazy val integrationTestSettings =
   Defaults.itSettings ++ inConfig(IntegrationTest)(scalafixConfigSettings(IntegrationTest)) ++ Seq(
-    testCasesPackageTask    := (IntegrationTest / sbt.Keys.packageBin).value,
-    testCasesJar            := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
-    dockerImageCreationTask := (Docker / publishLocal).value
+    testCasesPackageTask                   := (IntegrationTest / sbt.Keys.packageBin).value,
+    testCasesJar                           := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
+    dockerImageCreationTask                := (Docker / publishLocal).value,
+    composeContainerPauseBeforeTestSeconds := 30
   )
 
 val buildInfoSettings = Seq(

@@ -4,8 +4,8 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
 
-import scala.concurrent.duration._
 import scala.compat.java8.DurationConverters._
+import scala.concurrent.duration._
 
 trait DockerBase {
 

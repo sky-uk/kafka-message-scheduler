@@ -42,6 +42,6 @@ services:
       AKHQ_CONFIGURATION: |
         akhq:
           connections:
-              map:
+              kafka:
                 properties:
                   bootstrap.servers: "kafka:9092"

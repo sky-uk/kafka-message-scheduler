@@ -8,6 +8,7 @@ ThisBuild / semanticdbVersion                              := scalafixSemanticdb
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
+Global / excludeLintKeys ++= Set(testCasesJar)
 
 Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 
@@ -26,11 +27,12 @@ val compilerSettings = Seq(
   }
 )
 
-lazy val integrationTestSettings = Defaults.itSettings ++ Seq(
-  testCasesPackageTask    := (IntegrationTest / sbt.Keys.packageBin).value,
-  testCasesJar            := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
-  dockerImageCreationTask := (Docker / publishLocal).value
-)
+lazy val integrationTestSettings =
+  Defaults.itSettings ++ inConfig(IntegrationTest)(scalafixConfigSettings(IntegrationTest)) ++ Seq(
+    testCasesPackageTask    := (IntegrationTest / sbt.Keys.packageBin).value,
+    testCasesJar            := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
+    dockerImageCreationTask := (Docker / publishLocal).value
+  )
 
 val buildInfoSettings = Seq(
   buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),

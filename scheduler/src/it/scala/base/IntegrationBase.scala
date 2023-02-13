@@ -4,10 +4,9 @@ import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import com.sky.kms.base.KafkaIntSpecBase
 import io.github.embeddedkafka.EmbeddedKafkaConfig
 import org.scalatest._
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.featurespec.FixtureAnyFeatureSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 
@@ -28,7 +27,6 @@ abstract class IntegrationBase
 
   override def afterEach(): Unit = {
     super.afterEach()
-    println("Seek to end")
     seekToEnd()
   }
 }

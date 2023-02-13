@@ -7,7 +7,7 @@ ThisBuild / semanticdbVersion                              := scalafixSemanticdb
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
-Global / excludeLintKeys ++= Set(testCasesJar)
+Global / excludeLintKeys ++= Set(testCasesJar, composeContainerPauseBeforeTestSeconds)
 
 Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 

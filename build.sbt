@@ -1,4 +1,3 @@
-import Aliases._
 import Release._
 import DockerPublish._
 

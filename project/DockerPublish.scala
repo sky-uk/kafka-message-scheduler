@@ -21,7 +21,12 @@ object DockerPublish {
     dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
-      Cmd("RUN", "apk add --no-cache bash openjdk17")
+      Cmd(
+        "RUN",
+        "wget -O /etc/apk/keys/adoptium.rsa.pub https://packages.adoptium.net/artifactory/api/security/keypair/public/repositories/apk"
+      ),
+      Cmd("RUN", "echo 'https://packages.adoptium.net/artifactory/apk/alpine/main' >> /etc/apk/repositories"),
+      Cmd("RUN", "apk add --no-cache bash temurin-17-jre")
     )
   )
 

@@ -65,7 +65,8 @@ class SchedulerFeature extends IntegrationBase {
 
     Scenario("not schedule messages that have been deleted but not compacted on startup") {
       new TestContext(_) {
-        val schedules @ (id, scheduleToDelete) :: otherSchedules = createSchedules(4, List(scheduleTopic), 20)
+        // Increase schedule time to allow the container to restart
+        val schedules @ (id, scheduleToDelete) :: otherSchedules = createSchedules(4, List(scheduleTopic), 45)
 
         val publishedSchedules = publish(schedules)
 

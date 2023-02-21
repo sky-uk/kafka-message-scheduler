@@ -21,7 +21,7 @@ abstract class IntegrationBase
     with KafkaIntSpecBase
     with DockerBase {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(kafkaConsumerTimeout, interval = 200.millis)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(kafkaConsumerTimeout, 200.millis)
 
   override implicit lazy val kafkaConfig: EmbeddedKafkaConfig = EmbeddedKafkaConfig(kafkaPort = 9093)
 

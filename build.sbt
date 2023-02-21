@@ -31,7 +31,7 @@ lazy val integrationTestSettings =
     testCasesPackageTask                   := (IntegrationTest / sbt.Keys.packageBin).value,
     testCasesJar                           := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
     dockerImageCreationTask                := (Docker / publishLocal).value,
-    composeContainerPauseBeforeTestSeconds := 30
+    composeContainerPauseBeforeTestSeconds := 45
   )
 
 val buildInfoSettings = Seq(

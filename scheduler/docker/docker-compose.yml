@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+
+  kms:
+    image: skyuk/kafka-message-scheduler:latest<localBuild>
+    depends_on:
+      - kafka
+      - zookeeper
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      JAVA_TOOL_OPTIONS:
+        -Dscheduler.reader.schedule-topics.0=scheduleTopic
+        -Dscheduler.reader.schedule-topics.1=extraScheduleTopic
+    ports:
+      - "9095:9095"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: '2181'
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    ports:
+      - "9093:9093"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,OUTSIDE://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
+
+#  akhq:
+#    image: tchiotludo/akhq:0.23.0
+#    depends_on:
+#      - kafka
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      AKHQ_CONFIGURATION: |
+#        akhq:
+#          connections:
+#              kafka:
+#                properties:
+#                  bootstrap.servers: "kafka:9092"

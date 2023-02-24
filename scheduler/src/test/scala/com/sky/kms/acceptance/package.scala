@@ -4,7 +4,7 @@ import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.actor.{ActorSystem, CoordinatedShutdown}
 import com.sky.kms.config.{AppConfig, SchedulerConfig}
 
-package object e2e {
+package object acceptance {
 
   def withSchedulerApp[T](
       scenario: => T

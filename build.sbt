@@ -1,4 +1,3 @@
-import Aliases._
 import Release._
 import DockerPublish._
 
@@ -8,8 +7,11 @@ ThisBuild / semanticdbVersion                              := scalafixSemanticdb
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
+Global / excludeLintKeys ++= Set(testCasesJar, composeContainerPauseBeforeTestSeconds)
 
 Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
+
+lazy val IntegrationTest = config("it") extend Test
 
 val commonSettings = Seq(
   organization := "com.sky",
@@ -24,15 +26,25 @@ val compilerSettings = Seq(
   }
 )
 
+lazy val integrationTestSettings =
+  Defaults.itSettings ++ inConfig(IntegrationTest)(scalafixConfigSettings(IntegrationTest)) ++ Seq(
+    testCasesPackageTask                   := (IntegrationTest / sbt.Keys.packageBin).value,
+    testCasesJar                           := (IntegrationTest / packageBin / artifactPath).value.getAbsolutePath,
+    dockerImageCreationTask                := (Docker / publishLocal).value,
+    composeContainerPauseBeforeTestSeconds := 45
+  )
+
 val buildInfoSettings = Seq(
   buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
   buildInfoPackage := "com.sky"
 )
 
 lazy val scheduler = (project in file("scheduler"))
-  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
+  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin, DockerComposePlugin)
   .settings(commonSettings)
   .settings(compilerSettings)
+  .settings(integrationTestSettings)
+  .configs(IntegrationTest)
   .settings(
     libraryDependencies ++= Dependencies.all,
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
@@ -58,7 +70,6 @@ lazy val avro = (project in file("avro"))
 lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
   .settings(commonSettings)
-  .settings(defineCommandAliases)
   .settings(dockerImageCreationTask := (scheduler / Docker / publishLocal).value)
   .aggregate(scheduler, avro)
   .enablePlugins(DockerComposePlugin)

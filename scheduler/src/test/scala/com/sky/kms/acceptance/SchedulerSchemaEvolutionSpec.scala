@@ -1,4 +1,4 @@
-package com.sky.kms.e2e
+package com.sky.kms.acceptance
 
 import cats.syntax.option._
 import com.danielasfregola.randomdatagenerator.RandomDataGenerator

@@ -23,14 +23,33 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
         }
       }
     }
+
+    "schedule a past message to be sent to Kafka immediately and delete it after it has been emitted" in new TestContext {
+      withRunningKafka {
+        withSchedulerApp {
+          val schedule =
+            createSchedules(1, forTopics = List(scheduleTopic, extraScheduleTopic), fromNow = -100000L)
+
+          publish(schedule)
+            .foreach(_ => assertMessagesWrittenFrom(OffsetDateTime.now(), schedule))
+
+          assertTombstoned(schedule)
+        }
+      }
+    }
+
   }
 
   private class TestContext {
-    def createSchedules(numSchedules: Int, forTopics: List[String]): List[(ScheduleId, ScheduleEvent)] =
+    def createSchedules(
+        numSchedules: Int,
+        forTopics: List[String],
+        fromNow: Long = 4
+    ): List[(ScheduleId, ScheduleEvent)] =
       random[(ScheduleId, ScheduleEvent)](numSchedules).toList
         .zip(LazyList.continually(forTopics.to(LazyList)).flatten.take(numSchedules).toList)
         .map { case ((id, schedule), topic) =>
-          id -> schedule.copy(inputTopic = topic).secondsFromNow(4)
+          id -> schedule.copy(inputTopic = topic).secondsFromNow(fromNow)
         }
 
     def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map { case (id, scheduleEvent) =>

@@ -28,12 +28,10 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
   "stream" should {
     "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
       withRunningKafka {
-        probe.expectMsg(StreamStarted)
-        probe.expectMsg(Initialised)
+        probe.expectMsg(5.seconds, StreamStarted)
+        probe.expectMsg(5.seconds, Initialised)
         scheduleShouldFlow(probe)
       }
-      // Wait 5 seconds. Embedded Kafka causes issues if you restart too quickly on the same ports.
-      Thread.sleep(5000)
       withRunningKafka {
         scheduleShouldFlow(probe)
       }

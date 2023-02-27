@@ -27,6 +27,10 @@ A schedule is composed of:
 
 The KMS is responsible for sending the actual message to the specified topic at the specified time.
 
+>**Note**
+> 
+> If the timestamp of when to deliver the message is in the past, the schedule will be sent immediately.
+
 The Schedule ID can be used to delete a scheduled message, via a delete message (with a null message value)
 in the source topic.
 

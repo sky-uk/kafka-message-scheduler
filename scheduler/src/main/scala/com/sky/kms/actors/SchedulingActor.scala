@@ -22,7 +22,7 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
         schedules += (scheduleId -> schedule)
 
-      case Cancel(scheduleId: String) =>
+      case Cancel(scheduleId: ScheduleId) =>
         schedules -= scheduleId
     }
 
@@ -47,14 +47,19 @@ class SchedulingActor(publisher: ActorRef, monixScheduler: MonixScheduler, monit
       case CreateOrUpdate(scheduleId: ScheduleId, schedule: ScheduleEvent) =>
         scheduled.get(scheduleId).foreach(_.cancel())
         val cancellable = scheduleOnce(scheduleId, schedule)
-        log.info(
-          s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} in ${schedule.delay.toMillis} millis"
-        )
+
+        val scheduleDelay = schedule.delay.toMillis
+
+        val message =
+          if (schedule.delay.toMillis < 0) s"immediately as it was scheduled for ${scheduleDelay.abs} millis ago"
+          else s"in $scheduleDelay millis"
+
+        log.info(s"Scheduled $scheduleId from ${schedule.inputTopic} to ${schedule.outputTopic} $message")
 
         monitoring.scheduleReceived()
         scheduled += (scheduleId -> cancellable)
 
-      case Cancel(scheduleId: String) =>
+      case Cancel(scheduleId: ScheduleId) =>
         scheduled.get(scheduleId).foreach { schedule =>
           schedule.cancel()
           monitoring.scheduleDone()

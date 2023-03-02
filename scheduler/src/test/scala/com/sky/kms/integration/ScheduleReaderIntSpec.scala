@@ -14,32 +14,42 @@ import com.sky.kms.utils.TestActorSystem
 import com.sky.kms.utils.TestDataUtils._
 import eu.timepit.refined.auto._
 import io.github.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringSerializer}
+import io.github.embeddedkafka.EmbeddedKafka
+import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ScheduleReaderIntSpec extends SchedulerIntSpecBase {
+class ScheduleReaderIntSpec extends SchedulerIntSpecBase with BeforeAndAfterEach {
 
   override implicit lazy val system: ActorSystem =
     TestActorSystem(kafkaConfig.kafkaPort, akkaExpectDuration = 20.seconds)
 
   val numSchedules = 3
 
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    EmbeddedKafka.start()
+  }
+
+  override def afterEach(): Unit = {
+    super.afterEach()
+    EmbeddedKafka.stop()
+  }
+
   "stream" should {
     "continue processing when Kafka becomes available" in withRunningScheduleReader { probe =>
-      withRunningKafka {
-        probe.expectMsg(StreamStarted)
-        probe.expectMsg(Initialised)
-        scheduleShouldFlow(probe)
-      }
-      // Wait 5 seconds. Embedded Kafka causes issues if you restart too quickly on the same ports.
-      Thread.sleep(5000)
-      withRunningKafka {
-        scheduleShouldFlow(probe)
-      }
+      probe.expectMsg(StreamStarted)
+      probe.expectMsg(Initialised)
+      scheduleShouldFlow(probe)
+
+      EmbeddedKafka.stop()
+      EmbeddedKafka.start()
+
+      scheduleShouldFlow(probe)
     }
 
-    "not schedule messages that have been deleted but not compacted on startup" in withRunningKafka {
+    "not schedule messages that have been deleted but not compacted on startup" in {
       val schedules @ firstSchedule :: _ = List.fill(numSchedules)(generateSchedule)
       writeSchedulesToKafka(schedules: _*)
       deleteSchedulesInKafka(firstSchedule)

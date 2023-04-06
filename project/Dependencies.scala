@@ -55,7 +55,7 @@ object Dependencies {
     val test            = Seq(scalaCheck)
   }
 
-  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.0"
+  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.1"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"

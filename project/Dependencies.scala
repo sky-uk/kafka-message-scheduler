@@ -61,7 +61,7 @@ object Dependencies {
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
 
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.10" % Runtime
-  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.4.8"  % Runtime
+  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.4.9"  % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.4"    % Runtime
 
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.4.0.1"  % Test

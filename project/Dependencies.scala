@@ -61,15 +61,15 @@ object Dependencies {
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
 
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.10" % Runtime
-  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.4.8"  % Runtime
+  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.4.11" % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.4"    % Runtime
 
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.4.1"    % Test
-  val mockito              = "org.mockito"              % "mockito-core"                % "5.3.1"    % Test
+  val mockito              = "org.mockito"              % "mockito-core"                % "5.6.0"    % Test
   val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
   val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.17.0"   % Test
   val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.7.0"    % Test
-  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.16"   % Test
+  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.17"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
   val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(

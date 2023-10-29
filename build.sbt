@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker.Cmd
+
 lazy val scala3 = "3.3.1"
 lazy val scmUrl = "https://github.com/sky-uk/kafka-message-scheduler"
 
@@ -6,10 +8,27 @@ ThisBuild / organization := "uk.sky"
 ThisBuild / licenses     := List("BSD New" -> url("https://opensource.org/licenses/BSD-3-Clause"))
 ThisBuild / homepage     := Some(url(scmUrl))
 
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+
 Global / onChangedBuildSource := ReloadOnSourceChanges
+Global / scalafmtOnCompile    := true
 
 lazy val scheduler = project
   .settings(CommonSettings.default)
+  .settings {
+    Seq(
+      dockerImageCreationTask := (Docker / publishLocal).value,
+      dockerBaseImage         := "alpine:3.17.2",
+      Docker / packageName    := "kafka-message-scheduler",
+      dockerUpdateLatest      := true,
+      dockerCommands ++= Seq(
+        Cmd("USER", "root"),
+        Cmd("RUN", "apk add --no-cache bash openjdk17")
+      ),
+      composeFile             := "scheduler/docker/docker-compose.yml"
+    )
+  }
 
 lazy val root = Project("kafka-message-scheduler", file("."))
   .aggregate(scheduler)

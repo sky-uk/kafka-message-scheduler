@@ -1,0 +1,15 @@
+<configuration scan="true" scanPeriod="60 seconds">
+
+    <logger name="org.apache.kafka" level="WARN" additivity="false"/>
+    <logger name="fs2.kafka" level="WARN" additivity="false"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date %level %logger{10} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="${LOG_LEVEL:-INFO}">
+        <appender-ref ref="console"/>
+    </root>
+</configuration>

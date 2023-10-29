@@ -10,6 +10,13 @@ object Dependencies {
     lazy val effectTesting = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
   }
 
+  object Circe {
+    private lazy val version = "0.14.6"
+
+    lazy val generic = "io.circe" %% "circe-generic" % version
+    lazy val parser  = "io.circe" %% "circe-parser"  % version
+  }
+
   object EmbeddedKafka {
     lazy val embeddedKafka = "io.github.embeddedkafka" %% "embedded-kafka" % "3.6.0" % Test
   }
@@ -21,6 +28,26 @@ object Dependencies {
 
   object Logback {
     lazy val classic = "ch.qos.logback" % "logback-classic" % "1.4.11" % Runtime
+  }
+
+  object OpenTelemetry {
+    private lazy val version      = "1.30.1"
+    private lazy val alphaVersion = "1.30.1-alpha"
+    private lazy val agentVersion = "1.31.0"
+
+    lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"       % version      % Runtime
+    lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus" % alphaVersion % Runtime
+    lazy val sdkAutoconfigure   =
+      "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % version
+
+    lazy val javaAgent = "io.opentelemetry.javaagent" % "opentelemetry-javaagent" % agentVersion % Runtime
+  }
+
+  object Otel4s {
+    private lazy val version = "0.3-edcb397-SNAPSHOT"
+
+    lazy val java    = "org.typelevel" %% "otel4s-java"    % version
+    lazy val testkit = "org.typelevel" %% "otel4s-testkit" % version % Test
   }
 
   object ScalaTest {

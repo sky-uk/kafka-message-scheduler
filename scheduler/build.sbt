@@ -1,6 +1,6 @@
 import Dependencies.*
 
-enablePlugins(JavaAgent, DockerComposePlugin, DockerPlugin, JavaAppPackaging)
+enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging)
 
 libraryDependencies ++= Seq(
   Cats.core,

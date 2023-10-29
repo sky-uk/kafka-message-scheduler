@@ -13,5 +13,3 @@ def jsonDeserializer[F[_] : Sync, T : Decoder]: Deserializer[F, T] = for {
   json    <- parser.parse(payload).fold(Deserializer.fail[F, Json], Deserializer.const[F, Json])
   decoded <- json.as[T].fold(Deserializer.fail[F, T], Deserializer.const[F, T])
 } yield decoded
-
-

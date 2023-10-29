@@ -18,15 +18,22 @@ lazy val scheduler = project
   .settings(CommonSettings.default)
   .settings {
     Seq(
-      dockerImageCreationTask := (Docker / publishLocal).value,
       dockerBaseImage         := "alpine:3.17.2",
       Docker / packageName    := "kafka-message-scheduler",
       dockerUpdateLatest      := true,
       dockerCommands ++= Seq(
         Cmd("USER", "root"),
         Cmd("RUN", "apk add --no-cache bash openjdk17")
-      ),
-      composeFile             := "scheduler/docker/docker-compose.yml"
+      )
+    )
+  }
+
+lazy val it = Project("integration-test", file("it"))
+  .settings(CommonSettings.default)
+  .settings {
+    Seq(
+      dockerImageCreationTask := (scheduler / Docker / publishLocal).value,
+      composeFile             := "it/docker/docker-compose.yml"
     )
   }
 

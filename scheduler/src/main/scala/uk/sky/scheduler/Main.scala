@@ -1,6 +1,5 @@
 package uk.sky.scheduler
 
-import cats.Applicative
 import cats.effect.{Async, IO, IOApp, Sync}
 import cats.syntax.all.*
 import fs2.*
@@ -8,23 +7,35 @@ import fs2.kafka.*
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.otel4s.java.OtelJava
+import uk.sky.scheduler.circe.given
+import uk.sky.scheduler.domain.Schedule
+import uk.sky.scheduler.kafka.json.jsonDeserializer
 
 import scala.concurrent.duration.*
 
 object Main extends IOApp.Simple {
-  def processRecord[F[_] : Applicative : LoggerFactory](record: ConsumerRecord[String, String]): F[(String, String)] =
+  def processRecord[F[_] : Async : LoggerFactory](
+      record: ConsumerRecord[String, Schedule]
+  ): F[(String, ScheduleEvent)] =
     for {
-      _ <- LoggerFactory[F].getLogger.info(s"Processed message [${record.key}]")
-    } yield record.key -> record.value
+      _             <- LoggerFactory[F].getLogger.info(s"Processed message [${record.key}]")
+      scheduleEvent <- ScheduleEvent.fromSchedule(record.value)
+    } yield record.key -> scheduleEvent
 
-  def consumerSettings[F[_] : Sync]: ConsumerSettings[F, String, String] =
-    ConsumerSettings[F, String, String]
+  given scheduleDeserializer[F[_] : Sync]: ValueDeserializer[F, Schedule] =
+    jsonDeserializer[F, Schedule]
+
+  given outputSerializer[F[_] : Sync]: ValueSerializer[F, Option[Array[Byte]]] =
+    Serializer.identity.option
+
+  def consumerSettings[F[_] : Sync]: ConsumerSettings[F, String, Schedule] =
+    ConsumerSettings[F, String, Schedule]
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
       .withBootstrapServers("kafka:9092")
-      .withGroupId("group")
+      .withGroupId("kafka-message-scheduler")
 
-  def producerSettings[F[_] : Sync]: ProducerSettings[F, String, String] =
-    ProducerSettings[F, String, String]
+  def producerSettings[F[_] : Sync]: ProducerSettings[F, Array[Byte], Option[Array[Byte]]] =
+    ProducerSettings[F, Array[Byte], Option[Array[Byte]]]
       .withBootstrapServers("kafka:9092")
 
   def stream[F[_] : Async : LoggerFactory]: Stream[F, Unit] =
@@ -33,8 +44,8 @@ object Main extends IOApp.Simple {
       .subscribeTo("schedules")
       .records
       .mapAsync(25) { committable =>
-        processRecord(committable.record).map { case (key, value) =>
-          val record = ProducerRecord("output-topic", key, value)
+        processRecord(committable.record).map { case (_, scheduleEvent) =>
+          val record = ScheduleEvent.toProducerRecord(scheduleEvent)
           committable.offset -> ProducerRecords.one(record)
         }
       }

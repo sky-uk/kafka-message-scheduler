@@ -18,9 +18,9 @@ lazy val scheduler = project
   .settings(CommonSettings.default)
   .settings {
     Seq(
-      dockerBaseImage         := "alpine:3.17.2",
-      Docker / packageName    := "kafka-message-scheduler",
-      dockerUpdateLatest      := true,
+      dockerBaseImage      := "alpine:3.17.2",
+      Docker / packageName := "kafka-message-scheduler",
+      dockerUpdateLatest   := true,
       dockerCommands ++= Seq(
         Cmd("USER", "root"),
         Cmd("RUN", "apk add --no-cache bash openjdk17")
@@ -36,6 +36,7 @@ lazy val it = Project("integration-test", file("it"))
       composeFile             := "it/docker/docker-compose.yml"
     )
   }
+  .dependsOn(scheduler)
 
 lazy val root = Project("kafka-message-scheduler", file("."))
   .aggregate(scheduler)

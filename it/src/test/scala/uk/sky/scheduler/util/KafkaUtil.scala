@@ -13,24 +13,23 @@ import scala.concurrent.duration.FiniteDuration
 
 trait KafkaUtil[F[_]] {
 
-  def produce(
+  def produce[V](
       topic: String,
-      key: String,
-      value: Option[String]
-  ): F[Unit]
+      keyValues: (String, Option[V])*
+  )(using ValueSerializer[F, V]): F[Unit]
 
-  def consume(
+  def consume[V](
       topic: String,
       noMessages: Int,
       autoCommit: Boolean = true
-  ): F[List[ConsumerResult]]
+  )(using ValueDeserializer[F, V]): F[List[ConsumerResult[V]]]
 
 }
 
 object KafkaUtil {
 
-  final case class ConsumerResult(topic: String, key: String, value: String, producedAt: Instant, consumedAt: Instant) {
-    val keyValue: (String, String) = key -> value
+  final case class ConsumerResult[V](topic: String, key: String, value: V, producedAt: Instant, consumedAt: Instant) {
+    val keyValue: (String, V) = key -> value
   }
 
   def apply[F[_] : Async](
@@ -39,34 +38,31 @@ object KafkaUtil {
   ): Resource[F, KafkaUtil[F]] =
     Resource.pure {
       new KafkaUtil[F] {
-        override def produce(
+        override def produce[V](
             topic: String,
-            key: String,
-            value: Option[String]
-        ): F[Unit] = {
-          val producerSettings: ProducerSettings[F, String, Option[String]] =
-            ProducerSettings[F, String, Option[String]]
+            keyValues: (String, Option[V])*
+        )(using ValueSerializer[F, V]): F[Unit] = {
+          val producerSettings: ProducerSettings[F, String, Option[V]] =
+            ProducerSettings[F, String, Option[V]]
               .withBootstrapServers(s"localhost:$kafkaPort")
 
-          val record = ProducerRecord(topic, key, value)
+          val records = Chunk.from(keyValues).map(ProducerRecord(topic, _, _))
 
           KafkaProducer
             .stream(producerSettings)
-            .evalMap { producer =>
-              producer.produce(ProducerRecords.one(record))
-            }
+            .evalMap(_.produce(records))
             .parEvalMapUnbounded(identity)
             .compile
             .drain
         }
 
-        override def consume(
+        override def consume[V](
             topic: String,
             noMessages: Int,
             autocommit: Boolean = true
-        ): F[List[ConsumerResult]] = {
-          val consumerSettings: ConsumerSettings[F, String, String] =
-            ConsumerSettings[F, String, String]
+        )(using ValueDeserializer[F, V]): F[List[ConsumerResult[V]]] = {
+          val consumerSettings: ConsumerSettings[F, String, V] =
+            ConsumerSettings[F, String, V]
               .withAutoOffsetReset(AutoOffsetReset.Earliest)
               .withBootstrapServers(s"localhost:$kafkaPort")
               .withGroupId("integration-test-consumer-group")

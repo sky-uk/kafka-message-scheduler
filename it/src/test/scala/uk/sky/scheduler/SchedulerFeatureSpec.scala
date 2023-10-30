@@ -55,12 +55,12 @@ final class SchedulerFeatureSpec
         schedule2     <- createSchedule(scheduledTime, "output-topic", "cancellableKey", "scheduledValue")
         _             <- IO.println(s"schedule: $schedule")
         _             <- IO.println(s"Schedule JSON: ${schedule.asJson.spaces2}")
-        _             <- kafkaUtil.produce("schedules", "key", schedule.asJson.noSpaces.some)
+        _             <- kafkaUtil.produce[String]("schedules", "key" -> schedule.asJson.noSpaces.some)
         // Cancelled key isn't under test this is just PoC
-        _             <- kafkaUtil.produce("schedules", "cancelledKey", schedule2.asJson.noSpaces.some)
+        _             <- kafkaUtil.produce[String]("schedules", "cancelledKey" -> schedule2.asJson.noSpaces.some)
         _             <- IO.sleep(5.seconds)
-        _             <- kafkaUtil.produce("schedules", "cancelledKey", none)
-        messages      <- kafkaUtil.consume("output-topic", 1)
+        _             <- kafkaUtil.produce[String]("schedules", "cancelledKey" -> none)
+        messages      <- kafkaUtil.consume[String]("output-topic", 1)
         _             <- IO.println(s"Messages: $messages")
       } yield {
         val message = messages.loneElement

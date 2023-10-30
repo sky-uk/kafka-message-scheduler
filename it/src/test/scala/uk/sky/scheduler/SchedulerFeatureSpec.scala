@@ -37,21 +37,29 @@ final class SchedulerFeatureSpec
 
   "scheduler" should {
     "schedule an event for the specified time" in { kafkaUtil =>
+      def createSchedule(time: Long, topic: String, key: String, value: String): IO[Schedule] =
+        for {
+          key   <- key.base64Encode[IO]
+          value <- value.base64Encode[IO]
+        } yield Schedule(
+          time = time,
+          topic = topic,
+          key = key,
+          value = value.some,
+          headers = Map.empty
+        )
+
       for {
-        scheduledTime <- IO.realTimeInstant.map(_.plusSeconds(5).toEpochMilli)
-        key           <- "scheduledKey".base64Encode[IO]
-        value         <- "scheduledValue".base64Encode[IO]
-        schedule       =
-          Schedule(
-            time = scheduledTime,
-            topic = "output-topic",
-            key = key,
-            value = value.some,
-            headers = Map.empty
-          )
+        scheduledTime <- IO.realTimeInstant.map(_.plusSeconds(20).toEpochMilli)
+        schedule      <- createSchedule(scheduledTime, "output-topic", "scheduledKey", "scheduledValue")
+        schedule2     <- createSchedule(scheduledTime, "output-topic", "cancellableKey", "scheduledValue")
         _             <- IO.println(s"schedule: $schedule")
         _             <- IO.println(s"Schedule JSON: ${schedule.asJson.spaces2}")
-        _             <- kafkaUtil.produce("schedules", "key", schedule.asJson.noSpaces)
+        _             <- kafkaUtil.produce("schedules", "key", schedule.asJson.noSpaces.some)
+        // Cancelled key isn't under test this is just PoC
+        _             <- kafkaUtil.produce("schedules", "cancelledKey", schedule2.asJson.noSpaces.some)
+        _             <- IO.sleep(5.seconds)
+        _             <- kafkaUtil.produce("schedules", "cancelledKey", none)
         messages      <- kafkaUtil.consume("output-topic", 1)
         _             <- IO.println(s"Messages: $messages")
       } yield {

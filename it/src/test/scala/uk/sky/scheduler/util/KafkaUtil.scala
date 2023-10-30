@@ -16,7 +16,7 @@ trait KafkaUtil[F[_]] {
   def produce(
       topic: String,
       key: String,
-      value: String
+      value: Option[String]
   ): F[Unit]
 
   def consume(
@@ -42,10 +42,10 @@ object KafkaUtil {
         override def produce(
             topic: String,
             key: String,
-            value: String
+            value: Option[String]
         ): F[Unit] = {
-          val producerSettings: ProducerSettings[F, String, String] =
-            ProducerSettings[F, String, String]
+          val producerSettings: ProducerSettings[F, String, Option[String]] =
+            ProducerSettings[F, String, Option[String]]
               .withBootstrapServers(s"localhost:$kafkaPort")
 
           val record = ProducerRecord(topic, key, value)

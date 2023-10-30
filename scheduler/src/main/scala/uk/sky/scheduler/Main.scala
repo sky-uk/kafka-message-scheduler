@@ -22,20 +22,26 @@ import uk.sky.scheduler.kafka.json.jsonDeserializer
 import scala.concurrent.duration.*
 
 object Main extends IOApp.Simple {
-  def toEvent[F[_] : Sync](
+  def toEvent[F[_] : Sync : LoggerFactory](
       cr: CommittableConsumerRecord[F, String, Either[Throwable, Option[Schedule]]]
   ): F[Event[F]] = {
+    val logger = LoggerFactory[F].getLogger
+
     val key    = cr.record.key
     val offset = cr.offset
+    val topic  = cr.record.topic
 
     cr.record.value match {
       case Left(error)           =>
         val scheduleError = ScheduleError.DecodeError(key, error.getMessage)
-        Event.Error(key, scheduleError, offset).pure
+        logger.info(s"Error decoding [$key] from topic $topic - ${error.getMessage}") *>
+          Event.Error(key, scheduleError, offset).pure
       case Right(Some(schedule)) =>
-        ScheduleEvent.fromSchedule(schedule).map(Event.Update(key, _, offset))
+        logger.info(s"Decoded UPDATE for [$key] from topic $topic") *>
+          ScheduleEvent.fromSchedule(schedule).map(Event.Update(key, _, offset))
       case Right(None)           =>
-        Event.Delete(key, offset).pure
+        logger.info(s"Decoded DELETE for [$key] from topic $topic") *>
+          Event.Delete(key, offset).pure
     }
   }
 
@@ -77,19 +83,19 @@ object Main extends IOApp.Simple {
           case Event.Delete(key, _)           =>
             {
               for {
-                _              <- OptionT.pure(logger.info(s"Cancelling schedule [$key] due to Delete"))
+                _              <- OptionT.liftF(logger.info(s"Cancelling schedule [$key] due to Delete"))
                 scheduledFiber <- OptionT.apply(scheduleRef.apply(key).get)
-                _              <- OptionT.pure(scheduledFiber.cancel)
-                _              <- OptionT.pure(scheduleRef.unsetKey(key))
+                _              <- OptionT.liftF(scheduledFiber.cancel)
+                _              <- OptionT.liftF(scheduleRef.unsetKey(key))
               } yield ()
             }.value.void
           case Event.Error(key, _, _)         =>
             {
               for {
-                _              <- OptionT.pure(logger.error(s"Cancelling schedule [$key] due to Error"))
+                _              <- OptionT.liftF(logger.error(s"Cancelling schedule [$key] due to Error"))
                 scheduledFiber <- OptionT.apply(scheduleRef.apply(key).get)
-                _              <- OptionT.pure(scheduledFiber.cancel)
-                _              <- OptionT.pure(scheduleRef.unsetKey(key))
+                _              <- OptionT.liftF(scheduledFiber.cancel)
+                _              <- OptionT.liftF(scheduleRef.unsetKey(key))
               } yield ()
             }.value.void
         }

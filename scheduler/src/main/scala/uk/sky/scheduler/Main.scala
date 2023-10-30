@@ -2,6 +2,7 @@ package uk.sky.scheduler
 
 import java.util.concurrent.TimeUnit
 
+import cats.data.OptionT
 import cats.effect.kernel.Fiber
 import cats.effect.std.{MapRef, Queue}
 import cats.effect.syntax.all.*
@@ -14,27 +15,38 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.otel4s.java.OtelJava
 import uk.sky.scheduler.circe.given
 import uk.sky.scheduler.domain.Schedule
+import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.kafka.Event
 import uk.sky.scheduler.kafka.json.jsonDeserializer
 
 import scala.concurrent.duration.*
 
 object Main extends IOApp.Simple {
-  def processRecord[F[_] : Async : LoggerFactory](
-      record: ConsumerRecord[String, Schedule]
-  ): F[ScheduleEvent] =
-    for {
-      _             <- LoggerFactory[F].getLogger.info(s"Processed message [${record.key}]")
-      scheduleEvent <- ScheduleEvent.fromSchedule(record.key)(record.value)
-    } yield scheduleEvent
+  def toEvent[F[_] : Sync](
+      cr: CommittableConsumerRecord[F, String, Either[Throwable, Option[Schedule]]]
+  ): F[Event[F]] = {
+    val key    = cr.record.key
+    val offset = cr.offset
 
-  given scheduleDeserializer[F[_] : Sync]: ValueDeserializer[F, Schedule] =
-    jsonDeserializer[F, Schedule]
+    cr.record.value match {
+      case Left(error)           =>
+        val scheduleError = ScheduleError.DecodeError(key, error.getMessage)
+        Event.Error(key, scheduleError, offset).pure
+      case Right(Some(schedule)) =>
+        ScheduleEvent.fromSchedule(schedule).map(Event.Update(key, _, offset))
+      case Right(None)           =>
+        Event.Delete(key, offset).pure
+    }
+  }
+
+  given scheduleDeserializer[F[_] : Sync]: ValueDeserializer[F, Either[Throwable, Option[Schedule]]] =
+    jsonDeserializer[F, Schedule].option.attempt
 
   given outputSerializer[F[_] : Sync]: ValueSerializer[F, Option[Array[Byte]]] =
     Serializer.identity.option
 
-  def consumerSettings[F[_] : Sync]: ConsumerSettings[F, String, Schedule] =
-    ConsumerSettings[F, String, Schedule]
+  def consumerSettings[F[_] : Sync]: ConsumerSettings[F, String, Either[Throwable, Option[Schedule]]] =
+    ConsumerSettings[F, String, Either[Throwable, Option[Schedule]]]
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
       .withBootstrapServers("kafka:9092")
       .withGroupId("kafka-message-scheduler")
@@ -49,24 +61,43 @@ object Main extends IOApp.Simple {
   ): Stream[F, Unit] = {
     val logger = LoggerFactory[F].getLogger
 
-    val consumer = KafkaConsumer
-      .stream(consumerSettings[F])
-      .subscribeTo("schedules")
-      .records
-      .mapAsync(25) { committable =>
-        processRecord(committable.record).flatTap { scheduleEvent =>
-          for {
-            scheduleFiber <- deferredQueue(scheduleEvent, queue)
-            _             <- scheduleRef.setKeyValue(scheduleEvent.id, scheduleFiber)
-          } yield ()
-        }.map { scheduleEvent =>
-          val record = ScheduleEvent.toProducerRecord(scheduleEvent)
-          committable.offset -> ProducerRecords.one(record)
+    val consumer: Stream[F, Unit] =
+      KafkaConsumer
+        .stream(consumerSettings[F])
+        .subscribeTo("schedules")
+        .records
+        .evalMap(toEvent)
+        .evalTap {
+          case Event.Update(key, schedule, _) =>
+            for {
+              _              <- logger.info(s"Deferring schedule [$key] and adding to the Queue")
+              scheduledFiber <- deferScheduling(schedule, queue)
+              _              <- scheduleRef.setKeyValue(key, scheduledFiber)
+            } yield ()
+          case Event.Delete(key, _)           =>
+            {
+              for {
+                _              <- OptionT.pure(logger.info(s"Cancelling schedule [$key] due to Delete"))
+                scheduledFiber <- OptionT.apply(scheduleRef.apply(key).get)
+                _              <- OptionT.pure(scheduledFiber.cancel)
+                _              <- OptionT.pure(scheduleRef.unsetKey(key))
+              } yield ()
+            }.value.void
+          case Event.Error(key, _, _)         =>
+            {
+              for {
+                _              <- OptionT.pure(logger.error(s"Cancelling schedule [$key] due to Error"))
+                scheduledFiber <- OptionT.apply(scheduleRef.apply(key).get)
+                _              <- OptionT.pure(scheduledFiber.cancel)
+                _              <- OptionT.pure(scheduleRef.unsetKey(key))
+              } yield ()
+            }.value.void
         }
-      }
-      .map(_._1)
-      .through(commitBatchWithin(500, 15.seconds))
+        .map(_.offset)
+        .through(commitBatchWithin[F](500, 15.seconds))
 
+    /** Construct a Stream from the Queue schedules delay their offering to
+      */
     val producer =
       KafkaProducer.stream(producerSettings[F]).flatMap { producer =>
         Stream
@@ -87,7 +118,7 @@ object Main extends IOApp.Simple {
   def scheduleRef[F[_] : Sync]: F[MapRef[F, String, Option[DeferredSchedule[F]]]] =
     MapRef.ofScalaConcurrentTrieMap[F, String, DeferredSchedule[F]]
 
-  def deferredQueue[F[_] : Async : LoggerFactory](
+  def deferScheduling[F[_] : Async : LoggerFactory](
       scheduleEvent: ScheduleEvent,
       queue: Queue[F, ScheduleEvent]
   ): F[DeferredSchedule[F]] = {
@@ -99,7 +130,6 @@ object Main extends IOApp.Simple {
     } yield ()
 
     val deferred = for {
-      _        <- logger.info(s"Deferring schedule of $scheduleEvent and adding to the Queue")
       now      <- Async[F].realTimeInstant
       delay     = Math.max(0, scheduleEvent.time - now.toEpochMilli)
       duration  = Duration(delay, TimeUnit.MILLISECONDS)

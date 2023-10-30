@@ -1,9 +1,13 @@
 package uk.sky.scheduler.util
 
+import java.time.Instant
+
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Resource}
+import cats.syntax.all.*
 import fs2.*
 import fs2.kafka.*
+import uk.sky.scheduler.util.KafkaUtil.ConsumerResult
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -19,11 +23,15 @@ trait KafkaUtil[F[_]] {
       topic: String,
       noMessages: Int,
       autoCommit: Boolean = true
-  ): F[List[(String, String)]]
+  ): F[List[ConsumerResult]]
 
 }
 
 object KafkaUtil {
+
+  final case class ConsumerResult(topic: String, key: String, value: String, producedAt: Instant, consumedAt: Instant) {
+    val keyValue: (String, String) = key -> value
+  }
 
   def apply[F[_] : Async](
       kafkaPort: Int,
@@ -56,7 +64,7 @@ object KafkaUtil {
             topic: String,
             noMessages: Int,
             autocommit: Boolean = true
-        ): F[List[(String, String)]] = {
+        ): F[List[ConsumerResult]] = {
           val consumerSettings: ConsumerSettings[F, String, String] =
             ConsumerSettings[F, String, String]
               .withAutoOffsetReset(AutoOffsetReset.Earliest)
@@ -68,7 +76,23 @@ object KafkaUtil {
             .stream(consumerSettings)
             .subscribeTo(topic)
             .records
-            .map(cr => cr.record.key -> cr.record.value)
+            .evalMap(cr =>
+              for {
+                consumedAt <- Async[F].realTimeInstant
+                producedAt <- {
+                  val ts = cr.record.timestamp
+                  (ts.createTime orElse ts.unknownTime orElse ts.logAppendTime)
+                    .map(Instant.ofEpochMilli.apply)
+                    .liftTo(IllegalStateException("Record timestamp was empty"))
+                }
+              } yield ConsumerResult(
+                topic = topic,
+                key = cr.record.key,
+                value = cr.record.value,
+                producedAt = producedAt,
+                consumedAt = consumedAt
+              )
+            )
             .take(noMessages)
             .compile
             .toList

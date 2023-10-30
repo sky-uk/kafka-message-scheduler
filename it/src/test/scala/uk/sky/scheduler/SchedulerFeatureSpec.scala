@@ -37,9 +37,9 @@ final class SchedulerFeatureSpec
   "scheduler" should {
     "do foo" in { kafkaUtil =>
       for {
-        now      <- IO.realTimeInstant.map(_.toEpochMilli)
-        key      <- "key".base64Encode[IO]
-        value    <- "value".base64Encode[IO]
+        now      <- IO.realTimeInstant.map(_.plusSeconds(20).toEpochMilli)
+        key      <- "scheduledKey".base64Encode[IO]
+        value    <- "scheduledValue".base64Encode[IO]
         schedule  =
           Schedule(
             time = now,
@@ -53,7 +53,7 @@ final class SchedulerFeatureSpec
         _        <- kafkaUtil.produce("schedules", "key", schedule.asJson.noSpaces)
         messages <- kafkaUtil.consume("output-topic", 1)
         _        <- IO.println(s"Messages: $messages")
-      } yield messages.loneElement shouldBe ("key" -> "value")
+      } yield messages.loneElement shouldBe ("scheduledKey" -> "scheduledValue")
     }
   }
 

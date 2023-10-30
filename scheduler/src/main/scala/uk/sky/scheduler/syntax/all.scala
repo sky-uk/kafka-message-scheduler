@@ -1,3 +1,5 @@
 package uk.sky.scheduler.syntax
 
-object all extends base64
+trait AllSyntax extends Base64Syntax
+
+object all extends AllSyntax

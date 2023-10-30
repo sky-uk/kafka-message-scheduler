@@ -6,7 +6,7 @@ import java.util.Base64
 import cats.effect.Sync
 import cats.syntax.all.*
 
-trait base64 {
+trait Base64Syntax {
   extension (s: String) {
     def base64Decode[F[_] : Sync]: F[Array[Byte]] = Sync[F].delay {
       Base64.getDecoder.decode(s.getBytes(StandardCharsets.UTF_8))
@@ -24,4 +24,4 @@ trait base64 {
   }
 }
 
-object base64 extends base64
+object base64 extends Base64Syntax

@@ -7,6 +7,7 @@ import uk.sky.scheduler.domain.Schedule
 import uk.sky.scheduler.syntax.all.*
 
 case class ScheduleEvent(
+    id: String,
     time: Long,
     topic: String,
     key: Array[Byte],
@@ -15,12 +16,13 @@ case class ScheduleEvent(
 )
 
 object ScheduleEvent {
-  def fromSchedule[F[_] : Sync](schedule: Schedule): F[ScheduleEvent] =
+  def fromSchedule[F[_] : Sync](id: String)(schedule: Schedule): F[ScheduleEvent] =
     for {
       key     <- schedule.key.base64Decode
       value   <- schedule.value.traverse(_.base64Decode)
       headers <- schedule.headers.toList.traverse((key, value) => value.base64Decode.map(key -> _)).map(_.toMap)
     } yield ScheduleEvent(
+      id = id,
       time = schedule.time,
       topic = schedule.topic,
       key = key,

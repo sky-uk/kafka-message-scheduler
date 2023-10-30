@@ -1,11 +1,10 @@
 package uk.sky.scheduler
 
-import java.util.Base64
-
 import cats.effect.kernel.Sync
 import cats.syntax.all.*
 import fs2.kafka.{Header, Headers, ProducerRecord}
 import uk.sky.scheduler.domain.Schedule
+import uk.sky.scheduler.syntax.all.*
 
 case class ScheduleEvent(
     time: Long,
@@ -16,18 +15,6 @@ case class ScheduleEvent(
 )
 
 object ScheduleEvent {
-  extension (s: String) {
-    private def base64Decode[F[_] : Sync]: F[Array[Byte]] = Sync[F].delay {
-      Base64.getDecoder.decode(s)
-    }
-  }
-
-  extension (bytes: Array[Byte]) {
-    private def base64Encode[F[_] : Sync]: F[String] = Sync[F].delay {
-      Base64.getEncoder.encodeToString(bytes)
-    }
-  }
-
   def fromSchedule[F[_] : Sync](schedule: Schedule): F[ScheduleEvent] =
     for {
       key     <- schedule.key.base64Decode

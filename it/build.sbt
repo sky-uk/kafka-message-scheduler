@@ -2,6 +2,8 @@ import Dependencies.*
 
 enablePlugins(DockerComposePlugin)
 
+Test / fork := true
+
 libraryDependencies ++= Seq(
   Cats.core,
   Cats.effect,

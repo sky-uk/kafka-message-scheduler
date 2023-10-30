@@ -39,4 +39,4 @@ lazy val it = Project("integration-test", file("it"))
   .dependsOn(scheduler)
 
 lazy val root = Project("kafka-message-scheduler", file("."))
-  .aggregate(scheduler)
+  .aggregate(scheduler, it)

@@ -25,5 +25,7 @@ resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Seq(
   "jitpack" at "https://jitpack.io"
 )
 
+run / fork := true
+
 javaOptions += "-Dotel.java.global-autoconfigure.enabled=true"
 javaAgents += OpenTelemetry.javaAgent

@@ -1,6 +1,6 @@
-import com.typesafe.sbt.packager.docker.Cmd
 import Aliases._
 import Release._
+import DockerPublish._
 
 ThisBuild / scalafmtOnCompile                              := true
 ThisBuild / semanticdbEnabled                              := true
@@ -13,7 +13,7 @@ Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
 
 val commonSettings = Seq(
   organization := "com.sky",
-  scalaVersion := "2.13.8"
+  scalaVersion := "2.13.10"
 )
 
 val compilerSettings = Seq(
@@ -22,18 +22,6 @@ val compilerSettings = Seq(
   tpolecatScalacOptions ~= { opts =>
     opts.filterNot(Set(ScalacOptions.warnValueDiscard))
   }
-)
-
-lazy val dockerSettings = Seq(
-  Docker / packageName := "kafka-message-scheduler",
-  dockerBaseImage      := "eclipse-temurin:17-jdk-alpine",
-  dockerRepository     := Some("skyuk"),
-  dockerLabels         := Map("maintainer" -> "Sky"),
-  dockerUpdateLatest   := true,
-  dockerCommands ++= Seq(
-    Cmd("USER", "root"),
-    Cmd("RUN", "apk add --no-cache bash")
-  )
 )
 
 val buildInfoSettings = Seq(
@@ -50,7 +38,7 @@ lazy val scheduler = (project in file("scheduler"))
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
     run / fork               := true,
     Test / fork              := true,
-    javaAgents += "io.kamon"  % "kanela-agent" % "1.0.14",
+    javaAgents += "io.kamon"  % "kanela-agent" % "1.0.18",
     buildInfoSettings,
     dockerSettings,
     releaseSettings,

@@ -1,5 +1,9 @@
 # Kafka Message Scheduler
 
+[![Build Status](https://app.travis-ci.com/sky-uk/kafka-message-scheduler.svg?branch=master)](https://app.travis-ci.com/sky-uk/kafka-message-scheduler)
+[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/skyuk/kafka-message-scheduler)](https://hub.docker.com/r/skyuk/kafka-message-scheduler)
+[![Docker Pulls](https://img.shields.io/docker/pulls/skyuk/kafka-message-scheduler)](https://hub.docker.com/r/skyuk/kafka-message-scheduler)
+
 This application is a scheduler for low-frequency and long-term scheduling of delayed messages to [Kafka](https://kafka.apache.org/) topics.
 
 ## Background
@@ -22,6 +26,10 @@ A schedule is composed of:
 - The actual message to be sent, both key and value
 
 The KMS is responsible for sending the actual message to the specified topic at the specified time.
+
+>**Note**
+> 
+> If the timestamp of when to deliver the message is in the past, the schedule will be sent immediately.
 
 The Schedule ID can be used to delete a scheduled message, via a delete message (with a null message value)
 in the source topic.

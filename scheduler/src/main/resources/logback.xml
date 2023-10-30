@@ -16,6 +16,8 @@
         <appender-ref ref="STDOUT" />
     </logger>
 
+    <logger name="org.apache.kafka.common.metrics" level="OFF" additivity="false" />
+
     <root level="${KMS_ROOT_LOGGING_LEVEL:-WARN}">
         <appender-ref ref="STDOUT" />
     </root>

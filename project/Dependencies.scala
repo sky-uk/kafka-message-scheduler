@@ -6,7 +6,7 @@ object Dependencies {
     private val version = "2.6.19"
     val actor           = "com.typesafe.akka" %% "akka-actor"          % version
     val stream          = "com.typesafe.akka" %% "akka-stream"         % version
-    val streamKafka     = "com.typesafe.akka" %% "akka-stream-kafka"   % "3.0.0"
+    val streamKafka     = "com.typesafe.akka" %% "akka-stream-kafka"   % "3.0.1"
     val slf4j           = "com.typesafe.akka" %% "akka-slf4j"          % version
     val testKit         = "com.typesafe.akka" %% "akka-testkit"        % version % Test
     val streamTestKit   = "com.typesafe.akka" %% "akka-stream-testkit" % version % Test
@@ -55,21 +55,21 @@ object Dependencies {
     val test            = Seq(scalaCheck)
   }
 
-  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.0.13"
-  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "2.0.0"
+  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.1"
+  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "2.2.0"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
 
-  val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.7"  % Runtime
-  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.2.11" % Runtime
-  val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.2"    % Runtime
+  val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.10" % Runtime
+  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.4.11" % Runtime
+  val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.4"    % Runtime
 
-  val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.2.0"    % Test
-  val mockito              = "org.mockito"              % "mockito-core"                % "4.5.1"    % Test
+  val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.4.0.1"  % Test
+  val mockito              = "org.mockito"              % "mockito-core"                % "5.6.0"    % Test
   val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
-  val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.16.0"   % Test
-  val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.6.0"    % Test
-  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.12"   % Test
+  val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.17.0"   % Test
+  val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.7.0"    % Test
+  val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.17"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
   val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(

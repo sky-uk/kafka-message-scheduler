@@ -8,20 +8,20 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestProbe
 import cats.data.NonEmptyList
-import cats.syntax.either._
-import cats.syntax.option._
+import cats.syntax.either.*
+import cats.syntax.option.*
 import com.sky.kms.actors.SchedulingActor.UpstreamFailure
 import com.sky.kms.base.SpecBase
-import com.sky.kms.config._
+import com.sky.kms.config.*
 import com.sky.kms.domain.{ApplicationError, ScheduleEvent}
 import com.sky.kms.kafka.Topic
 import com.sky.kms.streams.ScheduleReader
-import com.sky.kms.utils.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils.*
 import com.sky.kms.utils.{StubControl, TestConfig}
 import com.sky.kms.{AkkaComponents, SchedulerApp}
-import eu.timepit.refined.auto._
+import eu.timepit.refined.auto.*
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.{Await, Future}
 
 class SchedulerResiliencySpec extends SpecBase {

@@ -1,8 +1,8 @@
-import com.typesafe.sbt.packager.Keys._
+import com.typesafe.sbt.packager.Keys.*
 import com.typesafe.sbt.packager.docker.Cmd
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.Docker
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
+import sbt.*
 
 import scala.sys.process.Process
 

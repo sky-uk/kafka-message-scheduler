@@ -26,6 +26,6 @@ object TerminatorActor {
 
   def create(actors: ActorRef*)(implicit system: ActorSystem): ActorRef =
     system.actorOf(
-      Props(new TerminatorActor(Eval.later(CoordinatedShutdown(system).run(StreamActorsTerminated)), actors: _*))
+      Props(new TerminatorActor(Eval.later(CoordinatedShutdown(system).run(StreamActorsTerminated)), actors*))
     )
 }

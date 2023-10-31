@@ -6,16 +6,16 @@ import akka.actor.ActorRef
 import akka.testkit.{ImplicitSender, TestActorRef, TestProbe}
 import com.sky.kms.actors.PublisherActor.Trigger
 import com.sky.kms.actors.SchedulingActor
-import com.sky.kms.actors.SchedulingActor._
+import com.sky.kms.actors.SchedulingActor.*
 import com.sky.kms.base.AkkaSpecBase
-import com.sky.kms.domain._
+import com.sky.kms.domain.*
 import com.sky.kms.utils.SimpleCounterMonitoring
-import com.sky.kms.utils.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils.*
 import monix.execution.schedulers.TestScheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class SchedulingActorSpec extends AkkaSpecBase with ImplicitSender with MockitoSugar with Eventually {
 

@@ -2,16 +2,16 @@ package com.sky.kms.base
 
 import com.sky.kms.kafka.Topic
 import com.sky.kms.utils.RandomPort.randomPort
-import eu.timepit.refined.auto._
+import eu.timepit.refined.auto.*
 import io.github.embeddedkafka.Codecs.{nullDeserializer, stringDeserializer}
 import io.github.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.clients.consumer.{ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.serialization.Deserializer
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.compat.java8.DurationConverters._
-import scala.concurrent.duration._
-import scala.jdk.CollectionConverters._
+import scala.compat.java8.DurationConverters.*
+import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
 
 trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
 

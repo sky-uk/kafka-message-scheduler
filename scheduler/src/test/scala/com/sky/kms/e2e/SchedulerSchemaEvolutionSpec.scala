@@ -1,15 +1,15 @@
 package com.sky.kms.e2e
 
-import cats.syntax.option._
+import cats.syntax.option.*
 import com.danielasfregola.randomdatagenerator.RandomDataGenerator
-import com.sky.kms._
+import com.sky.kms.*
 import com.sky.kms.base.SchedulerIntSpecBase
 import com.sky.kms.domain.ScheduleEvent
 import com.sky.kms.streams.ScheduleReader
-import com.sky.kms.utils.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils.*
 import io.github.embeddedkafka.Codecs.{
-  nullDeserializer => arrayByteDeserializer,
-  nullSerializer => arrayByteSerializer,
+  nullDeserializer as arrayByteDeserializer,
+  nullSerializer as arrayByteSerializer,
   stringSerializer
 }
 

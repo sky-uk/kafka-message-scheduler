@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import com.sky.kms.config.SchedulerConfig
 import com.sky.kms.utils.TestConfig
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 abstract class SchedulerIntSpecBase extends AkkaKafkaSpecBase {
   implicit val conf: SchedulerConfig                   = TestConfig(NonEmptyList.of(scheduleTopic, extraScheduleTopic))

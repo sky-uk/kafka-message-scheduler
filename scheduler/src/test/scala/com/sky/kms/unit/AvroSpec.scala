@@ -2,8 +2,8 @@ package com.sky.kms.unit
 
 import java.time.OffsetDateTime
 
-import com.sksamuel.avro4s._
-import com.sky.kms.avro._
+import com.sksamuel.avro4s.*
+import com.sky.kms.avro.*
 import com.sky.kms.base.SpecBase
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData

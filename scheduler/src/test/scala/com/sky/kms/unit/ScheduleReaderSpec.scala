@@ -5,17 +5,17 @@ import akka.stream.testkit.TestPublisher
 import akka.testkit.{TestActor, TestProbe}
 import akka.{Done, NotUsed}
 import cats.Eval
-import cats.syntax.either._
+import cats.syntax.either.*
 import com.sky.kms.actors.SchedulingActor
-import com.sky.kms.actors.SchedulingActor._
+import com.sky.kms.actors.SchedulingActor.*
 import com.sky.kms.base.{AkkaSpecBase, SpecBase}
 import com.sky.kms.config.ReaderConfig
-import com.sky.kms.domain._
+import com.sky.kms.domain.*
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.streams.ScheduleReader.In
-import com.sky.kms.utils.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils.*
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.{Future, Promise}
 
 class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {

@@ -1,13 +1,13 @@
 package com.sky.kms
 
-import cats.implicits.toShow
+import cats.syntax.show.*
 import com.sky.BuildInfo
 import com.sky.kms.config.AppConfig
 import com.typesafe.scalalogging.LazyLogging
-import eu.timepit.refined.pureconfig._
+import eu.timepit.refined.pureconfig.*
 import pureconfig.ConfigSource.default.loadOrThrow
-import pureconfig.generic.auto._
-import pureconfig.module.cats._
+import pureconfig.generic.auto.*
+import pureconfig.module.cats.*
 
 object Main extends App with LazyLogging with AkkaComponents {
   logger.info(s"Kafka Message Scheduler ${BuildInfo.name} ${BuildInfo.version} starting up...")

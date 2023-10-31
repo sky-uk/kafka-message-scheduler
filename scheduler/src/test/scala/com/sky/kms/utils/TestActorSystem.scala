@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.kafka.clients.consumer.ConsumerConfig
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 object TestActorSystem {
 

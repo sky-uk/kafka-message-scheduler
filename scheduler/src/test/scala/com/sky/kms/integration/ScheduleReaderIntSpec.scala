@@ -4,21 +4,21 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestActor, TestProbe}
-import cats.syntax.functor._
-import com.sky.kms.actors.SchedulingActor._
+import cats.syntax.functor.*
+import com.sky.kms.actors.SchedulingActor.*
 import com.sky.kms.base.SchedulerIntSpecBase
-import com.sky.kms.config._
+import com.sky.kms.config.*
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId}
 import com.sky.kms.streams.ScheduleReader
 import com.sky.kms.utils.TestActorSystem
-import com.sky.kms.utils.TestDataUtils._
-import eu.timepit.refined.auto._
-import io.github.embeddedkafka.Codecs.{nullSerializer => arrayByteSerializer, stringSerializer}
+import com.sky.kms.utils.TestDataUtils.*
+import eu.timepit.refined.auto.*
+import io.github.embeddedkafka.Codecs.{nullSerializer as arrayByteSerializer, stringSerializer}
 import io.github.embeddedkafka.EmbeddedKafka
 import org.scalatest.BeforeAndAfterEach
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class ScheduleReaderIntSpec extends SchedulerIntSpecBase with BeforeAndAfterEach {
 
@@ -51,7 +51,7 @@ class ScheduleReaderIntSpec extends SchedulerIntSpecBase with BeforeAndAfterEach
 
     "not schedule messages that have been deleted but not compacted on startup" in {
       val schedules @ firstSchedule :: _ = List.fill(numSchedules)(generateSchedule)
-      writeSchedulesToKafka(schedules: _*)
+      writeSchedulesToKafka(schedules*)
       deleteSchedulesInKafka(firstSchedule)
 
       withRunningScheduleReader { probe =>

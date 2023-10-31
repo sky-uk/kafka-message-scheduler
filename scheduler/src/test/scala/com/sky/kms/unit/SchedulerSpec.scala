@@ -2,12 +2,12 @@ package com.sky.kms.unit
 
 import java.time.OffsetDateTime
 
-import cats.syntax.option._
+import cats.syntax.option.*
 import com.sky.kms.base.SpecBase
-import com.sky.kms.domain.ApplicationError._
-import com.sky.kms.domain._
+import com.sky.kms.domain.ApplicationError.*
+import com.sky.kms.domain.*
 import com.sky.kms.scheduleConsumerRecordDecoder
-import com.sky.kms.utils.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils.*
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
 class SchedulerSpec extends SpecBase {

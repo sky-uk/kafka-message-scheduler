@@ -1,10 +1,10 @@
 package com.sky.kms.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
-import com.sky.kms.actors.SchedulingActor._
-import com.sky.kms.domain._
-import com.sky.kms.monitoring._
-import monix.execution.{Cancelable, Scheduler => MonixScheduler}
+import com.sky.kms.actors.SchedulingActor.*
+import com.sky.kms.domain.*
+import com.sky.kms.monitoring.*
+import monix.execution.{Cancelable, Scheduler as MonixScheduler}
 
 import scala.collection.mutable
 

@@ -1,66 +1,35 @@
 package uk.sky.scheduler
 
-import java.nio.charset.StandardCharsets
-
 import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
-import fs2.kafka.ValueSerializer
 import io.circe.syntax.*
 import org.scalatest.LoneElement
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.FixtureAsyncWordSpec
 import uk.sky.scheduler.circe.given
-import uk.sky.scheduler.domain.Schedule
-import uk.sky.scheduler.kafka.avro.{avroBinarySerializer, avroScheduleCodec, AvroSchedule}
-import uk.sky.scheduler.syntax.all.*
-import uk.sky.scheduler.util.KafkaUtil
+import uk.sky.scheduler.kafka.avro.AvroSchedule
+import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
 
-/*
-TODO - investigate why dockerComposeTest gives
-Error occurred during initialization of VM
-java.lang.Error: Properties init: Could not determine current working directory.
- */
 final class SchedulerFeatureSpec
     extends FixtureAsyncWordSpec,
       AsyncIOSpec,
       CatsResourceIO[KafkaUtil[IO]],
+      ScheduleHelpers,
       Matchers,
       Eventually,
       LoneElement {
+  val timeout: FiniteDuration = 15.seconds
+
   override given executionContext: ExecutionContext = ExecutionContext.global
 
-  val timeout                                   = 15.seconds
   override given patienceConfig: PatienceConfig = PatienceConfig(timeout = timeout)
 
-  override val resource: Resource[IO, KafkaUtil[IO]] = KafkaUtil.apply[IO](9094, timeout)
-
-  def createJsonSchedule(time: Long, topic: String, key: String, value: String): IO[Schedule] =
-    for {
-      key   <- key.base64Encode[IO]
-      value <- value.base64Encode[IO]
-    } yield Schedule(
-      time = time,
-      topic = topic,
-      key = key,
-      value = value.some,
-      headers = Map.empty
-    )
-
-  def createAvroSchedule(time: Long, topic: String, key: String, value: String): AvroSchedule =
-    AvroSchedule(
-      time = time,
-      topic = topic,
-      key = key.getBytes(StandardCharsets.UTF_8),
-      value = value.getBytes(StandardCharsets.UTF_8).some,
-      headers = Map.empty
-    )
-
-  given avroSerializer: ValueSerializer[IO, AvroSchedule] = avroBinarySerializer[IO, AvroSchedule]
+  override val resource: Resource[IO, KafkaUtil[IO]] = Resource.pure(KafkaUtil[IO](9094, timeout))
 
   "scheduler" should {
     "schedule a JSON event for the specified time" in { kafkaUtil =>

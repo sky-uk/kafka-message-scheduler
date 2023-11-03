@@ -3,24 +3,18 @@ package uk.sky.scheduler.syntax
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
-import cats.effect.Sync
-import cats.syntax.all.*
-
 trait Base64Syntax {
   extension (s: String) {
-    def base64Decode[F[_] : Sync]: F[Array[Byte]] = Sync[F].delay {
+    def base64Decode: Array[Byte] =
       Base64.getDecoder.decode(s.getBytes(StandardCharsets.UTF_8))
-    }
 
-    def base64Encode[F[_] : Sync]: F[String] = Sync[F].delay {
-      s.getBytes(StandardCharsets.UTF_8)
-    }.flatMap(_.base64Encode)
+    def base64Encode: String =
+      s.getBytes(StandardCharsets.UTF_8).base64Encode
   }
 
   extension (bytes: Array[Byte]) {
-    def base64Encode[F[_] : Sync]: F[String] = Sync[F].delay {
+    def base64Encode: String =
       Base64.getEncoder.encodeToString(bytes)
-    }
   }
 }
 

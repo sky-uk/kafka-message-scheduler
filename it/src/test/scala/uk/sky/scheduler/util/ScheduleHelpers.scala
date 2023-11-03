@@ -16,15 +16,12 @@ trait ScheduleHelpers {
       key: String,
       value: String,
       headers: Map[String, String] = Map.empty
-  ): IO[Schedule] =
-    for {
-      key   <- key.base64Encode[IO]
-      value <- value.base64Encode[IO]
-    } yield Schedule(
+  ): Schedule =
+    Schedule(
       time = time,
       topic = topic,
-      key = key,
-      value = value.some,
+      key = key.base64Encode,
+      value = value.base64Encode.some,
       headers = headers
     )
 

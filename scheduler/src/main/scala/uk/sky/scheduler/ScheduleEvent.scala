@@ -1,7 +1,5 @@
 package uk.sky.scheduler
 
-import cats.effect.kernel.Sync
-import cats.syntax.all.*
 import fs2.kafka.{Header, Headers, ProducerRecord}
 import io.scalaland.chimney.dsl.*
 import uk.sky.scheduler.domain.Schedule
@@ -17,34 +15,35 @@ case class ScheduleEvent(
 )
 
 object ScheduleEvent {
-  def fromSchedule[F[_] : Sync](schedule: Schedule): F[ScheduleEvent] =
-    for {
-      key     <- schedule.key.base64Decode
-      value   <- schedule.value.traverse(_.base64Decode)
-      headers <- schedule.headers.toList.traverse((key, value) => value.base64Decode.map(key -> _)).map(_.toMap)
-    } yield ScheduleEvent(
+  def fromSchedule(schedule: Schedule): ScheduleEvent = {
+    val key     = schedule.key.base64Decode
+    val value   = schedule.value.map(_.base64Decode)
+    val headers = schedule.headers.view.mapValues(_.base64Decode).toMap
+
+    ScheduleEvent(
       time = schedule.time,
       topic = schedule.topic,
       key = key,
       value = value,
       headers = headers
     )
+  }
 
   def fromAvroSchedule(avroSchedule: AvroSchedule): ScheduleEvent =
     avroSchedule.transformInto[ScheduleEvent]
 
-  def toSchedule[F[_] : Sync](scheduleEvent: ScheduleEvent): F[Schedule] =
-    for {
-      key     <- scheduleEvent.key.base64Encode
-      value   <- scheduleEvent.value.traverse(_.base64Encode)
-      headers <- scheduleEvent.headers.toList.traverse((key, value) => value.base64Encode.map(key -> _)).map(_.toMap)
-    } yield Schedule(
+  def toSchedule(scheduleEvent: ScheduleEvent): Schedule = {
+    val key     = scheduleEvent.key.base64Encode
+    val value   = scheduleEvent.value.map(_.base64Encode)
+    val headers = scheduleEvent.headers.view.mapValues(_.base64Encode).toMap
+    Schedule(
       time = scheduleEvent.time,
       topic = scheduleEvent.topic,
       key = key,
       value = value,
       headers = headers
     )
+  }
 
   def toProducerRecord(scheduleEvent: ScheduleEvent): ProducerRecord[Array[Byte], Option[Array[Byte]]] =
     ProducerRecord(

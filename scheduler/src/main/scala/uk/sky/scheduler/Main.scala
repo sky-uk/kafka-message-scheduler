@@ -46,7 +46,7 @@ object Main extends IOApp.Simple {
                       case avroSchedule: AvroSchedule =>
                         Event.Update(key, ScheduleEvent.fromAvroSchedule(avroSchedule), offset).pure
                       case schedule: Schedule         =>
-                        ScheduleEvent.fromSchedule(schedule).map(Event.Update(key, _, offset))
+                        Event.Update(key, ScheduleEvent.fromSchedule(schedule), offset).pure
                     }
         } yield update
       case Right(None)        =>

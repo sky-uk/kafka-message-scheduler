@@ -39,7 +39,7 @@ final class SchedulerFeatureSpec
 
       for {
         scheduledTime <- IO.realTimeInstant.map(_.plusSeconds(5).toEpochMilli)
-        schedule      <- createJsonSchedule(scheduledTime, outputTopic, outputJsonKey, outputJsonValue)
+        schedule       = createJsonSchedule(scheduledTime, outputTopic, outputJsonKey, outputJsonValue)
         _             <- kafkaUtil.produce[String]("json-schedules", "input-key-json" -> schedule.asJson.noSpaces.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
@@ -74,7 +74,7 @@ final class SchedulerFeatureSpec
       for {
         now              <- IO.realTimeInstant
         pastScheduledTime = now.minusSeconds(100)
-        schedule         <- createJsonSchedule(pastScheduledTime.toEpochMilli, outputTopic, outputJsonKey, outputJsonValue)
+        schedule          = createJsonSchedule(pastScheduledTime.toEpochMilli, outputTopic, outputJsonKey, outputJsonValue)
         _                <- kafkaUtil.produce[String]("json-schedules", "input-key-json-past" -> schedule.asJson.noSpaces.some)
         messages         <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {

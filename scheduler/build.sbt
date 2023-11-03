@@ -7,6 +7,7 @@ libraryDependencies ++= Seq(
   Cats.effect,
   Cats.log4cats,
   Cats.log4catsSlf4j,
+  Chimney.chimney,
   Circe.generic,
   Circe.parser,
   Fs2.core,
@@ -20,7 +21,7 @@ libraryDependencies ++= Seq(
   Otel4s.testkit,
   ScalaTest.scalaTest,
   Vulcan.core,
-  Vulcan.generic,
+  Vulcan.generic
 )
 
 resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Seq(

@@ -26,11 +26,11 @@ object ScheduleQueue {
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] = {
       val deferred = for {
-        now      <- Async[F].realTimeInstant
-        delay     = Math.max(0, scheduleEvent.time - now.toEpochMilli)
-        duration  = Duration(delay, TimeUnit.MILLISECONDS)
-        deferred <- Async[F].delayBy(queue.offer(scheduleEvent), duration)
-      } yield deferred
+        now     <- Async[F].realTimeInstant
+        delay    = Math.max(0, scheduleEvent.time - now.toEpochMilli)
+        duration = Duration(delay, TimeUnit.MILLISECONDS)
+        _       <- Async[F].delayBy(queue.offer(scheduleEvent), duration)
+      } yield ()
 
       for {
         started <- deferred.start.guarantee(scheduleRef.unsetKey(key))

@@ -3,7 +3,9 @@ package uk.sky.scheduler
 import cats.effect.kernel.Sync
 import cats.syntax.all.*
 import fs2.kafka.{Header, Headers, ProducerRecord}
+import io.scalaland.chimney.dsl.*
 import uk.sky.scheduler.domain.Schedule
+import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.syntax.all.*
 
 case class ScheduleEvent(
@@ -27,6 +29,9 @@ object ScheduleEvent {
       value = value,
       headers = headers
     )
+
+  def fromAvroSchedule(avroSchedule: AvroSchedule): ScheduleEvent =
+    avroSchedule.transformInto[ScheduleEvent]
 
   def toSchedule[F[_] : Sync](scheduleEvent: ScheduleEvent): F[Schedule] =
     for {

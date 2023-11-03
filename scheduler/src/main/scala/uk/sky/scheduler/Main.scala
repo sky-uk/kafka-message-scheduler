@@ -13,13 +13,19 @@ import uk.sky.scheduler.circe.given
 import uk.sky.scheduler.domain.Schedule
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.Event
+import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, AvroSchedule}
 import uk.sky.scheduler.kafka.json.jsonDeserializer
 
 import scala.concurrent.duration.*
 
 object Main extends IOApp.Simple {
+  type Input = Schedule | AvroSchedule
+
+  val jsonTopic = "json-schedules"
+  val avroTopic = "schedules"
+
   def toEvent[F[_] : Sync : LoggerFactory](
-      cr: CommittableConsumerRecord[F, String, Either[Throwable, Option[Schedule]]]
+      cr: CommittableConsumerRecord[F, String, Either[Throwable, Option[Input]]]
   ): F[Event[F]] = {
     val logger = LoggerFactory[F].getLogger
 
@@ -28,27 +34,42 @@ object Main extends IOApp.Simple {
     val topic  = cr.record.topic
 
     cr.record.value match {
-      case Left(error)           =>
+      case Left(error)        =>
         val scheduleError = ScheduleError.DecodeError(key, error.getMessage)
-        logger.info(s"Error decoding [$key] from topic $topic - ${error.getMessage}") *>
-          Event.Error(key, scheduleError, offset).pure
-      case Right(Some(schedule)) =>
-        logger.info(s"Decoded UPDATE for [$key] from topic $topic") *>
-          ScheduleEvent.fromSchedule(schedule).map(Event.Update(key, _, offset))
-      case Right(None)           =>
-        logger.info(s"Decoded DELETE for [$key] from topic $topic") *>
-          Event.Delete(key, offset).pure
+        for {
+          _ <- logger.error(error)(s"Error decoding [$key] from topic $topic - ${error.getMessage}")
+        } yield Event.Error(key, scheduleError, offset)
+      case Right(Some(input)) =>
+        for {
+          _      <- logger.info(s"Decoded UPDATE for [$key] from topic $topic")
+          update <- input match {
+                      case avroSchedule: AvroSchedule =>
+                        Event.Update(key, ScheduleEvent.fromAvroSchedule(avroSchedule), offset).pure
+                      case schedule: Schedule         =>
+                        ScheduleEvent.fromSchedule(schedule).map(Event.Update(key, _, offset))
+                    }
+        } yield update
+      case Right(None)        =>
+        for {
+          _ <- logger.info(s"Decoded DELETE for [$key] from topic $topic")
+        } yield Event.Delete(key, offset)
     }
   }
 
-  given scheduleDeserializer[F[_] : Sync]: ValueDeserializer[F, Either[Throwable, Option[Schedule]]] =
-    jsonDeserializer[F, Schedule].option.attempt
+  given deserializer[F[_] : Sync]: ValueDeserializer[F, Either[Throwable, Option[Input]]] =
+    Deserializer
+      .topic[Value, F, Input] {
+        case `avroTopic` => avroBinaryDeserializer[F, AvroSchedule].widen[Input]
+        case `jsonTopic` => jsonDeserializer[F, Schedule].widen[Input]
+      }
+      .option
+      .attempt
 
   given outputSerializer[F[_] : Sync]: ValueSerializer[F, Option[Array[Byte]]] =
     Serializer.identity.option
 
-  def consumerSettings[F[_] : Sync]: ConsumerSettings[F, String, Either[Throwable, Option[Schedule]]] =
-    ConsumerSettings[F, String, Either[Throwable, Option[Schedule]]]
+  def consumerSettings[F[_] : Sync]: ConsumerSettings[F, String, Either[Throwable, Option[Input]]] =
+    ConsumerSettings[F, String, Either[Throwable, Option[Input]]]
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
       .withBootstrapServers("kafka:9092")
       .withGroupId("kafka-message-scheduler")
@@ -68,7 +89,7 @@ object Main extends IOApp.Simple {
     val consumer: Stream[F, Unit] =
       KafkaConsumer
         .stream(consumerSettings[F])
-        .subscribeTo("schedules")
+        .subscribeTo(avroTopic, jsonTopic)
         .records
         .evalMap(toEvent)
         .evalTap {

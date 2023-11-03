@@ -10,6 +10,10 @@ object Dependencies {
     lazy val effectTesting = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
   }
 
+  object Chimney {
+    lazy val chimney = "io.scalaland" %% "chimney" % "0.8.1"
+  }
+
   object Circe {
     private lazy val version = "0.14.6"
 

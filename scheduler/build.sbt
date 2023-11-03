@@ -11,13 +11,16 @@ libraryDependencies ++= Seq(
   Circe.parser,
   Fs2.core,
   Fs2.kafka,
+  Fs2.kafkaVulcan,
   Logback.classic,
   OpenTelemetry.exporterOtlp,
   OpenTelemetry.exporterPrometheus,
   OpenTelemetry.sdkAutoconfigure,
   Otel4s.java,
   Otel4s.testkit,
-  ScalaTest.scalaTest
+  ScalaTest.scalaTest,
+  Vulcan.core,
+  Vulcan.generic,
 )
 
 resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Seq(

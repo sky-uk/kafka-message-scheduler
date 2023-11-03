@@ -22,8 +22,11 @@ object Dependencies {
   }
 
   object Fs2 {
-    lazy val core  = "co.fs2"          %% "fs2-core"  % "3.9.2"
-    lazy val kafka = "com.github.fd4s" %% "fs2-kafka" % "3.2.0"
+    private lazy val kafkaVersion = "3.2.0"
+
+    lazy val core        = "co.fs2"          %% "fs2-core"         % "3.9.2"
+    lazy val kafka       = "com.github.fd4s" %% "fs2-kafka"        % kafkaVersion
+    lazy val kafkaVulcan = "com.github.fd4s" %% "fs2-kafka-vulcan" % kafkaVersion
   }
 
   object Logback {
@@ -52,6 +55,13 @@ object Dependencies {
 
   object ScalaTest {
     lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.17" % Test
+  }
+
+  object Vulcan {
+    private lazy val version = "1.9.0"
+
+    val core    = "com.github.fd4s" %% "vulcan"         % version
+    val generic = "com.github.fd4s" %% "vulcan-generic" % version // TODO - not used
   }
 
 }

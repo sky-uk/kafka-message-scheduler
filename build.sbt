@@ -28,6 +28,8 @@ lazy val scheduler = project
     )
   }
 
+lazy val avro = project.dependsOn(scheduler)
+
 lazy val it = Project("integration-test", file("it"))
   .settings(CommonSettings.default)
   .settings {
@@ -39,4 +41,4 @@ lazy val it = Project("integration-test", file("it"))
   .dependsOn(scheduler)
 
 lazy val root = Project("kafka-message-scheduler", file("."))
-  .aggregate(scheduler, it)
+  .aggregate(scheduler, avro, it)

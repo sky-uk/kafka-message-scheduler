@@ -1,7 +1,7 @@
 package uk.sky.scheduler.kafka
 
 import fs2.kafka.CommittableOffset
-import uk.sky.scheduler.ScheduleEvent
+import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
 
 enum Event[F[_]] {

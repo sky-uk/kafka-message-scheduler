@@ -10,16 +10,17 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 import org.typelevel.otel4s.java.OtelJava
 import uk.sky.scheduler.ScheduleQueue.DeferredSchedule
 import uk.sky.scheduler.circe.given
-import uk.sky.scheduler.domain.Schedule
+import uk.sky.scheduler.converters.*
+import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.Event
 import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, AvroSchedule}
-import uk.sky.scheduler.kafka.json.jsonDeserializer
+import uk.sky.scheduler.kafka.json.{jsonDeserializer, JsonSchedule}
 
 import scala.concurrent.duration.*
 
 object Main extends IOApp.Simple {
-  type Input = Schedule | AvroSchedule
+  type Input = JsonSchedule | AvroSchedule
 
   val jsonTopic = "json-schedules"
   val avroTopic = "schedules"
@@ -44,9 +45,9 @@ object Main extends IOApp.Simple {
           _      <- logger.info(s"Decoded UPDATE for [$key] from topic $topic")
           update <- input match {
                       case avroSchedule: AvroSchedule =>
-                        Event.Update(key, ScheduleEvent.fromAvroSchedule(avroSchedule), offset).pure
-                      case schedule: Schedule         =>
-                        Event.Update(key, ScheduleEvent.fromSchedule(schedule), offset).pure
+                        Event.Update(key, avroSchedule.scheduleEvent, offset).pure
+                      case jsonSchedule: JsonSchedule =>
+                        Event.Update(key, jsonSchedule.scheduleEvent, offset).pure
                     }
         } yield update
       case Right(None)        =>
@@ -60,7 +61,7 @@ object Main extends IOApp.Simple {
     Deserializer
       .topic[Value, F, Input] {
         case `avroTopic` => avroBinaryDeserializer[F, AvroSchedule].widen[Input]
-        case `jsonTopic` => jsonDeserializer[F, Schedule].widen[Input]
+        case `jsonTopic` => jsonDeserializer[F, JsonSchedule].widen[Input]
       }
       .option
       .attempt
@@ -107,7 +108,7 @@ object Main extends IOApp.Simple {
         Stream
           .fromQueueUnterminated(queue)
           .evalMap { scheduleEvent =>
-            val producerRecord = ScheduleEvent.toProducerRecord(scheduleEvent)
+            val producerRecord = scheduleEvent.toProducerRecord
             logger.info(s"Producing $scheduleEvent") *>
               producer.produce(ProducerRecords.one(producerRecord))
           }

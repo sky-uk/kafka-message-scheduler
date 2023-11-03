@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.kafka.ValueSerializer
-import uk.sky.scheduler.domain.Schedule
 import uk.sky.scheduler.kafka.avro.{avroBinarySerializer, avroScheduleCodec, AvroSchedule}
+import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
 
 trait ScheduleHelpers {
@@ -16,8 +16,8 @@ trait ScheduleHelpers {
       key: String,
       value: String,
       headers: Map[String, String] = Map.empty
-  ): Schedule =
-    Schedule(
+  ): JsonSchedule =
+    JsonSchedule(
       time = time,
       topic = topic,
       key = key.base64Encode,

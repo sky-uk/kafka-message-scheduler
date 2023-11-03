@@ -9,6 +9,7 @@ import cats.effect.syntax.all.*
 import cats.effect.{Async, Fiber}
 import cats.syntax.all.*
 import org.typelevel.log4cats.LoggerFactory
+import uk.sky.scheduler.domain.ScheduleEvent
 
 import scala.concurrent.duration.Duration
 
@@ -59,7 +60,7 @@ object ScheduleQueue {
       override def cancel(key: String): F[Unit] =
         for {
           _ <- delegate.cancel(key)
-          _ <- logger.info(s"Canceled Schedule [$key]")
+          _ <- logger.info(s"Canceled JsonSchedule [$key]")
         } yield ()
 
     }

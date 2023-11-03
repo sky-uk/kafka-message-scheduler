@@ -1,6 +1,6 @@
-package uk.sky.scheduler.domain
+package uk.sky.scheduler.kafka.json
 
-final case class Schedule(
+final case class JsonSchedule(
     time: Long,
     topic: String,
     key: String,

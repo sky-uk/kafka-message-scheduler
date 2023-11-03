@@ -6,8 +6,8 @@ import fs2.kafka.{Deserializer, Serializer, ValueDeserializer, ValueSerializer}
 import vulcan.Codec
 
 given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
-  name = "Schedule",
-  namespace = "com.sky.kms.domain"
+  name = "ScheduleWithHeaders",
+  namespace = "com.sky.kms.domain.Schedule"
 ) { field =>
   (
     field("time", _.time),

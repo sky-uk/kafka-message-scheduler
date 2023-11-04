@@ -11,8 +11,10 @@ services:
       OTEL_SERVICE_NAME: kafka-message-scheduler
       OTEL_INSTRUMENTATION_GRPC_ENABLED: 'false'
       OTEL_TRACES_EXPORTER: 'none'
+      BOOTSTRAP_SERVERS: 'kafka:9092'
+      SCHEDULE_TOPICS: 'avro-schedules'
+      JSON_SCHEDULE_TOPICS: 'json-schedules'
       LOG_LEVEL: info
-      KAFKA_HOSTS: kafka:9092
     depends_on:
       kafka:
         condition: service_started

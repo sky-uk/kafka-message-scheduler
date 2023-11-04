@@ -57,6 +57,14 @@ object Dependencies {
     lazy val testkit = "org.typelevel" %% "otel4s-testkit" % version % Test
   }
 
+  object PureConfig {
+    private lazy val version = "0.17.4"
+
+    lazy val core       = "com.github.pureconfig" %% "pureconfig-core"        % version
+    lazy val cats       = "com.github.pureconfig" %% "pureconfig-cats"        % version
+    lazy val catsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % version
+  }
+
   object ScalaTest {
     lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.17" % Test
   }
@@ -64,8 +72,7 @@ object Dependencies {
   object Vulcan {
     private lazy val version = "1.9.0"
 
-    val core    = "com.github.fd4s" %% "vulcan"         % version
-    val generic = "com.github.fd4s" %% "vulcan-generic" % version // TODO - not used
+    val core = "com.github.fd4s" %% "vulcan" % version
   }
 
 }

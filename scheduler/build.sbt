@@ -19,9 +19,11 @@ libraryDependencies ++= Seq(
   OpenTelemetry.sdkAutoconfigure,
   Otel4s.java,
   Otel4s.testkit,
+  PureConfig.cats,
+  PureConfig.catsEffect,
+  PureConfig.core,
   ScalaTest.scalaTest,
-  Vulcan.core,
-  Vulcan.generic
+  Vulcan.core
 )
 
 resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Seq(

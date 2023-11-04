@@ -16,6 +16,7 @@ import scala.concurrent.duration.Duration
 trait ScheduleQueue[F[_]] {
   def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit]
   def cancel(key: String): F[Unit]
+  def queue: Queue[F, ScheduleEvent]
 }
 
 object ScheduleQueue {
@@ -23,7 +24,7 @@ object ScheduleQueue {
 
   def apply[F[_] : Async](
       scheduleRef: MapRef[F, String, Option[DeferredSchedule[F]]],
-      queue: Queue[F, ScheduleEvent]
+      eventQueue: Queue[F, ScheduleEvent]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] = {
       val deferred = for {
@@ -45,6 +46,8 @@ object ScheduleQueue {
         _       <- OptionT.liftF(started.cancel)
       } yield ()
     }.value.void
+
+    override def queue: Queue[F, ScheduleEvent] = eventQueue
   }
 
   def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] =
@@ -63,6 +66,13 @@ object ScheduleQueue {
           _ <- logger.info(s"Canceled JsonSchedule [$key]")
         } yield ()
 
+      override def queue: Queue[F, ScheduleEvent] = delegate.queue
     }
+
+  def live[F[_] : Async : LoggerFactory]: F[ScheduleQueue[F]] =
+    for {
+      scheduleRef <- MapRef.ofScalaConcurrentTrieMap[F, String, DeferredSchedule[F]]
+      eventQueue  <- Queue.unbounded[F, ScheduleEvent]
+    } yield ScheduleQueue.observed(ScheduleQueue(scheduleRef, eventQueue))
 
 }

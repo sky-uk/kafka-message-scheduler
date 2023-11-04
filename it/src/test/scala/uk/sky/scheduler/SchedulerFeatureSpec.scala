@@ -57,7 +57,7 @@ final class SchedulerFeatureSpec
       for {
         scheduledTime <- IO.realTimeInstant.map(_.plusSeconds(5).toEpochMilli)
         schedule       = createAvroSchedule(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
-        _             <- kafkaUtil.produce[AvroSchedule]("schedules", "input-key-avro" -> schedule.some)
+        _             <- kafkaUtil.produce[AvroSchedule]("avro-schedules", "input-key-avro" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement

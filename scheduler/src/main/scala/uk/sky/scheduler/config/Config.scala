@@ -10,7 +10,7 @@ import pureconfig.ConfigReader.Result
 import pureconfig.error.CannotConvert
 import pureconfig.generic.derivation.default.*
 import pureconfig.{ConfigCursor, ConfigReader}
-import uk.sky.scheduler.config
+import uk.sky.scheduler.config.TopicConfig.topicConfigReader
 
 final case class Config(scheduler: ScheduleConfig) derives ConfigReader
 
@@ -42,7 +42,8 @@ final case class TopicConfig(avro: List[String], json: List[String])
 
 object TopicConfig {
 
-  given ConfigReader[TopicConfig] = ConfigReader.fromCursor[TopicConfig] { cur =>
+  // TODO - test this
+  given topicConfigReader: ConfigReader[TopicConfig] = ConfigReader.fromCursor[TopicConfig] { cur =>
     for {
       objCur  <- cur.asObjectCursor
       avroCur <- objCur.atKey("avro")

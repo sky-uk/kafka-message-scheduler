@@ -3,11 +3,13 @@ import sbt.*
 object Dependencies {
 
   object Cats {
-    lazy val core          = "org.typelevel" %% "cats-core"                     % "2.10.0"
-    lazy val effect        = "org.typelevel" %% "cats-effect"                   % "3.5.2"
-    lazy val log4cats      = "org.typelevel" %% "log4cats-core"                 % "2.6.0"
-    lazy val log4catsSlf4j = "org.typelevel" %% "log4cats-slf4j"                % "2.6.0"
-    lazy val effectTesting = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
+    lazy val core             = "org.typelevel" %% "cats-core"                     % "2.10.0"
+    lazy val effect           = "org.typelevel" %% "cats-effect"                   % "3.5.2"
+    lazy val log4cats         = "org.typelevel" %% "log4cats-core"                 % "2.6.0"
+    lazy val log4catsSlf4j    = "org.typelevel" %% "log4cats-slf4j"                % "2.6.0"
+    lazy val effectTesting    = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
+    lazy val testKit          = "org.typelevel" %% "cats-effect-testkit"           % "3.5.2" % Test
+    lazy val testkitScalatest = "org.typelevel" %% "cats-testkit-scalatest"        % "2.1.5" % Test
   }
 
   object Chimney {
@@ -67,6 +69,10 @@ object Dependencies {
 
   object ScalaTest {
     lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.17" % Test
+  }
+
+  object TopicLoader {
+    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.3"
   }
 
   object Vulcan {

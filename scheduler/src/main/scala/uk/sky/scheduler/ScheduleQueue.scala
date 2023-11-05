@@ -6,7 +6,7 @@ import cats.Monad
 import cats.data.OptionT
 import cats.effect.std.{MapRef, Queue}
 import cats.effect.syntax.all.*
-import cats.effect.{Async, Fiber}
+import cats.effect.{Async, Deferred, Fiber}
 import cats.syntax.all.*
 import org.typelevel.log4cats.LoggerFactory
 import uk.sky.scheduler.domain.ScheduleEvent
@@ -20,23 +20,24 @@ trait ScheduleQueue[F[_]] {
 }
 
 object ScheduleQueue {
-  type DeferredSchedule[F[_]] = Fiber[F, Throwable, Unit]
+  type CancelableSchedule[F[_]] = Fiber[F, Throwable, Unit]
 
   def apply[F[_] : Async](
-      scheduleRef: MapRef[F, String, Option[DeferredSchedule[F]]],
+      scheduleRef: MapRef[F, String, Option[CancelableSchedule[F]]],
+      allowEnqueue: Deferred[F, Unit],
       eventQueue: Queue[F, ScheduleEvent]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] = {
-      val deferred = for {
+      val delayScheduling = for {
         now     <- Async[F].realTimeInstant
         delay    = Math.max(0, scheduleEvent.time - now.toEpochMilli)
         duration = Duration(delay, TimeUnit.MILLISECONDS)
-        _       <- Async[F].delayBy(queue.offer(scheduleEvent), duration)
+        _       <- Async[F].delayBy(allowEnqueue.get *> queue.offer(scheduleEvent), duration)
       } yield ()
 
       for {
-        started <- deferred.start.guarantee(scheduleRef.unsetKey(key))
-        _       <- scheduleRef.setKeyValue(key, started)
+        cancelableSchedule <- delayScheduling.start.guarantee(scheduleRef.unsetKey(key))
+        _                  <- scheduleRef.setKeyValue(key, cancelableSchedule)
       } yield ()
     }
 
@@ -63,16 +64,16 @@ object ScheduleQueue {
       override def cancel(key: String): F[Unit] =
         for {
           _ <- delegate.cancel(key)
-          _ <- logger.info(s"Canceled JsonSchedule [$key]")
+          _ <- logger.info(s"Canceled Schedule [$key]")
         } yield ()
 
       override def queue: Queue[F, ScheduleEvent] = delegate.queue
     }
 
-  def live[F[_] : Async : LoggerFactory]: F[ScheduleQueue[F]] =
+  def live[F[_] : Async : LoggerFactory](allowEnqueue: Deferred[F, Unit]): F[ScheduleQueue[F]] =
     for {
-      scheduleRef <- MapRef.ofScalaConcurrentTrieMap[F, String, DeferredSchedule[F]]
+      scheduleRef <- MapRef.ofScalaConcurrentTrieMap[F, String, CancelableSchedule[F]]
       eventQueue  <- Queue.unbounded[F, ScheduleEvent]
-    } yield ScheduleQueue.observed(ScheduleQueue(scheduleRef, eventQueue))
+    } yield ScheduleQueue.observed(ScheduleQueue(scheduleRef, allowEnqueue, eventQueue))
 
 }

@@ -5,8 +5,11 @@ enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging)
 libraryDependencies ++= Seq(
   Cats.core,
   Cats.effect,
+  Cats.effectTesting,
   Cats.log4cats,
   Cats.log4catsSlf4j,
+  Cats.testKit,
+  Cats.testkitScalatest,
   Chimney.chimney,
   Circe.generic,
   Circe.parser,
@@ -23,6 +26,7 @@ libraryDependencies ++= Seq(
   PureConfig.catsEffect,
   PureConfig.core,
   ScalaTest.scalaTest,
+  TopicLoader.topicLoader,
   Vulcan.core
 )
 

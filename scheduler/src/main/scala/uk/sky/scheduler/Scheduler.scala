@@ -11,9 +11,8 @@ class Scheduler[F[_] : Concurrent, O](
 
   private val scheduleStream = eventSubscriber.messages.evalMap { message =>
     message.value match {
-      case Event.Update(key, schedule) => scheduleQueue.schedule(key, schedule)
-      case Event.Delete(key)           => scheduleQueue.cancel(key)
-      case Event.Error(key, _)         => scheduleQueue.cancel(key)
+      case Left(_) | Right(None) => scheduleQueue.cancel(message.key)
+      case Right(Some(schedule)) => scheduleQueue.schedule(message.key, schedule)
     }
   }
 

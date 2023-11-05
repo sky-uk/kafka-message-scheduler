@@ -32,7 +32,6 @@ object Config {
   given configShow: Show[Config] = Show.show(_.asJson.noSpaces)
 }
 
-// TODO - custom config loader where if both topic lists are empty we error
 final case class ScheduleConfig(kafka: KafkaConfig) derives ConfigReader
 
 final case class KafkaConfig(topics: TopicConfig, bootstrapServers: String, properties: Map[String, String])

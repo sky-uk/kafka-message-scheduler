@@ -1,7 +1,6 @@
 package uk.sky.scheduler
 
 import cats.Monad
-import cats.data.OptionT
 import cats.effect.Sync
 import cats.effect.std.MapRef
 import cats.syntax.all.*
@@ -26,21 +25,21 @@ object Repository {
   )(name: String): F[Repository[F, K, V]] =
     Meter[F].upDownCounter(s"$name-size").create.map { counter =>
       new Repository[F, K, V] {
-        override def set(key: K, value: V): F[Unit] = {
-          for {
-            _ <- OptionT(mapRef(key).getAndSet(value.some))
-            _ <- OptionT.liftF(counter.inc())
-          } yield ()
-        }.value.void
+        private def getAndSetF(key: K, value: Option[V])(ifPresent: => F[Unit]): F[Unit] =
+          mapRef(key).getAndSet(value).flatMap {
+            case Some(_) => ifPresent
+            case None    => Monad[F].unit
+          }
 
-        override def get(key: K): F[Option[V]] = mapRef(key).get
+        override def set(key: K, value: V): F[Unit] =
+          getAndSetF(key, value.some)(counter.inc())
 
-        override def delete(key: K): F[Unit] = {
-          for {
-            _ <- OptionT(mapRef(key).getAndSet(None))
-            _ <- OptionT.liftF(counter.dec())
-          } yield ()
-        }.value.void
+        override def get(key: K): F[Option[V]] =
+          mapRef(key).get
+
+        override def delete(key: K): F[Unit] =
+          getAndSetF(key, None)(counter.inc())
+
       }
     }
 

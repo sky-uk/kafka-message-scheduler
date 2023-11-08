@@ -5,6 +5,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.testkit.TestControl
 import cats.effect.{Deferred, IO, Outcome}
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{Assertion, OptionValues}
@@ -21,7 +22,7 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
 
         for {
           _             <- scheduleQueue.schedule("key", scheduleEvent)
-          maybeSchedule <- scheduleRef("key").get
+          maybeSchedule <- repository.get("key")
         } yield maybeSchedule shouldBe defined
       }
 
@@ -31,9 +32,9 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
         for {
           _             <- allowEnqueue.complete(())
           _             <- scheduleQueue.schedule("key", scheduleEvent)
-          _             <- scheduleRef("key").get.asserting(_ shouldBe defined)
+          _             <- repository.get("key").asserting(_ shouldBe defined)
           _             <- scheduleQueue.cancel("key")
-          maybeSchedule <- scheduleRef("key").get
+          maybeSchedule <- repository.get("key")
         } yield maybeSchedule shouldBe None
       }
 
@@ -48,7 +49,7 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
           interval      <- control.nextInterval
           _              = interval.toMillis shouldBe scheduleEvent.time
           _             <- control.tickFor(interval)
-          maybeSchedule <- scheduleRef("key").get
+          maybeSchedule <- repository.get("key")
         } yield maybeSchedule shouldBe None
       }
     }
@@ -113,31 +114,32 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
     }
   }
 
+  val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)
+
   private trait TestContext {
-    val scheduleRef: MapRef[IO, String, Option[CancelableSchedule[IO]]]
+    val repository: Repository[IO, String, CancelableSchedule[IO]]
     val allowEnqueue: Deferred[IO, Unit]
     val eventQueue: Queue[IO, ScheduleEvent]
     val scheduleQueue: ScheduleQueue[IO]
     val scheduleEvent: ScheduleEvent
   }
 
-  private def withContext(test: TestContext => IO[Assertion]): IO[Assertion] = {
-    val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)
+  private def withContext(test: TestContext => IO[Assertion]): IO[Assertion] =
     for {
       now        <- IO.realTimeInstant
-      ref        <- MapRef.ofScalaConcurrentTrieMap[IO, String, CancelableSchedule[IO]]
+      repo       <- MapRef.ofScalaConcurrentTrieMap[IO, String, CancelableSchedule[IO]].map(Repository.apply)
       deferred   <- Deferred[IO, Unit]
       queue      <- Queue.unbounded[IO, ScheduleEvent]
+      schedule   <- IO.fromOption(scheduleEventArb.sample)(TestFailedException("Could not generate a schedule", 0))
+                      .map(_.copy(time = now.plusSeconds(10).toEpochMilli))
       testContext = new TestContext {
-                      override val scheduleRef: MapRef[IO, String, Option[CancelableSchedule[IO]]] = ref
-                      override val allowEnqueue: Deferred[IO, Unit]                                = deferred
-                      override val eventQueue: Queue[IO, ScheduleEvent]                            = queue
-                      override val scheduleQueue: ScheduleQueue[IO]                                = ScheduleQueue.apply(ref, deferred, queue)
-                      override val scheduleEvent: ScheduleEvent                                    =
-                        scheduleEventArb.sample.get.copy(time = now.plusSeconds(10).toEpochMilli)
+                      override val repository: Repository[IO, String, CancelableSchedule[IO]] = repo
+                      override val allowEnqueue: Deferred[IO, Unit]                           = deferred
+                      override val eventQueue: Queue[IO, ScheduleEvent]                       = queue
+                      override val scheduleQueue: ScheduleQueue[IO]                           = ScheduleQueue(repo, deferred, queue)
+                      override val scheduleEvent: ScheduleEvent                               = schedule
                     }
       assertion  <- test(testContext)
     } yield assertion
-  }
 
 }

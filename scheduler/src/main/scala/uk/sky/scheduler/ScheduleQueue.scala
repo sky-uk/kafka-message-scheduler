@@ -1,7 +1,5 @@
 package uk.sky.scheduler
 
-import java.util.concurrent.TimeUnit
-
 import cats.Monad
 import cats.data.OptionT
 import cats.effect.std.{MapRef, Queue}
@@ -11,7 +9,7 @@ import cats.syntax.all.*
 import org.typelevel.log4cats.LoggerFactory
 import uk.sky.scheduler.domain.ScheduleEvent
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.*
 
 trait ScheduleQueue[F[_]] {
   def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit]
@@ -29,14 +27,16 @@ object ScheduleQueue {
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] = {
       val delayScheduling = for {
-        now     <- Async[F].realTimeInstant
-        delay    = Math.max(0, scheduleEvent.time - now.toEpochMilli)
-        duration = Duration(delay, TimeUnit.MILLISECONDS)
-        _       <- Async[F].delayBy(allowEnqueue.get *> queue.offer(scheduleEvent), duration)
+        now  <- Async[F].realTimeInstant
+        delay = Math.max(0, scheduleEvent.time - now.toEpochMilli)
+        _    <- Async[F].delayBy(
+                  allowEnqueue.get *> queue.offer(scheduleEvent) *> scheduleRef.unsetKey(key),
+                  delay.milliseconds
+                )
       } yield ()
 
       for {
-        cancelableSchedule <- delayScheduling.start.guarantee(scheduleRef.unsetKey(key))
+        cancelableSchedule <- delayScheduling.start
         _                  <- scheduleRef.setKeyValue(key, cancelableSchedule)
       } yield ()
     }
@@ -45,6 +45,7 @@ object ScheduleQueue {
       for {
         started <- OptionT(scheduleRef.apply(key).get)
         _       <- OptionT.liftF(started.cancel)
+        _       <- OptionT.liftF(scheduleRef.unsetKey(key))
       } yield ()
     }.value.void
 

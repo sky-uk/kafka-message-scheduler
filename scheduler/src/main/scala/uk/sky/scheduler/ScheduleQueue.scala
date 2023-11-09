@@ -29,7 +29,7 @@ object ScheduleQueue {
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] = {
       val delayScheduling = for {
         now  <- Async[F].realTimeInstant
-        delay = Math.max(0, scheduleEvent.time - now.toEpochMilli)
+        delay = Math.max(0, scheduleEvent.schedule.time - now.toEpochMilli)
         _    <- Async[F].delayBy(
                   allowEnqueue.get *> queue.offer(scheduleEvent) *> repository.delete(key),
                   delay.milliseconds
@@ -37,6 +37,8 @@ object ScheduleQueue {
       } yield ()
 
       for {
+        previous           <- repository.get(key)
+        _                  <- previous.fold(Async[F].unit)(_.cancel)
         cancelableSchedule <- delayScheduling.start
         _                  <- repository.set(key, cancelableSchedule)
       } yield ()

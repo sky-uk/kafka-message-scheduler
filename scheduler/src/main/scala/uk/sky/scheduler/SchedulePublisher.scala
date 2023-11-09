@@ -32,8 +32,9 @@ object SchedulePublisher {
             Stream
               .fromQueueUnterminated(eventQueue)
               .evalMap { scheduleEvent =>
-                val producerRecord = scheduleEvent.toProducerRecord
-                producer.produce(ProducerRecords.one(producerRecord))
+                val scheduleProducerRecord = scheduleEvent.toProducerRecord
+                val tombstone              = scheduleEvent.toTombstone
+                producer.produce(ProducerRecords(List(scheduleProducerRecord, tombstone)))
               }
               .parEvalMapUnbounded(identity)
           }

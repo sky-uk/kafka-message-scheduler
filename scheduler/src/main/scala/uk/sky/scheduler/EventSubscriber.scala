@@ -29,20 +29,27 @@ object EventSubscriber {
     def toEvent(cr: ConsumerRecord[String, Either[Throwable, Option[Input]]]): Message[Output] = {
       val key = cr.key
 
-      val payload = cr.value match {
+      val payload: Either[ScheduleError, Option[ScheduleEvent]] = cr.value match {
         case Left(error)        => ScheduleError.DecodeError(key, error.getMessage).asLeft
         case Right(None)        => none[ScheduleEvent].asRight[ScheduleError]
         case Right(Some(input)) =>
           val scheduleEvent = input match {
-            case avroSchedule: AvroSchedule => avroSchedule.scheduleEvent
-            case jsonSchedule: JsonSchedule => jsonSchedule.scheduleEvent
+            case avroSchedule: AvroSchedule => avroSchedule.scheduleEvent(cr.key, cr.topic)
+            case jsonSchedule: JsonSchedule => jsonSchedule.scheduleEvent(cr.key, cr.topic)
           }
           scheduleEvent.some.asRight[ScheduleError]
       }
 
-      Message[Output](cr.key, cr.topic, payload)
+      Message[Output](
+        key = cr.key,
+        source = cr.topic,
+        value = payload,
+        headers = cr.headers.toChain.toList.map(header => header.key -> header.as[String]).toMap
+      )
     }
 
+    /** If both topics have finished loading, complete the Deferred to allow Queueing schedules.
+      */
     def onLoadCompare(ref: Ref[F, Boolean], other: Ref[F, Boolean])(exitCase: ExitCase): F[Unit] =
       exitCase match {
         case ExitCase.Succeeded                      =>
@@ -77,20 +84,14 @@ object EventSubscriber {
           .withBootstrapServers(config.kafka.bootstrapServers)
           .withProperties(config.kafka.properties)
 
-      val avroStream: Stream[F, ConsumerRecord[String, Either[Throwable, Option[Input]]]] =
-        config.kafka.topics.avro.toNel.fold(Stream.eval(avroRef.set(true)).drain)(topics =>
-          TopicLoader.loadAndRun[F, String, Either[Throwable, Option[AvroSchedule]]](
-            topics = topics,
-            consumerSettings = avroConsumerSettings
-          )(onLoadCompare(avroRef, jsonRef))
+      val avroStream =
+        config.kafka.topics.avro.toNel.fold(Stream.eval(avroRef.set(true)).drain)(
+          TopicLoader.loadAndRun(_, avroConsumerSettings)(onLoadCompare(avroRef, jsonRef))
         )
 
-      val jsonStream: Stream[F, ConsumerRecord[String, Either[Throwable, Option[Input]]]] =
-        config.kafka.topics.json.toNel.fold(Stream.eval(jsonRef.set(true)).drain)(topics =>
-          TopicLoader.loadAndRun[F, String, Either[Throwable, Option[JsonSchedule]]](
-            topics = topics,
-            consumerSettings = jsonConsumerSettings
-          )(onLoadCompare(jsonRef, avroRef))
+      val jsonStream =
+        config.kafka.topics.json.toNel.fold(Stream.eval(jsonRef.set(true)).drain)(
+          TopicLoader.loadAndRun(_, jsonConsumerSettings)(onLoadCompare(jsonRef, avroRef))
         )
 
       override def messages: Stream[F, Message[Output]] =
@@ -110,7 +111,14 @@ object EventSubscriber {
           case Right(None)    => logger.info(s"Decoded DELETE for [$key] from topic $topic")
           case Right(Some(_)) => logger.info(s"Decoded UPDATE for [$key] from topic $topic")
         }
+      }.onFinalizeCase {
+        case ExitCase.Succeeded  => logger.info("Stream Succeeded")
+        case ExitCase.Errored(e) => logger.error(e)(s"Stream error - ${e.getMessage}")
+        case ExitCase.Canceled   => logger.info("Stream canceled")
       }
     }
   }
+
+  def live[F[_] : Async : LoggerFactory](config: ScheduleConfig, loaded: Deferred[F, Unit]): F[EventSubscriber[F]] =
+    kafka[F](config, loaded).map(observed)
 }

@@ -17,6 +17,7 @@ libraryDependencies ++= Seq(
   Fs2.kafka,
   Fs2.kafkaVulcan,
   Logback.classic,
+  Monocle.core,
   OpenTelemetry.exporterOtlp,
   OpenTelemetry.exporterPrometheus,
   OpenTelemetry.sdkAutoconfigure,

@@ -39,6 +39,10 @@ object Dependencies {
     lazy val classic = "ch.qos.logback" % "logback-classic" % "1.4.11" % Runtime
   }
 
+  object Monocle {
+    lazy val core = "dev.optics" %% "monocle-core" % "3.2.0"
+  }
+
   object OpenTelemetry {
     private lazy val version      = "1.30.1"
     private lazy val alphaVersion = "1.30.1-alpha"
@@ -72,7 +76,7 @@ object Dependencies {
   }
 
   object TopicLoader {
-    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.3"
+    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.3+3-c7ee46c6-SNAPSHOT"
   }
 
   object Vulcan {

@@ -42,3 +42,6 @@ lazy val it = Project("integration-test", file("it"))
 
 lazy val root = Project("kafka-message-scheduler", file("."))
   .aggregate(scheduler, avro, it)
+
+run / fork  := true
+Test / fork := true

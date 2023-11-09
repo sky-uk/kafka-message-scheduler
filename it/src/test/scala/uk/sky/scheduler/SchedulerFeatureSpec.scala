@@ -3,13 +3,12 @@ package uk.sky.scheduler
 import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
-import io.circe.syntax.*
 import org.scalatest.LoneElement
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.FixtureAsyncWordSpec
-import uk.sky.scheduler.circe.given
 import uk.sky.scheduler.kafka.avro.AvroSchedule
+import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
 
 import scala.concurrent.ExecutionContext
@@ -40,7 +39,7 @@ final class SchedulerFeatureSpec
       for {
         scheduledTime <- IO.realTimeInstant.map(_.plusSeconds(5).toEpochMilli)
         schedule       = createJsonSchedule(scheduledTime, outputTopic, outputJsonKey, outputJsonValue)
-        _             <- kafkaUtil.produce[String]("json-schedules", "input-key-json" -> schedule.asJson.noSpaces.some)
+        _             <- kafkaUtil.produce[JsonSchedule]("json-schedules", "input-key-json" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement
@@ -75,13 +74,17 @@ final class SchedulerFeatureSpec
         now              <- IO.realTimeInstant
         pastScheduledTime = now.minusSeconds(100)
         schedule          = createJsonSchedule(pastScheduledTime.toEpochMilli, outputTopic, outputJsonKey, outputJsonValue)
-        _                <- kafkaUtil.produce[String]("json-schedules", "input-key-json-past" -> schedule.asJson.noSpaces.some)
+        _                <- kafkaUtil.produce[JsonSchedule]("json-schedules", "input-key-json-past" -> schedule.some)
         messages         <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement
         message.keyValue shouldBe (outputJsonKey -> outputJsonValue)
         message.producedAt.toEpochMilli shouldBe now.toEpochMilli +- 500L
       }
+    }
+
+    "tombstone an input schedule when it is scheduled" in { _ =>
+      IO(pending)
     }
   }
 

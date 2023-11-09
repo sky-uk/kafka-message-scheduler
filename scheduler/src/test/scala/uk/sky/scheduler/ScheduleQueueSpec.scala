@@ -4,13 +4,16 @@ import cats.effect.std.{MapRef, Queue}
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.testkit.TestControl
 import cats.effect.{Deferred, IO, Outcome}
+import monocle.syntax.all.*
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{Assertion, OptionValues}
 import uk.sky.scheduler.ScheduleQueue.CancelableSchedule
-import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
+
+import scala.concurrent.duration.*
 
 final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues {
 
@@ -47,10 +50,23 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
           _             <- control.results.asserting(_ shouldBe None)
           _             <- control.tick
           interval      <- control.nextInterval
-          _              = interval.toMillis shouldBe scheduleEvent.time
+          _              = interval.toMillis shouldBe scheduleEvent.schedule.time
           _             <- control.tickFor(interval)
           maybeSchedule <- repository.get("key")
         } yield maybeSchedule shouldBe None
+      }
+
+      "cancel a schedule if it is updated" in withContext { ctx =>
+        import ctx.*
+
+        for {
+          _          <- allowEnqueue.complete(())
+          _          <- scheduleQueue.schedule("key", scheduleEvent)
+          schedule   <- repository.get("key").map(_.value)
+          newSchedule = scheduleEvent.focus(_.schedule.time).modify(_ + +100_000L)
+          _          <- scheduleQueue.schedule("key", newSchedule)
+          outcome    <- schedule.join.testTimeout()
+        } yield outcome shouldBe Outcome.canceled[IO, Throwable, Unit]
       }
     }
 
@@ -67,7 +83,7 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
           _        <- control.tickFor(interval)
           result   <- eventQueue.tryTake
         } yield {
-          interval.toMillis shouldBe scheduleEvent.time
+          interval.toMillis shouldBe scheduleEvent.schedule.time
           result.value shouldBe scheduleEvent
         }
       }
@@ -78,7 +94,7 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
         for {
           _           <- allowEnqueue.complete(())
           now         <- IO.realTimeInstant
-          pastSchedule = scheduleEvent.copy(time = now.minusSeconds(100_000).toEpochMilli)
+          pastSchedule = scheduleEvent.focus(_.schedule.time).replace(now.minusSeconds(100_000).toEpochMilli)
           control     <- TestControl.execute(scheduleQueue.schedule("key", pastSchedule))
           _           <- control.results.asserting(_ shouldBe None)
           _           <- control.tick
@@ -107,13 +123,20 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
           _        <- control.tickAll
           result   <- eventQueue.tryTake
         } yield {
-          interval.toMillis shouldBe scheduleEvent.time
+          interval.toMillis shouldBe scheduleEvent.schedule.time
           result.value shouldBe scheduleEvent
         }
       }
     }
   }
 
+  extension [A](fa: IO[A]) {
+    def testTimeout(timeout: FiniteDuration = 10.seconds): IO[A] =
+      fa.timeoutTo(timeout, IO.raiseError(TestFailedException(s"Operation did not complete within $timeout", 0)))
+  }
+
+  given Arbitrary[Metadata]                = Arbitrary(Gen.resultOf(Metadata.apply))
+  given Arbitrary[Schedule]                = Arbitrary(Gen.resultOf(Schedule.apply))
   val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)
 
   private trait TestContext {
@@ -131,7 +154,7 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
       deferred   <- Deferred[IO, Unit]
       queue      <- Queue.unbounded[IO, ScheduleEvent]
       schedule   <- IO.fromOption(scheduleEventArb.sample)(TestFailedException("Could not generate a schedule", 0))
-                      .map(_.copy(time = now.plusSeconds(10).toEpochMilli))
+                      .map(_.focus(_.schedule.time).replace(now.plusSeconds(10).toEpochMilli))
       testContext = new TestContext {
                       override val repository: Repository[IO, String, CancelableSchedule[IO]] = repo
                       override val allowEnqueue: Deferred[IO, Unit]                           = deferred

@@ -12,7 +12,7 @@ object Main extends IOApp.Simple {
 
   override def run: IO[Unit] = {
     for {
-      outputDir <- EitherT.liftF(IO.blocking(Paths.get("avro/target/schemas")))
+      outputDir <- EitherT.liftF(IO.blocking(Paths.get("target/schemas")))
       _         <- EitherT.liftF(IO.blocking(Files.createDirectories(outputDir)))
       schema    <- EitherT.fromEither(avroScheduleCodec.schema)
       path      <- EitherT.liftF(IO.blocking(outputDir.resolve(Paths.get("schedule.avsc"))))

@@ -28,7 +28,10 @@ lazy val scheduler = project
     )
   }
 
-lazy val avro = project.dependsOn(scheduler)
+val schema    = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
+lazy val avro = project
+  .dependsOn(scheduler)
+  .settings(schema := (Compile / run).toTask("").value)
 
 lazy val it = Project("integration-test", file("it"))
   .settings(CommonSettings.default)

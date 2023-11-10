@@ -5,6 +5,7 @@ import cats.syntax.all.*
 import io.circe.Encoder
 import io.circe.generic.semiauto
 import io.circe.syntax.*
+import monocle.syntax.all.*
 import org.apache.kafka.common.config.SslConfigs
 import pureconfig.ConfigReader.Result
 import pureconfig.error.CannotConvert
@@ -17,14 +18,16 @@ final case class Config(scheduler: ScheduleConfig) derives ConfigReader
 object Config {
   private val redacted = "*".repeat(8)
 
-  given kafkaConfigEncoder: Encoder[KafkaConfig] = semiauto.deriveEncoder[KafkaConfig].contramap { config =>
-    config.copy(
-      properties = config.properties
-        .updatedWith(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG)(_.as(redacted))
-        .updatedWith(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG)(_.as(redacted))
-        .updatedWith(SslConfigs.SSL_KEY_PASSWORD_CONFIG)(_.as(redacted))
+  given kafkaConfigEncoder: Encoder[KafkaConfig] = semiauto
+    .deriveEncoder[KafkaConfig]
+    .contramap(
+      _.focus(_.properties)
+        .modify(
+          _.updatedWith(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG)(_.as(redacted))
+            .updatedWith(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG)(_.as(redacted))
+            .updatedWith(SslConfigs.SSL_KEY_PASSWORD_CONFIG)(_.as(redacted))
+        )
     )
-  }
 
   given schedulerConfigEncoder: Encoder[ScheduleConfig] = semiauto.deriveEncoder[ScheduleConfig]
   given configEncoder: Encoder[Config]                  = semiauto.deriveEncoder[Config]

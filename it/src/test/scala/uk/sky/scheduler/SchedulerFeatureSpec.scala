@@ -3,10 +3,10 @@ package uk.sky.scheduler
 import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{IO, Resource}
 import cats.syntax.all.*
-import org.scalatest.LoneElement
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.FixtureAsyncWordSpec
+import org.scalatest.{LoneElement, OptionValues}
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
@@ -19,6 +19,7 @@ final class SchedulerFeatureSpec
       AsyncIOSpec,
       CatsResourceIO[KafkaUtil[IO]],
       ScheduleHelpers,
+      OptionValues,
       Matchers,
       Eventually,
       LoneElement {
@@ -83,8 +84,25 @@ final class SchedulerFeatureSpec
       }
     }
 
-    "tombstone an input schedule when it is scheduled" in { _ =>
-      IO(pending)
+    "tombstone an input schedule when it is scheduled" in { kafkaUtil =>
+      val scheduleKey     = "input-key-json-tombstone"
+      val outputTopic     = "output-topic"
+      val outputJsonKey   = "jsonKey"
+      val outputJsonValue = "jsonValue"
+
+      for {
+
+        scheduledTime <- IO.realTimeInstant.map(_.toEpochMilli)
+        schedule       = createJsonSchedule(scheduledTime, outputTopic, outputJsonKey, outputJsonValue)
+        _             <- kafkaUtil.produce[JsonSchedule]("json-schedules", scheduleKey -> schedule.some)
+        inputMessages <- kafkaUtil.consumeLast[Option[String]]("json-schedules", 2)
+      } yield {
+        val scheduled = inputMessages.headOption.value
+        scheduled.value shouldBe defined
+        val tombstone = inputMessages.lastOption.value
+        tombstone.keyValue shouldBe (scheduleKey -> None)
+        tombstone.headers.get("schedule:expired").value shouldBe "true"
+      }
     }
   }
 

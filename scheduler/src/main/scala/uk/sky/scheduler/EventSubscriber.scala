@@ -85,18 +85,20 @@ object EventSubscriber {
           .withProperties(config.kafka.properties)
 
       val avroStream =
-        config.kafka.topics.avro.toNel.fold(Stream.eval(avroLoadedRef.set(true)).drain)(
-          TopicLoader.loadAndRun(_, avroConsumerSettings)(exitCase =>
-            avroLoadedRef.set(true) *> onLoadCompare(exitCase)
+        config.kafka.topics.avro.toNel
+          .fold(Stream.eval(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)).drain)(
+            TopicLoader.loadAndRun(_, avroConsumerSettings)(exitCase =>
+              avroLoadedRef.set(true) *> onLoadCompare(exitCase)
+            )
           )
-        )
 
       val jsonStream =
-        config.kafka.topics.json.toNel.fold(Stream.eval(jsonLoadedRef.set(true)).drain)(
-          TopicLoader.loadAndRun(_, jsonConsumerSettings)(exitCase =>
-            jsonLoadedRef.set(true) *> onLoadCompare(exitCase)
+        config.kafka.topics.json.toNel
+          .fold(Stream.eval(jsonLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)).drain)(
+            TopicLoader.loadAndRun(_, jsonConsumerSettings)(exitCase =>
+              jsonLoadedRef.set(true) *> onLoadCompare(exitCase)
+            )
           )
-        )
 
       override def messages: Stream[F, Message[Output]] =
         avroStream.merge(jsonStream).map(toEvent)

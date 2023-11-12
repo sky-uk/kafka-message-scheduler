@@ -48,23 +48,23 @@ object EventSubscriber {
       )
     }
 
-    /** If both topics have finished loading, complete the Deferred to allow Queueing schedules.
-      */
-    def onLoadCompare(ref: Ref[F, Boolean], other: Ref[F, Boolean])(exitCase: ExitCase): F[Unit] =
-      exitCase match {
-        case ExitCase.Succeeded                      =>
-          for {
-            _         <- ref.set(true)
-            otherDone <- other.get
-            _         <- if (otherDone) loaded.complete(()).void else Async[F].unit
-          } yield ()
-        case ExitCase.Errored(_) | ExitCase.Canceled => Async[F].unit
-      }
-
     for {
-      avroRef <- Ref.of[F, Boolean](false)
-      jsonRef <- Ref.of[F, Boolean](false)
+      avroLoadedRef <- Ref.of[F, Boolean](false)
+      jsonLoadedRef <- Ref.of[F, Boolean](false)
     } yield new EventSubscriber[F] {
+
+      /** If both topics have finished loading, complete the Deferred to allow Queueing schedules.
+        */
+      def onLoadCompare(exitCase: ExitCase): F[Unit] =
+        exitCase match {
+          case ExitCase.Succeeded                      =>
+            for {
+              avroLoaded <- avroLoadedRef.get
+              jsonLoaded <- jsonLoadedRef.get
+              _          <- if (avroLoaded && jsonLoaded) loaded.complete(()).void else Async[F].unit
+            } yield ()
+          case ExitCase.Errored(_) | ExitCase.Canceled => Async[F].unit
+        }
 
       given avroDeser: Deserializer[F, Either[Throwable, Option[AvroSchedule]]] =
         avroBinaryDeserializer[F, AvroSchedule].option.attempt
@@ -85,13 +85,17 @@ object EventSubscriber {
           .withProperties(config.kafka.properties)
 
       val avroStream =
-        config.kafka.topics.avro.toNel.fold(Stream.eval(avroRef.set(true)).drain)(
-          TopicLoader.loadAndRun(_, avroConsumerSettings)(onLoadCompare(avroRef, jsonRef))
+        config.kafka.topics.avro.toNel.fold(Stream.eval(avroLoadedRef.set(true)).drain)(
+          TopicLoader.loadAndRun(_, avroConsumerSettings)(exitCase =>
+            avroLoadedRef.set(true) *> onLoadCompare(exitCase)
+          )
         )
 
       val jsonStream =
-        config.kafka.topics.json.toNel.fold(Stream.eval(jsonRef.set(true)).drain)(
-          TopicLoader.loadAndRun(_, jsonConsumerSettings)(onLoadCompare(jsonRef, avroRef))
+        config.kafka.topics.json.toNel.fold(Stream.eval(jsonLoadedRef.set(true)).drain)(
+          TopicLoader.loadAndRun(_, jsonConsumerSettings)(exitCase =>
+            jsonLoadedRef.set(true) *> onLoadCompare(exitCase)
+          )
         )
 
       override def messages: Stream[F, Message[Output]] =

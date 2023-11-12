@@ -28,9 +28,11 @@ object Dependencies {
   }
 
   object Fs2 {
+    private lazy val version      = "3.9.2"
     private lazy val kafkaVersion = "3.2.0"
 
-    lazy val core        = "co.fs2"          %% "fs2-core"         % "3.9.2"
+    lazy val core        = "co.fs2"          %% "fs2-core"         % version
+    lazy val io          = "co.fs2"          %% "fs2-io"           % version
     lazy val kafka       = "com.github.fd4s" %% "fs2-kafka"        % kafkaVersion
     lazy val kafkaVulcan = "com.github.fd4s" %% "fs2-kafka-vulcan" % kafkaVersion
   }

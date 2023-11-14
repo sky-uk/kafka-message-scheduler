@@ -4,6 +4,7 @@ import cats.Monad
 import cats.effect.Sync
 import cats.effect.std.MapRef
 import cats.syntax.all.*
+import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Meter
 
 trait Repository[F[_], K, V] {
@@ -24,6 +25,10 @@ object Repository {
       mapRef: MapRef[F, K, Option[V]]
   )(name: String): F[Repository[F, K, V]] =
     Meter[F].upDownCounter(s"$name-size").create.map { counter =>
+      val totalAttribute  = Attribute("counter.type", "total")
+      val setAttribute    = Attribute("counter.type", "set")
+      val deleteAttribute = Attribute("counter.type", "delete")
+
       new Repository[F, K, V] {
         private def getAndSetF(key: K, value: Option[V])(ifPresent: => F[Unit]): F[Unit] =
           mapRef(key).getAndSet(value).flatMap {
@@ -32,13 +37,13 @@ object Repository {
           }
 
         override def set(key: K, value: V): F[Unit] =
-          getAndSetF(key, value.some)(counter.inc())
+          getAndSetF(key, value.some)(counter.inc(totalAttribute) *> counter.inc(setAttribute))
 
         override def get(key: K): F[Option[V]] =
           mapRef(key).get
 
         override def delete(key: K): F[Unit] =
-          getAndSetF(key, None)(counter.dec())
+          getAndSetF(key, None)(counter.dec(totalAttribute) *> counter.inc(deleteAttribute))
 
       }
     }

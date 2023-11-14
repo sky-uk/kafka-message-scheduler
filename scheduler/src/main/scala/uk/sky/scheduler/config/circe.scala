@@ -25,5 +25,3 @@ given schedulerConfigEncoder: Encoder[ScheduleConfig] = semiauto.deriveEncoder[S
 given configEncoder: Encoder[Config]                  = semiauto.deriveEncoder[Config]
 
 given configShow: Show[Config] = Show.show(_.asJson.noSpaces)
-
- 

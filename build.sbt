@@ -11,6 +11,8 @@ ThisBuild / homepage     := Some(url(scmUrl))
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
+ThisBuild / dynverSeparator := "-"
+
 Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / scalafmtOnCompile    := true
 

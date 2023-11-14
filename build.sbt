@@ -20,6 +20,7 @@ lazy val scheduler = project
   .settings(CommonSettings.default)
   .settings {
     Seq(
+      dockerRepository     := sys.env.get("DOCKER_REPOSITORY"),
       dockerBaseImage      := "alpine:3.17.2",
       Docker / packageName := "kafka-message-scheduler",
       dockerUpdateLatest   := true,

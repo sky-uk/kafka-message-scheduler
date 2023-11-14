@@ -35,6 +35,7 @@ val schema    = inputKey[Unit]("Generate the Avro schema file for the Schedule s
 lazy val avro = project
   .dependsOn(scheduler)
   .settings(schema := (Compile / run).toTask("").value)
+  .settings(publishArtifact := false)
 
 lazy val it = Project("integration-test", file("it"))
   .settings(CommonSettings.default)
@@ -45,9 +46,11 @@ lazy val it = Project("integration-test", file("it"))
     )
   }
   .dependsOn(scheduler)
+  .settings(publishArtifact := false)
 
 lazy val root = Project("kafka-message-scheduler", file("."))
   .aggregate(scheduler, avro, it)
+  .settings(publishArtifact := false)
 
 run / fork  := true
 Test / fork := true

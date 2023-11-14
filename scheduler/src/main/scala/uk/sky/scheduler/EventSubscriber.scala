@@ -86,7 +86,7 @@ object EventSubscriber {
 
       val avroStream =
         config.kafka.topics.avro.toNel
-          .fold(Stream.eval(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)).drain)(
+          .fold(Stream.exec(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
             TopicLoader.loadAndRun(_, avroConsumerSettings)(exitCase =>
               avroLoadedRef.set(true) *> onLoadCompare(exitCase)
             )
@@ -94,7 +94,7 @@ object EventSubscriber {
 
       val jsonStream =
         config.kafka.topics.json.toNel
-          .fold(Stream.eval(jsonLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)).drain)(
+          .fold(Stream.exec(jsonLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
             TopicLoader.loadAndRun(_, jsonConsumerSettings)(exitCase =>
               jsonLoadedRef.set(true) *> onLoadCompare(exitCase)
             )
@@ -109,7 +109,7 @@ object EventSubscriber {
     val logger = LoggerFactory[F].getLogger
 
     new EventSubscriber[F] {
-      override def messages: Stream[F, Message[Output]] = delegate.messages.evalTap { message =>
+      override def messages: Stream[F, Message[Output]] = delegate.messages.evalTapChunk { message =>
         val key   = message.key
         val topic = message.source
         message.value match {
@@ -117,10 +117,6 @@ object EventSubscriber {
           case Right(None)    => logger.info(s"Decoded DELETE for [$key] from topic $topic")
           case Right(Some(_)) => logger.info(s"Decoded UPDATE for [$key] from topic $topic")
         }
-      }.onFinalizeCase {
-        case ExitCase.Succeeded  => logger.info("Stream Succeeded")
-        case ExitCase.Errored(e) => logger.error(e)(s"Stream error - ${e.getMessage}")
-        case ExitCase.Canceled   => logger.info("Stream canceled")
       }
     }
   }

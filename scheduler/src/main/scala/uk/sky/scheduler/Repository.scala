@@ -38,7 +38,7 @@ object Repository {
           mapRef(key).get
 
         override def delete(key: K): F[Unit] =
-          getAndSetF(key, None)(counter.inc())
+          getAndSetF(key, None)(counter.dec())
 
       }
     }

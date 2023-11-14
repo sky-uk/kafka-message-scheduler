@@ -31,7 +31,7 @@ object SchedulePublisher {
           .flatMap { producer =>
             Stream
               .fromQueueUnterminated(eventQueue)
-              .evalMap { scheduleEvent =>
+              .evalMapChunk { scheduleEvent =>
                 val scheduleProducerRecord = scheduleEvent.toProducerRecord
                 val tombstone              = scheduleEvent.toTombstone
                 producer.produce(ProducerRecords(List(scheduleProducerRecord, tombstone)))

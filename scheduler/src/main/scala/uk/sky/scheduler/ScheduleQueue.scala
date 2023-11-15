@@ -1,7 +1,6 @@
 package uk.sky.scheduler
 
 import cats.Monad
-import cats.data.OptionT
 import cats.effect.std.Queue
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Deferred, Fiber}
@@ -44,13 +43,11 @@ object ScheduleQueue {
       } yield ()
     }
 
-    override def cancel(key: String): F[Unit] = {
+    override def cancel(key: String): F[Unit] =
       for {
-        started <- OptionT(repository.get(key))
-        _       <- OptionT.liftF(started.cancel)
-        _       <- OptionT.liftF(repository.delete(key))
+        maybeStarted <- repository.get(key)
+        _            <- maybeStarted.fold(Async[F].unit)(started => started.cancel *> repository.delete(key))
       } yield ()
-    }.value.void
 
     override def queue: Queue[F, ScheduleEvent] = eventQueue
   }

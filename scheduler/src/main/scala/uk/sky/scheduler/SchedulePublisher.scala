@@ -5,7 +5,7 @@ import cats.effect.std.Queue
 import cats.syntax.all.*
 import fs2.*
 import fs2.kafka.*
-import uk.sky.scheduler.config.ScheduleConfig
+import uk.sky.scheduler.config.{KafkaConfig, ScheduleConfig}
 import uk.sky.scheduler.converters.*
 import uk.sky.scheduler.domain.ScheduleEvent
 
@@ -22,6 +22,7 @@ object SchedulePublisher {
     val producerSettings: ProducerSettings[F, Array[Byte], Option[Array[Byte]]] =
       ProducerSettings[F, Array[Byte], Option[Array[Byte]]]
         .withBootstrapServers(config.kafka.bootstrapServers)
+        .withProperties(KafkaConfig.atLeastOnceProducerProperties)
         .withProperties(config.kafka.properties)
 
     new SchedulePublisher[F, Unit] {

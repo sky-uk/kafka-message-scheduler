@@ -33,8 +33,16 @@ object Dependencies {
     lazy val kafkaVulcan = "com.github.fd4s" %% "fs2-kafka-vulcan" % kafkaVersion
   }
 
+  object Janino {
+    val janino = "org.codehaus.janino" % "janino" % "3.1.10" % Runtime
+  }
+
   object Logback {
     lazy val classic = "ch.qos.logback" % "logback-classic" % "1.4.11" % Runtime
+  }
+
+  object Logstash {
+    lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.4" % Runtime
   }
 
   object Monocle {

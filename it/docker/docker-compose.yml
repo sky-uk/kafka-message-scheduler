@@ -14,7 +14,9 @@ services:
       BOOTSTRAP_SERVERS: 'kafka:9092'
       SCHEDULE_TOPICS: 'avro-schedules'
       JSON_SCHEDULE_TOPICS: 'json-schedules'
-      LOG_LEVEL: info
+      KMS_LOGGING_LOGSTASH: 'true'
+      KMS_LOGGING_LEVEL: INFO
+      KMS_ROOT_LOGGING_LEVEL: INFO
     depends_on:
       kafka:
         condition: service_started

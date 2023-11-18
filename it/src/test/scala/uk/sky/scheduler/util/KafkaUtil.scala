@@ -114,7 +114,7 @@ object KafkaUtil {
             endOffsets <- consumer.endOffsets(tps)
             newOffsets  = endOffsets.view.mapValues(o => Math.max(0, o - noMessages)).toList
             _          <- consumer.assign(topic)
-            _          <- newOffsets.traverse((tp, o) => consumer.seek(tp, o))
+            _          <- newOffsets.traverse(consumer.seek)
           } yield ()
         }
         .records

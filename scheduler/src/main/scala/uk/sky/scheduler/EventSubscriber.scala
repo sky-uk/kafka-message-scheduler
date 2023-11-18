@@ -1,9 +1,9 @@
 package uk.sky.scheduler
 
-import cats.Monad
 import cats.effect.Resource.ExitCase
 import cats.effect.{Async, Deferred, Ref}
 import cats.syntax.all.*
+import cats.{Monad, Parallel}
 import fs2.*
 import fs2.kafka.*
 import org.typelevel.log4cats.LoggerFactory
@@ -23,7 +23,10 @@ trait EventSubscriber[F[_]] {
 object EventSubscriber {
   private type Output = Either[ScheduleError, Option[ScheduleEvent]]
 
-  def kafka[F[_] : Async : LoggerFactory](config: ScheduleConfig, loaded: Deferred[F, Unit]): F[EventSubscriber[F]] = {
+  def kafka[F[_] : Async : Parallel : LoggerFactory](
+      config: ScheduleConfig,
+      loaded: Deferred[F, Unit]
+  ): F[EventSubscriber[F]] = {
     type Input = JsonSchedule | AvroSchedule
 
     def toEvent(cr: ConsumerRecord[String, Either[Throwable, Option[Input]]]): Message[Output] = {
@@ -59,9 +62,8 @@ object EventSubscriber {
         exitCase match {
           case ExitCase.Succeeded                      =>
             for {
-              avroLoaded <- avroLoadedRef.get
-              jsonLoaded <- jsonLoadedRef.get
-              _          <- if (avroLoaded && jsonLoaded) loaded.complete(()).void else Async[F].unit
+              results <- (avroLoadedRef.get, jsonLoadedRef.get).parTupled
+              _       <- if (results.forall(_ == true)) loaded.complete(()).void else Async[F].unit
             } yield ()
           case ExitCase.Errored(_) | ExitCase.Canceled => Async[F].unit
         }
@@ -121,6 +123,9 @@ object EventSubscriber {
     }
   }
 
-  def live[F[_] : Async : LoggerFactory](config: ScheduleConfig, loaded: Deferred[F, Unit]): F[EventSubscriber[F]] =
+  def live[F[_] : Async : Parallel : LoggerFactory](
+      config: ScheduleConfig,
+      loaded: Deferred[F, Unit]
+  ): F[EventSubscriber[F]] =
     kafka[F](config, loaded).map(observed)
 }

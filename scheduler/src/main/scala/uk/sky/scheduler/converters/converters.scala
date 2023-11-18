@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import fs2.kafka.{Header, Headers, ProducerRecord}
 import io.scalaland.chimney.dsl.*
 import uk.sky.scheduler.Message
-import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
+import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*

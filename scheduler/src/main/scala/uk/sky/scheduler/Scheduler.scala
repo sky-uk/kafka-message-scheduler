@@ -1,5 +1,6 @@
 package uk.sky.scheduler
 
+import cats.Parallel
 import cats.effect.Resource.ExitCase
 import cats.effect.std.Queue
 import cats.effect.{Async, Concurrent, Deferred}
@@ -20,7 +21,7 @@ class Scheduler[F[_] : Concurrent : LoggerFactory, O](
   private val scheduleStream = eventSubscriber.messages.evalMapChunk { message =>
     message.value match {
       case Left(_) | Right(None) => if (message.expired) Concurrent[F].unit else scheduleQueue.cancel(message.key)
-      case Right(Some(schedule)) => scheduleQueue.schedule(message.key, schedule)
+      case Right(Some(schedule)) => scheduleQueue.schedule(message.key, schedule).void
     }
   }
 
@@ -33,7 +34,7 @@ class Scheduler[F[_] : Concurrent : LoggerFactory, O](
 }
 
 object Scheduler {
-  def live[F[_] : Async : LoggerFactory : Meter](config: Config): F[Scheduler[F, Unit]] =
+  def live[F[_] : Async : Parallel : LoggerFactory : Meter](config: Config): F[Scheduler[F, Unit]] =
     for {
       eventQueue       <- Queue.unbounded[F, ScheduleEvent]
       allowEnqueue     <- Deferred[F, Unit]

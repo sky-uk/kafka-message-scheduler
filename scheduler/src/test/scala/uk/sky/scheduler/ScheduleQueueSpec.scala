@@ -9,13 +9,14 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.{Assertion, OptionValues}
+import org.scalatest.{Assertion, EitherValues, OptionValues}
 import uk.sky.scheduler.ScheduleQueue.CancelableSchedule
 import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
+import uk.sky.scheduler.error.ScheduleError
 
 import scala.concurrent.duration.*
 
-final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues {
+final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues {
 
   "ScheduleQueue" when {
 
@@ -67,6 +68,16 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
           _          <- scheduleQueue.schedule("key", newSchedule)
           outcome    <- schedule.join.testTimeout()
         } yield outcome shouldBe Outcome.canceled[IO, Throwable, Unit]
+      }
+
+      "error if the scheduled time is not valid" in withContext { ctx =>
+        import ctx.*
+
+        val invalidSchedule = scheduleEvent.focus(_.schedule.time).replace(Long.MaxValue)
+
+        for {
+          result <- scheduleQueue.schedule("key", invalidSchedule)
+        } yield result.left.value shouldBe ScheduleError.InvalidTimeError("key", invalidSchedule.schedule.time)
       }
     }
 

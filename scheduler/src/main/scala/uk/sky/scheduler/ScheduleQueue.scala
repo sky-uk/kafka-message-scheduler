@@ -14,7 +14,6 @@ import scala.concurrent.duration.*
 trait ScheduleQueue[F[_]] {
   def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit]
   def cancel(key: String): F[Unit]
-  def queue: Queue[F, ScheduleEvent]
 }
 
 object ScheduleQueue {
@@ -23,7 +22,7 @@ object ScheduleQueue {
   def apply[F[_] : Async](
       repository: Repository[F, String, CancelableSchedule[F]],
       allowEnqueue: Deferred[F, Unit],
-      eventQueue: Queue[F, ScheduleEvent]
+      queue: Queue[F, ScheduleEvent]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] = {
       val delayScheduling = for {
@@ -48,8 +47,7 @@ object ScheduleQueue {
         maybeStarted <- repository.get(key)
         _            <- maybeStarted.fold(Async[F].unit)(started => started.cancel *> repository.delete(key))
       } yield ()
-
-    override def queue: Queue[F, ScheduleEvent] = eventQueue
+    }.value.void
   }
 
   def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] =
@@ -67,14 +65,14 @@ object ScheduleQueue {
           _ <- delegate.cancel(key)
           _ <- logger.info(s"Canceled Schedule [$key]")
         } yield ()
-
-      override def queue: Queue[F, ScheduleEvent] = delegate.queue
     }
 
-  def live[F[_] : Async : LoggerFactory : Meter](allowEnqueue: Deferred[F, Unit]): F[ScheduleQueue[F]] =
+  def live[F[_] : Async : LoggerFactory : Meter](
+      eventQueue: Queue[F, ScheduleEvent],
+      allowEnqueue: Deferred[F, Unit]
+  ): F[ScheduleQueue[F]] =
     for {
-      repo       <- Repository.live[F, String, CancelableSchedule[F]]("schedules")
-      eventQueue <- Queue.unbounded[F, ScheduleEvent]
+      repo <- Repository.live[F, String, CancelableSchedule[F]]("schedules")
     } yield ScheduleQueue.observed(ScheduleQueue(repo, allowEnqueue, eventQueue))
 
 }

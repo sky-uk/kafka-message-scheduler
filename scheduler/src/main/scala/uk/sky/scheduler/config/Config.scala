@@ -43,9 +43,9 @@ object TopicConfig {
       jsonCur <- objCur.atKey("json")
       jsonL   <- jsonCur.asList
       json    <- jsonL.traverse(_.asString)
-      config  <- if (avro.isEmpty && json.isEmpty) {
+      config  <- if (avro.isEmpty && json.isEmpty)
                    cur.failed(CannotConvert("TopicConfig", "TopicConfig", "both Avro and JSON topics were empty"))
-                 } else TopicConfig(avro, json).asRight
+                 else TopicConfig(avro, json).asRight
     } yield config
 
   }

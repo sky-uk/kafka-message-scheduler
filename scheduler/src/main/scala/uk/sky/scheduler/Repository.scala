@@ -3,7 +3,7 @@ package uk.sky.scheduler
 import cats.effect.Sync
 import cats.effect.std.MapRef
 import cats.syntax.all.*
-import cats.{Functor, Monad}
+import cats.{Functor, Monad, Parallel}
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Meter
 
@@ -42,27 +42,24 @@ object Repository {
   private val setAttribute    = Attribute("counter.type", "set")
   private val deleteAttribute = Attribute("counter.type", "delete")
 
-  def observed[F[_] : Monad : Meter, K, V](
+  def observed[F[_] : Monad : Parallel : Meter, K, V](name: String)(
       mapRef: MapRef[F, K, Option[V]]
-  )(name: String): F[Repository[F, K, V]] =
-    Meter[F].upDownCounter(s"$name-size").create.map { counter =>
+  ): F[Repository[F, K, V]] =
+    Meter[F].upDownCounter(s"$name-repository-size").create.map { counter =>
       new Repository[F, K, V] {
         private val underlying = RepositoryImpl(mapRef)
 
         override def set(key: K, value: V): F[Unit] =
-          underlying.set(key, value).ifPresent(counter.inc(totalAttribute) *> counter.inc(setAttribute)).void
+          underlying.set(key, value).ifPresent(counter.inc(totalAttribute) &> counter.inc(setAttribute)).void
 
         override def get(key: K): F[Option[V]] =
-          mapRef(key).get
+          underlying.get(key)
 
         override def delete(key: K): F[Unit] =
-          underlying.delete(key).ifPresent(counter.dec(totalAttribute) *> counter.inc(deleteAttribute)).void
+          underlying.delete(key).ifPresent(counter.dec(totalAttribute) &> counter.inc(deleteAttribute)).void
       }
     }
 
-  def live[F[_] : Sync : Meter, K, V](name: String): F[Repository[F, K, V]] =
-    for {
-      mapRef <- MapRef.ofScalaConcurrentTrieMap[F, K, V]
-      repo   <- Repository.observed(mapRef)(name)
-    } yield repo
+  def live[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
+    MapRef.ofScalaConcurrentTrieMap[F, K, V].flatMap(observed(name))
 }

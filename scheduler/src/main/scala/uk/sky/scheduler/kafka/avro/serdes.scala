@@ -3,6 +3,7 @@ package uk.sky.scheduler.kafka.avro
 import cats.effect.Sync
 import cats.syntax.all.*
 import fs2.kafka.{Deserializer, Serializer, ValueDeserializer, ValueSerializer}
+import uk.sky.scheduler.error.ScheduleError
 import vulcan.Codec
 
 given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
@@ -14,18 +15,18 @@ given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
     field("topic", _.topic),
     field("key", _.key),
     field("value", _.value),
-    field("headers", _.headers)
+    field("headers", _.headers, default = Map.empty[String, Array[Byte]].some)
   ).mapN(AvroSchedule.apply)
 }
 
-def avroBinaryDeserializer[F[_] : Sync, V : Codec]: ValueDeserializer[F, V] =
+def avroBinaryDeserializer[F[_] : Sync, V : Codec]: ValueDeserializer[F, Either[ScheduleError, V]] =
   Codec[V].schema.fold(
     e => Deserializer.fail(e.throwable),
     schema =>
       Deserializer
-        .lift[F, V] { bytes =>
+        .lift[F, Either[ScheduleError, V]] { bytes =>
           Sync[F]
-            .fromEither(Codec.fromBinary[V](bytes, schema).leftMap(_.throwable))
+            .delay(Codec.fromBinary[V](bytes, schema).leftMap(_ => ScheduleError.InvalidAvroError(schema)))
         }
   )
 

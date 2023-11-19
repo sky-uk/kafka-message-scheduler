@@ -32,7 +32,8 @@ libraryDependencies ++= Seq(
   PureConfig.core,
   ScalaTest.scalaTest,
   TopicLoader.topicLoader,
-  Vulcan.core
+  Vulcan.core,
+  Vulcan.generic
 )
 
 resolvers ++= Resolver.sonatypeOssRepos("snapshots") ++ Seq(

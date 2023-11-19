@@ -88,7 +88,8 @@ object Dependencies {
   object Vulcan {
     private lazy val version = "1.9.0"
 
-    val core = "com.github.fd4s" %% "vulcan" % version
+    val core    = "com.github.fd4s" %% "vulcan"         % version
+    val generic = "com.github.fd4s" %% "vulcan-generic" % version % Test
   }
 
 }

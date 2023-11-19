@@ -1,5 +1,6 @@
 package uk.sky.scheduler.circe
 
+import cats.syntax.all.*
 import io.circe.*
 import io.circe.generic.semiauto
 import uk.sky.scheduler.kafka.json.JsonSchedule
@@ -12,7 +13,7 @@ given jsonScheduleDecoder: Decoder[JsonSchedule] =
     "value",
     "headers"
   ) { (time, topic, key, value, headers) =>
-    JsonSchedule(time, topic, key, value, headers.getOrElse(Map.empty))
+    JsonSchedule(time, topic, key, value, headers.combineAll)
   }
 
 given scheduleEncoder: Encoder[JsonSchedule] =

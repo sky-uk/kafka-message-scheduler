@@ -69,7 +69,7 @@ object EventSubscriber {
         }
 
       given avroDeser: Deserializer[F, Either[Throwable, Option[AvroSchedule]]] =
-        avroBinaryDeserializer[F, AvroSchedule].option.attempt
+        avroBinaryDeserializer[F, AvroSchedule].option.map(_.sequence)
 
       given jsonDeser: Deserializer[F, Either[Throwable, Option[JsonSchedule]]] =
         jsonDeserializer[F, JsonSchedule].option.attempt

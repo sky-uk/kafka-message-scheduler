@@ -2,22 +2,20 @@ package uk.sky.scheduler.kafka.avro
 
 import java.nio.charset.StandardCharsets
 
-import cats.Show
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.{IO, MonadCancelThrow}
 import cats.syntax.all.*
 import fs2.kafka.Headers
-import org.scalactic.Equality
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{EitherValues, OptionValues}
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.util.ScheduleMatchers
 import vulcan.generic.*
 import vulcan.{AvroError, Codec}
 
-final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues {
+final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues, ScheduleMatchers {
 
   val scheduleWithHeaders = AvroSchedule(
     time = Long.MinValue,
@@ -63,25 +61,4 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
       either.leftMap(avroError => TestFailedException(s"AvroError - ${avroError.message}", 0))
     )
   }
-
-  given testScheduleShow: Show[AvroSchedule] = Show.show { schedule =>
-    s"AvroSchedule(time=${schedule.time}, topic=${schedule.topic}, key=${schedule.key.toList}, value=${schedule.value
-        .map(_.toList)}, headers=${schedule.headers.view.mapValues(_.toList).toMap})"
-  }
-
-  private class EqualsScheduleMatcher(right: AvroSchedule) extends Matcher[AvroSchedule] {
-    override def apply(left: AvroSchedule): MatchResult =
-      MatchResult(
-        left.time === right.time &&
-          left.topic === right.topic &&
-          left.key.toList === right.key.toList &&
-          left.value.map(_.toList) === right.value.map(_.toList) &&
-          left.headers.view.mapValues(_.toList).toMap === right.headers.view.mapValues(_.toList).toMap,
-        s"${left.show} did not equal ${right.show}",
-        s"${left.show} equals ${right.show}"
-      )
-  }
-
-  private def equalSchedule(expectedSchedule: AvroSchedule) = EqualsScheduleMatcher(expectedSchedule)
-
 }

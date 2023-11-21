@@ -29,7 +29,7 @@ object EventSubscriber {
   ): F[EventSubscriber[F]] = {
     type Input = JsonSchedule | AvroSchedule
 
-    def toEvent(cr: ConsumerRecord[String, Either[Throwable, Option[Input]]]): Message[Output] = {
+    def toEvent(cr: ConsumerRecord[String, Either[ScheduleError, Option[Input]]]): Message[Output] = {
       val key = cr.key
 
       val payload: Either[ScheduleError, Option[ScheduleEvent]] = cr.value match {
@@ -68,20 +68,20 @@ object EventSubscriber {
           case ExitCase.Errored(_) | ExitCase.Canceled => Async[F].unit
         }
 
-      given avroDeser: Deserializer[F, Either[Throwable, Option[AvroSchedule]]] =
+      given avroDeser: Deserializer[F, Either[ScheduleError, Option[AvroSchedule]]] =
         avroBinaryDeserializer[F, AvroSchedule].option.map(_.sequence)
 
-      given jsonDeser: Deserializer[F, Either[Throwable, Option[JsonSchedule]]] =
-        jsonDeserializer[F, JsonSchedule].option.attempt
+      given jsonDeser: Deserializer[F, Either[ScheduleError, Option[JsonSchedule]]] =
+        jsonDeserializer[F, JsonSchedule].option.map(_.sequence)
 
       val avroConsumerSettings =
-        ConsumerSettings[F, String, Either[Throwable, Option[AvroSchedule]]]
+        ConsumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]]
           .withAutoOffsetReset(AutoOffsetReset.Earliest)
           .withBootstrapServers(config.kafka.bootstrapServers)
           .withProperties(config.kafka.properties)
 
       val jsonConsumerSettings =
-        ConsumerSettings[F, String, Either[Throwable, Option[JsonSchedule]]]
+        ConsumerSettings[F, String, Either[ScheduleError, Option[JsonSchedule]]]
           .withAutoOffsetReset(AutoOffsetReset.Earliest)
           .withBootstrapServers(config.kafka.bootstrapServers)
           .withProperties(config.kafka.properties)

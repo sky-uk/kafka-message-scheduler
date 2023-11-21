@@ -44,7 +44,7 @@ object EventSubscriber {
       }
 
       Message[Output](
-        key = cr.key,
+        key = key,
         source = cr.topic,
         value = payload,
         headers = cr.headers.toChain.toList.map(header => header.key -> header.as[String]).toMap

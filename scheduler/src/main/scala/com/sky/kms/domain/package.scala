@@ -5,7 +5,7 @@ import java.lang
 import org.apache.kafka.common.header.Header
 import org.apache.kafka.common.header.internals.RecordHeader
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 package object domain {
 

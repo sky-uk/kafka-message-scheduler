@@ -3,7 +3,7 @@ package com.sky.kms.actors
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.stream.QueueOfferResult
 import akka.stream.scaladsl.SourceQueueWithComplete
-import cats.syntax.show._
+import cats.syntax.show.*
 import com.sky.kms.Start
 import com.sky.kms.actors.PublisherActor.{DownstreamFailure, Init, ScheduleQueue, Trigger}
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage

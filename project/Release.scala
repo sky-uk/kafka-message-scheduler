@@ -1,10 +1,10 @@
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker => docker}
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.Docker as docker
 import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
-import sbt.Keys._
+import sbt.Keys.*
 import sbt.taskKey
-import sbtrelease.ReleasePlugin.autoImport._
-import sbtrelease.ReleaseStateTransformations._
-import sbtrelease._
+import sbtrelease.ReleasePlugin.autoImport.*
+import sbtrelease.ReleaseStateTransformations.*
+import sbtrelease.*
 
 object Release {
   // Useful tasks to show what versions would be used if a release was performed.

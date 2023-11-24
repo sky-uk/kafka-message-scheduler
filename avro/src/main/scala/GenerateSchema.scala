@@ -1,8 +1,8 @@
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
-import com.sksamuel.avro4s._
-import com.sky.kms.avro._
+import com.sksamuel.avro4s.*
+import com.sky.kms.avro.*
 import com.sky.kms.domain.Schedule.ScheduleWithHeaders
 
 object GenerateSchema extends App {

@@ -1,13 +1,15 @@
 package com.sky.kms
 
-import java.time.{Instant, OffsetDateTime, ZoneOffset}
+import com.sksamuel.avro4s
 
+import java.time.{Instant, OffsetDateTime, ZoneOffset}
 import com.sksamuel.avro4s.{Decoder, Encoder, SchemaFor}
 import org.apache.avro.Schema
 
 package object avro {
 
-  implicit val dateTimeSchemaFor = SchemaFor[OffsetDateTime](Schema.create(Schema.Type.LONG))
+  implicit val dateTimeSchemaFor: avro4s.SchemaFor.Typeclass[OffsetDateTime] =
+    SchemaFor[OffsetDateTime](Schema.create(Schema.Type.LONG))
 
   implicit object DateTimeEncoder extends Encoder[OffsetDateTime] {
     override def encode(value: OffsetDateTime): java.lang.Long = value.toInstant.toEpochMilli

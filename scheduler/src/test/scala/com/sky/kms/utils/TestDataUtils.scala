@@ -10,9 +10,8 @@ import akka.stream.scaladsl.{Sink, Source}
 import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
 import com.fortysevendeg.scalacheck.datetime.instances.jdk8.*
-import com.sksamuel.avro4s.{AvroOutputStream, Encoder, SchemaFor}
+import com.sksamuel.avro4s.{AvroOutputStream, Encoder}
 import com.sky.kms.SchedulerApp
-import com.sky.kms.avro.*
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain.Schedule.{ScheduleNoHeaders, ScheduleWithHeaders}
 import com.sky.kms.domain.{Schedule, ScheduleEvent}
@@ -35,11 +34,6 @@ object TestDataUtils {
 
   implicit val arbFiniteDuration: Arbitrary[FiniteDuration] =
     Arbitrary(arbNextMonthOffsetDateTime.arbitrary.map(_.getSecond.seconds))
-
-  implicit val schemaForScheduleWithHeaders  = SchemaFor[ScheduleWithHeaders]
-  implicit val schemaForScheduleNoHeaders    = SchemaFor[ScheduleNoHeaders]
-  implicit val encoderForScheduleWithHeaders = Encoder[ScheduleWithHeaders]
-  implicit val encoderForScheduleNoHeaders   = Encoder[ScheduleNoHeaders]
 
   implicit class ScheduleEventOps(private val schedule: ScheduleEvent) extends AnyVal {
     def toSchedule: ScheduleWithHeaders = {

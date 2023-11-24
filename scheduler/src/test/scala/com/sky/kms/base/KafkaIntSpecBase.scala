@@ -31,12 +31,12 @@ trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
   }
 
   def consumeFirstFrom[T : Deserializer](topic: String): ConsumerRecord[Array[Byte], T] =
-    withConsumer { cr: KafkaConsumer[Array[Byte], T] =>
+    withConsumer { (cr: KafkaConsumer[Array[Byte], T]) =>
       subscribeAndPoll(topic)(cr).next()
     }
 
   def consumeSomeFrom[T : Deserializer](topic: String, numMsgs: Int): List[ConsumerRecord[String, T]] =
-    withConsumer { cr: KafkaConsumer[String, T] =>
+    withConsumer { (cr: KafkaConsumer[String, T]) =>
       subscribeAndPoll(topic)(cr).toList.take(numMsgs)
     }
 }

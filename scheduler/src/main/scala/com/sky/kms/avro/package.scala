@@ -1,8 +1,8 @@
 package com.sky.kms
 
-import com.sksamuel.avro4s
-
 import java.time.{Instant, OffsetDateTime, ZoneOffset}
+
+import com.sksamuel.avro4s
 import com.sksamuel.avro4s.{Decoder, Encoder, SchemaFor}
 import org.apache.avro.Schema
 

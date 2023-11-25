@@ -25,21 +25,22 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
     headers = Map("headerKey" -> "headerValue".getBytes(StandardCharsets.UTF_8))
   )
 
-  "avro SerDes" when {
+  "avro SerDes" should {
 
-    "avroBinaryDeserializer" should {
-      "roundtrip valid Avro binary" in {
-        final case class TestData(foo: String, bar: Int)
-        val testData          = TestData("bar", 1)
-        given Codec[TestData] = Codec.derive[TestData]
+    "roundtrip valid Avro binary" in {
+      final case class TestData(foo: String, bar: Int)
+      val testData = TestData("bar", 1)
 
-        for {
-          serialized   <- avroBinarySerializer[IO, TestData].serialize("test", Headers.empty, testData)
-          deserialized <- avroBinaryDeserializer[IO, TestData].deserialize("test", Headers.empty, serialized)
-        } yield deserialized.value shouldBe testData
-      }
+      given Codec[TestData] = Codec.derive[TestData]
+
+      for {
+        serialized   <- avroBinarySerializer[IO, TestData].serialize("test", Headers.empty, testData)
+        deserialized <- avroBinaryDeserializer[IO, TestData].deserialize("test", Headers.empty, serialized)
+      } yield deserialized.value shouldBe testData
     }
+  }
 
+  "avroBinaryDeserializer" should {
     "deserialize a Schedule" in {
       for {
         avroBinary   <- Codec.toBinary[AvroSchedule](scheduleWithHeaders).liftAvro[IO]
@@ -53,7 +54,6 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
         deserialized <- avroBinaryDeserializer[IO, AvroSchedule].deserialize("test", Headers.empty, bytes)
       } yield deserialized.left.value shouldBe a[ScheduleError.InvalidAvroError]
     }
-
   }
 
   extension [R](either: Either[AvroError, R]) {

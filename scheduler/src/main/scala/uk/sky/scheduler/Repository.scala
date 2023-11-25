@@ -31,10 +31,16 @@ object Repository {
 
   // Observed Helpers
   extension [F[_] : Monad, V](maybeF: F[Option[V]]) {
-    private def ifPresent(record: F[Unit]) =
+    private def ifPresent(record: F[Unit]): F[Option[V]] =
       maybeF.flatTap {
         case Some(_) => record
         case None    => Monad[F].unit
+      }
+
+    private def ifNotPresent(record: F[Unit]): F[Option[V]] =
+      maybeF.flatTap {
+        case Some(_) => Monad[F].unit
+        case None    => record
       }
   }
 
@@ -50,7 +56,7 @@ object Repository {
         private val underlying = RepositoryImpl(mapRef)
 
         override def set(key: K, value: V): F[Unit] =
-          underlying.set(key, value).ifPresent(counter.inc(totalAttribute) &> counter.inc(setAttribute)).void
+          underlying.set(key, value).ifNotPresent(counter.inc(totalAttribute) &> counter.inc(setAttribute)).void
 
         override def get(key: K): F[Option[V]] =
           underlying.get(key)

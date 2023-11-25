@@ -10,7 +10,7 @@ enum ScheduleError(val message: String) extends Throwable(message) {
   case NotJsonError(payload: String, error: String)
       extends ScheduleError(s"'$payload' was not valid JSON with error: $error")
   case InvalidJsonError(payload: String, error: String)
-      extends ScheduleError(s"JSON message '$payload' did not conform to Schema with error: $error")
+      extends ScheduleError(s"JSON '$payload' did not conform to Schema with error: $error")
   case DecodeError(key: String, errorMessage: String)
       extends ScheduleError(s"Failed to decode [$key] with error: $errorMessage")
   case InvalidTimeError(key: String, epoch: Long)

@@ -10,12 +10,9 @@ import uk.sky.scheduler.error.ScheduleError
 def jsonDeserializer[F[_] : Sync, T : Decoder]: ValueDeserializer[F, Either[ScheduleError, T]] =
   for {
     payload <- Deserializer.string[F]
-    decoded <- Deserializer.const {
-                 for {
-                   json    <- parser.parse(payload).leftMap(e => ScheduleError.NotJsonError(payload, e.getMessage))
-                   decoded <- json.as[T].leftMap(e => ScheduleError.InvalidJsonError(json.noSpaces, e.getMessage))
-                 } yield decoded
-               }
+  } yield for {
+    json    <- parser.parse(payload).leftMap(e => ScheduleError.NotJsonError(payload, e.getMessage))
+    decoded <- json.as[T].leftMap(e => ScheduleError.InvalidJsonError(json.noSpaces, e.getMessage))
   } yield decoded
 
 def jsonSerializer[F[_] : Sync, V : Encoder]: ValueSerializer[F, V] =

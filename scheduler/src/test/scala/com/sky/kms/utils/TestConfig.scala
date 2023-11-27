@@ -9,7 +9,7 @@ import scala.concurrent.duration.*
 object TestConfig {
   def apply(topics: NonEmptyList[Topic]): SchedulerConfig =
     SchedulerConfig(
-      ReaderConfig(topics, timeouts = ReaderConfig.TimeoutConfig(100.millis, 100.millis)),
+      ReaderConfig(topics, timeouts = ReaderConfig.TimeoutConfig(1.second, 100.millis)),
       PublisherConfig(queueBufferSize = 100)
     )
 }

@@ -85,6 +85,10 @@ object Dependencies {
     lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.3+3-c7ee46c6-SNAPSHOT"
   }
 
+  object Typelevel {
+    val caseInsensitive = "org.typelevel" %% "case-insensitive" % "1.4.0"
+  }
+
   object Vulcan {
     private lazy val version = "1.9.0"
 

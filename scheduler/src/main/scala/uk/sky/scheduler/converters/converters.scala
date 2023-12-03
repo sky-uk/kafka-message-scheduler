@@ -57,5 +57,5 @@ extension (scheduleEvent: ScheduleEvent) {
       topic = scheduleEvent.metadata.scheduleTopic,
       key = scheduleEvent.metadata.id.getBytes(StandardCharsets.UTF_8),
       value = none[Array[Byte]]
-    ).withHeaders(Headers(Header(Message.expiredHeader, "true")))
+    ).withHeaders(Headers(Header(Message.Headers.expiredHeaderKey, Message.Headers.expiredHeaderValue)))
 }

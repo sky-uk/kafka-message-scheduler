@@ -32,6 +32,7 @@ libraryDependencies ++= Seq(
   PureConfig.core,
   ScalaTest.scalaTest,
   TopicLoader.topicLoader,
+  Typelevel.caseInsensitive,
   Vulcan.core,
   Vulcan.generic
 )

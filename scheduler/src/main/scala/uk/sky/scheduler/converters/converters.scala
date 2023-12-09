@@ -17,7 +17,7 @@ extension (schedule: JsonSchedule) {
       .into[Schedule]
       .withFieldComputed(_.key, _.key.base64Decode)
       .withFieldComputed(_.value, _.value.map(_.base64Decode))
-      .withFieldComputed(_.headers, _.headers.view.mapValues(_.base64Decode).toMap)
+      .withFieldComputed(_.headers, _.headers.base64DecodeValues)
       .transform
 
     ScheduleEvent(Metadata(id, scheduleTopic), event)
@@ -39,7 +39,7 @@ extension (scheduleEvent: ScheduleEvent) {
       .into[JsonSchedule]
       .withFieldComputed(_.key, _.key.base64Encode)
       .withFieldComputed(_.value, _.value.map(_.base64Encode))
-      .withFieldComputed(_.headers, _.headers.view.mapValues(_.base64Encode).toMap)
+      .withFieldComputed(_.headers, _.headers.base64EncodeValues)
       .transform
 
   def toAvroSchedule: AvroSchedule =

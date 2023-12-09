@@ -51,7 +51,7 @@ object ScheduleQueue {
 
     override def cancel(key: String): F[Unit] =
       repository.get(key).flatMap {
-        case Some(started) => started.cancel &> repository.delete(key) // Offer & Delete in Parallel
+        case Some(started) => started.cancel &> repository.delete(key) // Cancel & Delete in Parallel
         case None          => Async[F].unit
       }
   }

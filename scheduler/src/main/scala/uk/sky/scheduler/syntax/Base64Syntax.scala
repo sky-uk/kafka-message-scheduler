@@ -19,6 +19,16 @@ trait Base64Syntax {
     def base64Encode: String =
       b64Encoder.encodeToString(bytes)
   }
+
+  extension (map: Map[String, Array[Byte]]) {
+    def base64EncodeValues: Map[String, String] =
+      map.view.mapValues(_.base64Encode).toMap
+  }
+
+  extension (map: Map[String, String]) {
+    def base64DecodeValues: Map[String, Array[Byte]] =
+      map.view.mapValues(_.base64Decode).toMap
+  }
 }
 
 object base64 extends Base64Syntax

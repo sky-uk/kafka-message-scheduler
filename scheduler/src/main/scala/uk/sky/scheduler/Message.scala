@@ -22,7 +22,7 @@ object Message {
         headers.removed(CIString(key))
     }
 
-    def fromMap(rawHeaders: Map[String, String]): Headers =
+    def apply(rawHeaders: Map[String, String]): Headers =
       rawHeaders.map(CIString(_) -> CIString(_))
 
     final val expiredHeaderKey: String   = "schedule:expired"
@@ -30,6 +30,6 @@ object Message {
   }
 
   extension [T](message: Message[T]) {
-    def expired: Boolean = message.headers.getHeader(expiredHeaderKey).contains(expiredHeaderValue)
+    def expired: Boolean = message.headers.getHeader(expiredHeaderKey).contains(CIString(expiredHeaderValue))
   }
 }

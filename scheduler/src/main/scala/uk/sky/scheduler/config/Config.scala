@@ -1,10 +1,8 @@
 package uk.sky.scheduler.config
 
-import cats.syntax.all.*
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.record.CompressionType
 import pureconfig.ConfigReader.Result
-import pureconfig.error.CannotConvert
 import pureconfig.generic.derivation.default.*
 import pureconfig.{ConfigCursor, ConfigReader}
 import uk.sky.scheduler.config.TopicConfig.topicConfigReader
@@ -33,20 +31,12 @@ final case class TopicConfig(avro: List[String], json: List[String])
 
 object TopicConfig {
 
-  // TODO - test this
-  given topicConfigReader: ConfigReader[TopicConfig] = ConfigReader.fromCursor[TopicConfig] { cur =>
-    for {
-      objCur  <- cur.asObjectCursor
-      avroCur <- objCur.atKey("avro")
-      avroL   <- avroCur.asList
-      avro    <- avroL.traverse(_.asString)
-      jsonCur <- objCur.atKey("json")
-      jsonL   <- jsonCur.asList
-      json    <- jsonL.traverse(_.asString)
-      config  <- if (avro.isEmpty && json.isEmpty)
-                   cur.failed(CannotConvert("TopicConfig", "TopicConfig", "both Avro and JSON topics were empty"))
-                 else TopicConfig(avro, json).asRight
-    } yield config
+  given topicConfigReader: ConfigReader[TopicConfig] =
+    ConfigReader
+      .forProduct2[TopicConfig, List[String], List[String]]("avro", "json")(TopicConfig.apply)
+      .ensure(
+        config => config.avro.nonEmpty || config.json.nonEmpty,
+        _ => "both Avro and JSON topics were empty"
+      )
 
-  }
 }

@@ -30,25 +30,25 @@ object EventSubscriber {
     type Input = JsonSchedule | AvroSchedule
 
     def toEvent(cr: ConsumerRecord[String, Either[ScheduleError, Option[Input]]]): Message[Output] = {
-      val key = cr.key
+      val key   = cr.key
+      val topic = cr.topic
 
       val payload: Either[ScheduleError, Option[ScheduleEvent]] = cr.value match {
         case Left(error)        => ScheduleError.DecodeError(key, error.getMessage).asLeft
         case Right(None)        => none[ScheduleEvent].asRight[ScheduleError]
         case Right(Some(input)) =>
           val scheduleEvent = input match {
-            case avroSchedule: AvroSchedule => avroSchedule.scheduleEvent(cr.key, cr.topic)
-            case jsonSchedule: JsonSchedule => jsonSchedule.scheduleEvent(cr.key, cr.topic)
+            case avroSchedule: AvroSchedule => avroSchedule.scheduleEvent(key, topic)
+            case jsonSchedule: JsonSchedule => jsonSchedule.scheduleEvent(key, topic)
           }
           scheduleEvent.some.asRight[ScheduleError]
       }
 
       Message[Output](
         key = key,
-        source = cr.topic,
+        source = topic,
         value = payload,
-        headers =
-          Message.Headers.fromMap(cr.headers.toChain.map(header => header.key -> header.as[String]).toList.toMap)
+        headers = Message.Headers(cr.headers.toChain.map(header => header.key -> header.as[String]).toList.toMap)
       )
     }
 
@@ -113,12 +113,18 @@ object EventSubscriber {
 
     new EventSubscriber[F] {
       override def messages: Stream[F, Message[Output]] = delegate.messages.evalTapChunk { message =>
-        val key   = message.key
-        val topic = message.source
+        val key    = message.key
+        val source = message.source
+
         message.value match {
-          case Left(error)    => logger.error(error)(s"Error decoding [$key] from topic $topic - ${error.getMessage}")
-          case Right(None)    => logger.info(s"Decoded DELETE for [$key] from topic $topic")
-          case Right(Some(_)) => logger.info(s"Decoded UPDATE for [$key] from topic $topic")
+          case Left(error) =>
+            logger.error(error)(s"Error decoding [$key] from $source - ${error.getMessage}")
+
+          case Right(None) =>
+            logger.info(s"Decoded DELETE for${if (message.expired) " expired" else ""} [$key] from $source")
+
+          case Right(Some(_)) =>
+            logger.info(s"Decoded UPDATE for [$key] from $source")
         }
       }
     }

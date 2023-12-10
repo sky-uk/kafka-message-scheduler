@@ -22,7 +22,8 @@ object SchedulePublisher {
     val producerSettings: ProducerSettings[F, Array[Byte], Option[Array[Byte]]] =
       ProducerSettings[F, Array[Byte], Option[Array[Byte]]]
         .withBootstrapServers(config.kafka.bootstrapServers)
-        .withProperties(KafkaConfig.atLeastOnceProducerProperties)
+        .withProperties(KafkaConfig.atLeastOnce)
+        .withProperties(KafkaConfig.performant)
         .withProperties(config.kafka.properties)
 
     new SchedulePublisher[F, Unit] {

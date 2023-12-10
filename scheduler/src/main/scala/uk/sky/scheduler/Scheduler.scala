@@ -20,7 +20,8 @@ class Scheduler[F[_] : Concurrent : LoggerFactory, O](
 
   private val scheduleStream = eventSubscriber.messages.evalMapChunk { message =>
     message.value match {
-      case Left(_) | Right(None) => if (message.expired) Concurrent[F].unit else scheduleQueue.cancel(message.key)
+      case Left(_)               => scheduleQueue.cancel(message.key)
+      case Right(None)           => if (message.expired) Concurrent[F].unit else scheduleQueue.cancel(message.key)
       case Right(Some(schedule)) => scheduleQueue.schedule(message.key, schedule).void
     }
   }

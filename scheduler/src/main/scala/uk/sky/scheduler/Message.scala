@@ -15,10 +15,10 @@ object Message {
       def getHeader(key: String): Option[CIString] =
         headers.get(CIString(key))
 
-      def setHeader(key: String, value: String): Map[CIString, CIString] =
+      def setHeader(key: String, value: String): Headers =
         headers.updated(CIString(key), CIString(value))
 
-      def deleteHeader(key: String): Map[CIString, CIString] =
+      def deleteHeader(key: String): Headers =
         headers.removed(CIString(key))
     }
 

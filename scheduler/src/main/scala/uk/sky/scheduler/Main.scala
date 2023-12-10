@@ -1,5 +1,6 @@
 package uk.sky.scheduler
 
+import cats.effect.Resource.ExitCase
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
 import fs2.*
@@ -25,7 +26,11 @@ object Main extends IOApp.Simple {
       given Meter[IO] <- otel4s.meterProvider.get(appName)
       _               <- logger.info(s"Loaded Config: ${config.show}")
       scheduler       <- Scheduler.live[IO](config)
-      _               <- scheduler.stream.compile.drain
+      _               <- scheduler.stream.onFinalizeCase {
+                           case ExitCase.Succeeded  => logger.info("Stream Succeeded")
+                           case ExitCase.Errored(e) => logger.error(e)(s"Stream error - ${e.getMessage}")
+                           case ExitCase.Canceled   => logger.info("Stream canceled")
+                         }.compile.drain
     } yield ()
 
 }

@@ -1,7 +1,6 @@
 package uk.sky.scheduler
 
 import cats.Parallel
-import cats.effect.Resource.ExitCase
 import cats.effect.std.Queue
 import cats.effect.{Async, Concurrent, Deferred}
 import cats.syntax.all.*
@@ -11,13 +10,11 @@ import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.domain.ScheduleEvent
 
-class Scheduler[F[_] : Concurrent : LoggerFactory, O](
+class Scheduler[F[_] : Concurrent, O](
     eventSubscriber: EventSubscriber[F],
     scheduleQueue: ScheduleQueue[F],
     schedulePublisher: SchedulePublisher[F, O]
 ) {
-  private val logger = LoggerFactory[F].getLogger
-
   private val scheduleStream = eventSubscriber.messages.evalMapChunk { message =>
     message.value match {
       case Left(_)               => scheduleQueue.cancel(message.key)
@@ -27,11 +24,7 @@ class Scheduler[F[_] : Concurrent : LoggerFactory, O](
   }
 
   def stream: Stream[F, O] =
-    scheduleStream.drain.merge(schedulePublisher.publish).onFinalizeCase {
-      case ExitCase.Succeeded  => logger.info("Stream Succeeded")
-      case ExitCase.Errored(e) => logger.error(e)(s"Stream error - ${e.getMessage}")
-      case ExitCase.Canceled   => logger.info("Stream canceled")
-    }
+    scheduleStream.drain.merge(schedulePublisher.publish)
 }
 
 object Scheduler {

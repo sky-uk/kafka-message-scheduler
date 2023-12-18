@@ -35,5 +35,5 @@ object Scheduler {
       scheduleQueue    <- ScheduleQueue.live[F](eventQueue, allowEnqueue)
       eventSubscriber  <- EventSubscriber.live[F](config.scheduler, allowEnqueue)
       schedulePublisher = SchedulePublisher.kafka[F](config.scheduler, eventQueue)
-    } yield new Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
+    } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
 }

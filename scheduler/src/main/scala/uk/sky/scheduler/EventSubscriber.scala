@@ -121,7 +121,8 @@ object EventSubscriber {
             logger.error(error)(s"Error decoding [$key] from $source - ${error.getMessage}")
 
           case Right(None) =>
-            logger.info(s"Decoded DELETE for${if (message.expired) " expired" else ""} [$key] from $source")
+            val deleteType = if (message.expired) "expired" else "canceled"
+            logger.info(s"Decoded DELETE type=[$deleteType] for [$key] from $source")
 
           case Right(Some(_)) =>
             logger.info(s"Decoded UPDATE for [$key] from $source")

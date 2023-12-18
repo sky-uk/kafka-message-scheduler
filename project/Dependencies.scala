@@ -13,7 +13,7 @@ object Dependencies {
   }
 
   object Chimney {
-    lazy val chimney = "io.scalaland" %% "chimney" % "0.8.2"
+    lazy val chimney = "io.scalaland" %% "chimney" % "0.8.4"
   }
 
   object Circe {
@@ -34,11 +34,11 @@ object Dependencies {
   }
 
   object Janino {
-    val janino = "org.codehaus.janino" % "janino" % "3.1.10" % Runtime
+    val janino = "org.codehaus.janino" % "janino" % "3.1.11" % Runtime
   }
 
   object Logback {
-    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.4.11" % Runtime
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.4.14" % Runtime
   }
 
   object Logstash {
@@ -50,9 +50,9 @@ object Dependencies {
   }
 
   object OpenTelemetry {
-    private lazy val version      = "1.32.0"
-    private lazy val alphaVersion = "1.32.0-alpha"
-    private lazy val agentVersion = "1.31.0"
+    private lazy val version      = "1.33.0"
+    private lazy val alphaVersion = "1.33.0-alpha"
+    private lazy val agentVersion = "1.32.0"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"       % version      % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus" % alphaVersion % Runtime
@@ -82,7 +82,7 @@ object Dependencies {
   }
 
   object TopicLoader {
-    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.3+3-c7ee46c6-SNAPSHOT"
+    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.4"
   }
 
   object Typelevel {

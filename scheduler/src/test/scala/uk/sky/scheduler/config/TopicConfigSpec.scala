@@ -2,7 +2,6 @@ package uk.sky.scheduler.config
 
 import cats.data.NonEmptyList
 import cats.laws.discipline.arbitrary.*
-import cats.syntax.all.*
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
@@ -15,13 +14,15 @@ final class TopicConfigSpec extends AsyncWordSpec, ScalaCheckPropertyChecks, Mat
   "TopicConfig.topicConfigReader" should {
 
     extension (nel: List[String]) {
-      def toConfigString: String = nel.map(s => s""""$s"""").mkString_(", ")
+
+      /** List("a", "b") -> ["a", "b"]
+        */
+      def toConfigString: String = nel.map(s => s"\"$s\"").mkString(start = "[", sep = ", ", end = "]")
     }
 
     given arbValidConfigString: Arbitrary[String] = Arbitrary(Gen.alphaStr)
 
     given arbConfig: Arbitrary[TopicConfig] = Arbitrary {
-
       for {
         avroTopics <- Arbitrary.arbitrary[NonEmptyList[String]]
         jsonTopics <- Arbitrary.arbitrary[NonEmptyList[String]]
@@ -32,8 +33,8 @@ final class TopicConfigSpec extends AsyncWordSpec, ScalaCheckPropertyChecks, Mat
       val config = ConfigSource.string(
         s"""
              |{
-             |  avro: [${topicConfig.avro.toConfigString}]
-             |  json: [${topicConfig.json.toConfigString}]
+             |  avro: ${topicConfig.avro.toConfigString}
+             |  json: ${topicConfig.json.toConfigString}
              |}
              |""".stripMargin
       )
@@ -45,7 +46,7 @@ final class TopicConfigSpec extends AsyncWordSpec, ScalaCheckPropertyChecks, Mat
       val config = ConfigSource.string(
         s"""
            |{
-           |  avro: [${topicConfig.avro.toConfigString}]
+           |  avro: ${topicConfig.avro.toConfigString}
            |  json: []
            |}
            |""".stripMargin
@@ -59,7 +60,7 @@ final class TopicConfigSpec extends AsyncWordSpec, ScalaCheckPropertyChecks, Mat
         s"""
            |{
            |  avro: []
-           |  json: [${topicConfig.json.toConfigString}]
+           |  json: ${topicConfig.json.toConfigString}
            |}
            |""".stripMargin
       )

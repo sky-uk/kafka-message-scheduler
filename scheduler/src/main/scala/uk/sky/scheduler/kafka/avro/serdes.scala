@@ -22,14 +22,26 @@ given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
 def avroBinaryDeserializer[F[_] : Sync, V : Codec]: ValueDeserializer[F, Either[ScheduleError, V]] =
   Deserializer.lift[F, Either[ScheduleError, V]] { bytes =>
     for {
-      schema            <- Sync[F].fromEither(Codec[V].schema.leftMap(_.throwable))
-      maybeDeserialized <-
-        Sync[F].delay {
-          Codec.fromBinary[V](bytes, schema).leftMap(e => ScheduleError.InvalidAvroError(schema, e.message))
-        }
+      schema            <- Sync[F].defer {
+                             Codec[V].schema
+                               .leftMap(_.throwable)
+                               .liftTo[F]
+                           }
+      maybeDeserialized <- Sync[F].delay {
+                             Codec
+                               .fromBinary[V](bytes, schema)
+                               .leftMap(e => ScheduleError.InvalidAvroError(schema, e.message))
+                           }
     } yield maybeDeserialized
 
   }
 
 def avroBinarySerializer[F[_] : Sync, V : Codec]: ValueSerializer[F, V] =
-  Serializer.lift[F, V](v => Sync[F].fromEither(Codec.toBinary[V](v).leftMap(_.throwable)))
+  Serializer.lift[F, V] { avro =>
+    Sync[F].defer {
+      Codec
+        .toBinary[V](avro)
+        .leftMap(_.throwable)
+        .liftTo[F]
+    }
+  }

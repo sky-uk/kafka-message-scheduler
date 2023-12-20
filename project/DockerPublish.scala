@@ -21,7 +21,7 @@ object DockerPublish {
     dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
-      Cmd("RUN", "apk add --no-cache bash openjdk17")
+      Cmd("RUN", "apk add --no-cache bash openjdk17 libc6-compat")
     )
   )
 

@@ -9,10 +9,10 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import cats.Eval
 import com.fortysevendeg.scalacheck.datetime.GenDateTime.genDateTimeWithinRange
-import com.fortysevendeg.scalacheck.datetime.instances.jdk8._
+import com.fortysevendeg.scalacheck.datetime.instances.jdk8.*
 import com.sksamuel.avro4s.{AvroOutputStream, Encoder, SchemaFor}
 import com.sky.kms.SchedulerApp
-import com.sky.kms.avro._
+import com.sky.kms.avro.*
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain.Schedule.{ScheduleNoHeaders, ScheduleWithHeaders}
 import com.sky.kms.domain.{Schedule, ScheduleEvent}
@@ -20,7 +20,7 @@ import com.sky.kms.streams.{ScheduleReader, ScheduledMessagePublisher}
 import org.scalacheck.{Arbitrary, Gen}
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 object TestDataUtils {
 

@@ -4,13 +4,14 @@ import akka.Done
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.kafka.scaladsl.Consumer.Control
 import akka.pattern.ask
-import akka.stream.scaladsl._
+import akka.stream.scaladsl.*
 import cats.Eval
-import com.sky.kms._
-import com.sky.kms.actors.SchedulingActor._
-import com.sky.kms.config._
-import com.sky.kms.domain.ApplicationError._
-import com.sky.kms.domain._
+import com.sky.kafka.topicloader.*
+import com.sky.kms.*
+import com.sky.kms.actors.SchedulingActor.*
+import com.sky.kms.config.*
+import com.sky.kms.domain.ApplicationError.*
+import com.sky.kms.domain.*
 import com.sky.kms.streams.ScheduleReader.In
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, Deserializer, StringDeserializer}

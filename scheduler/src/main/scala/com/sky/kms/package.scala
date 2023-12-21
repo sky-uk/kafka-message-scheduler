@@ -4,17 +4,17 @@ import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit.MILLIS
 
 import cats.data.Reader
-import cats.implicits._
+import cats.syntax.all.*
 import com.sksamuel.avro4s.{AvroInputStream, AvroSchema, Decoder, SchemaFor}
-import com.sky.kms.avro._
-import com.sky.kms.domain.ApplicationError._
+import com.sky.kms.avro.*
+import com.sky.kms.domain.ApplicationError.*
 import com.sky.kms.domain.Schedule.{ScheduleNoHeaders, ScheduleWithHeaders}
-import com.sky.kms.domain._
+import com.sky.kms.domain.*
 import com.sky.kms.kafka.ConsumerRecordDecoder
 import com.sky.kms.streams.ScheduleReader
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.Try
 
 package object kms {

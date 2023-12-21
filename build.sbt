@@ -1,6 +1,7 @@
-import Aliases._
-import Release._
-import DockerPublish._
+import Aliases.*
+import Release.*
+import DockerPublish.*
+import org.typelevel.scalacoptions.ScalacOptions
 
 ThisBuild / scalafmtOnCompile                              := true
 ThisBuild / semanticdbEnabled                              := true
@@ -17,11 +18,8 @@ val commonSettings = Seq(
 )
 
 val compilerSettings = Seq(
-  // Compiler option not provided by sbt-tpolecat
-  scalacOptions += "-Ymacro-annotations",
-  tpolecatScalacOptions ~= { opts =>
-    opts.filterNot(Set(ScalacOptions.warnValueDiscard))
-  }
+  tpolecatScalacOptions ++= Set(ScalacOptions.other("-Ymacro-annotations"), ScalacOptions.source3),
+  tpolecatExcludeOptions ++= Set(ScalacOptions.warnNonUnitStatement, ScalacOptions.warnValueDiscard)
 )
 
 val buildInfoSettings = Seq(

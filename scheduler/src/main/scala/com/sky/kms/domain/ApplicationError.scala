@@ -5,8 +5,8 @@ import java.time.OffsetDateTime
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.{Done, NotUsed}
 import cats.Show
-import cats.Show._
-import cats.syntax.show._
+import cats.Show.*
+import cats.syntax.show.*
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Future

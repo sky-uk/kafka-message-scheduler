@@ -4,9 +4,9 @@ import java.util.UUID
 
 import com.sky.kms.base.SpecBase
 import com.sky.kms.domain.PublishableMessage.ScheduleDeletion
-import com.sky.kms.domain._
+import com.sky.kms.domain.*
 import com.sky.kms.streams.ScheduledMessagePublisher
-import com.sky.kms.utils.TestDataUtils._
+import com.sky.kms.utils.TestDataUtils.*
 
 class ScheduledMessagePublisherSpec extends SpecBase {
 

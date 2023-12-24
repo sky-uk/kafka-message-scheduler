@@ -1,8 +1,10 @@
 package uk.sky.scheduler
 
 import cats.Parallel
+import cats.data.Reader
 import cats.effect.std.Queue
-import cats.effect.{Async, Concurrent, Deferred}
+import cats.effect.syntax.all.*
+import cats.effect.{Async, Concurrent, Deferred, Resource}
 import cats.syntax.all.*
 import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
@@ -28,12 +30,14 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter](config: Config): F[Scheduler[F, Unit]] =
-    for {
-      eventQueue       <- Queue.unbounded[F, ScheduleEvent]
-      allowEnqueue     <- Deferred[F, Unit]
-      scheduleQueue    <- ScheduleQueue.live[F](eventQueue, allowEnqueue)
-      eventSubscriber  <- EventSubscriber.live[F](config.scheduler, allowEnqueue)
-      schedulePublisher = SchedulePublisher.kafka[F](config.scheduler, eventQueue)
-    } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
+  def live[F[_] : Async : Parallel : LoggerFactory : Meter]: Reader[Config, Resource[F, Scheduler[F, Unit]]] =
+    Reader { config =>
+      for {
+        eventQueue       <- Queue.unbounded[F, ScheduleEvent].toResource
+        allowEnqueue     <- Deferred[F, Unit].toResource
+        scheduleQueue    <- ScheduleQueue.live[F](eventQueue, allowEnqueue).toResource
+        eventSubscriber  <- EventSubscriber.live[F](config.scheduler, allowEnqueue).toResource
+        schedulePublisher = SchedulePublisher.kafka[F](config.scheduler, eventQueue)
+      } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
+    }
 }

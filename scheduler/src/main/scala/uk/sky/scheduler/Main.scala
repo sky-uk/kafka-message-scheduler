@@ -19,18 +19,19 @@ object Main extends IOApp.Simple {
   given LoggerFactory[IO] = Slf4jFactory.create[IO]
   val logger              = LoggerFactory.getLogger[IO]
 
-  override def run: IO[Unit] =
+  override def run: IO[Unit] = {
     for {
-      config          <- ConfigSource.default.loadF[IO, Config]()
-      otel4s          <- OtelJava.global[IO]
-      given Meter[IO] <- otel4s.meterProvider.get(appName)
-      _               <- logger.info(s"Loaded Config: ${config.show}")
-      scheduler       <- Scheduler.live[IO](config)
-      _               <- scheduler.stream.onFinalizeCase {
+      config          <- Stream.eval(ConfigSource.default.loadF[IO, Config]())
+      otel4s          <- Stream.eval(OtelJava.global[IO])
+      given Meter[IO] <- Stream.eval(otel4s.meterProvider.get(appName))
+      _               <- Stream.eval(logger.info(s"Loaded Config: ${config.show}"))
+      scheduler       <- Stream.resource(Scheduler.live[IO].apply(config))
+      message         <- scheduler.stream.onFinalizeCase {
                            case ExitCase.Succeeded  => logger.info("Stream Succeeded")
                            case ExitCase.Errored(e) => logger.error(e)(s"Stream error - ${e.getMessage}")
                            case ExitCase.Canceled   => logger.info("Stream canceled")
-                         }.compile.drain
-    } yield ()
+                         }
+    } yield message
+  }.compile.drain
 
 }

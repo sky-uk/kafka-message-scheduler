@@ -24,7 +24,7 @@ object Dependencies {
   }
 
   object Fs2 {
-    private lazy val version      = "3.9.2"
+    private lazy val version      = "3.9.3"
     private lazy val kafkaVersion = "3.2.0"
 
     lazy val core        = "co.fs2"          %% "fs2-core"         % version
@@ -63,7 +63,7 @@ object Dependencies {
   }
 
   object Otel4s {
-    private lazy val version = "0.3.0"
+    private lazy val version = "0.4.0"
 
     lazy val java    = "org.typelevel" %% "otel4s-java"    % version
     lazy val testkit = "org.typelevel" %% "otel4s-testkit" % version % Test

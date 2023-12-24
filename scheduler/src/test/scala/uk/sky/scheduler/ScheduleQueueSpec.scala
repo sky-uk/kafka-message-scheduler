@@ -12,7 +12,6 @@ import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{Assertion, EitherValues, OptionValues}
 import uk.sky.scheduler.ScheduleQueue.CancelableSchedule
 import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
-import uk.sky.scheduler.error.ScheduleError
 
 import scala.concurrent.duration.*
 
@@ -64,20 +63,25 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
           _          <- allowEnqueue.complete(())
           _          <- scheduleQueue.schedule("key", scheduleEvent)
           schedule   <- repository.get("key").map(_.value)
-          newSchedule = scheduleEvent.focus(_.schedule.time).modify(_ + +100_000L)
+          newSchedule = scheduleEvent.focus(_.schedule.time).modify(_ + 100_000L)
           _          <- scheduleQueue.schedule("key", newSchedule)
           outcome    <- schedule.join.testTimeout()
         } yield outcome shouldBe Outcome.canceled[IO, Throwable, Unit]
       }
 
-      "error if the scheduled time is not valid" in withContext { ctx =>
+      "schedule for the maximum finite duration if the scheduled time is too large" in withContext { ctx =>
         import ctx.*
 
         val invalidSchedule = scheduleEvent.focus(_.schedule.time).replace(Long.MaxValue)
 
         for {
-          result <- scheduleQueue.schedule("key", invalidSchedule)
-        } yield result.left.value shouldBe ScheduleError.InvalidTimeError("key", invalidSchedule.schedule.time)
+          _        <- allowEnqueue.complete(())
+          control  <- TestControl.execute(scheduleQueue.schedule("key", invalidSchedule))
+          _        <- control.results.asserting(_ shouldBe None)
+          _        <- control.tick
+          interval <- control.nextInterval
+          _        <- control.tickFor(interval)
+        } yield interval.toNanos shouldBe Long.MaxValue
       }
     }
 

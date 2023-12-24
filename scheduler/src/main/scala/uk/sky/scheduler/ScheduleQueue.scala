@@ -7,12 +7,11 @@ import cats.{Monad, Parallel}
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.domain.ScheduleEvent
-import uk.sky.scheduler.error.ScheduleError
 
 import scala.concurrent.duration.*
 
 trait ScheduleQueue[F[_]] {
-  def schedule(key: String, scheduleEvent: ScheduleEvent): F[Either[ScheduleError, Unit]]
+  def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit]
   def cancel(key: String): F[Unit]
 }
 
@@ -25,8 +24,8 @@ object ScheduleQueue {
       queue: Queue[F, ScheduleEvent],
       supervisor: Supervisor[F]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
-    override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Either[ScheduleError, Unit]] = {
-      def delayScheduling(time: FiniteDuration): F[Unit] =
+    override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] = {
+      def delayScheduling(delay: FiniteDuration): F[CancelableSchedule[F]] =
         for {
           cancelable <- supervisor.supervise(
                           Async[F]
@@ -35,21 +34,21 @@ object ScheduleQueue {
                                 _ <- allowEnqueue.get                                     // Block until Queuing is allowed
                                 _ <- queue.offer(scheduleEvent) &> repository.delete(key) // Offer & Delete in Parallel
                               } yield (),
-                              time = time
+                              time = delay
                             )
                         )
-          _          <- repository.set(key, cancelable)
-        } yield ()
+        } yield cancelable
 
       for {
-        previous <- repository.get(key)
-        _        <- previous.fold(Async[F].unit)(_.cancel) // Cancel the previous Schedule if it exists
-        now      <- Async[F].realTimeInstant
-        result   <- Either
-                      .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now.toEpochMilli).milliseconds)
-                      .leftMap(_ => ScheduleError.InvalidTimeError(key, scheduleEvent.schedule.time))
-                      .bitraverse(_.pure, delayScheduling)
-      } yield result
+        previous   <- repository.get(key)
+        _          <- previous.fold(Async[F].unit)(_.cancel) // Cancel the previous Schedule if it exists
+        now        <- Async[F].realTimeInstant
+        delay       = Either
+                        .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now.toEpochMilli).milliseconds)
+                        .getOrElse(Long.MaxValue.nanos)
+        cancelable <- delayScheduling(delay)
+        _          <- repository.set(key, cancelable)
+      } yield ()
     }
 
     override def cancel(key: String): F[Unit] =
@@ -63,13 +62,10 @@ object ScheduleQueue {
     new ScheduleQueue[F] {
       val logger = LoggerFactory[F].getLogger
 
-      override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Either[ScheduleError, Unit]] =
+      override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
         for {
           result <- delegate.schedule(key, scheduleEvent)
-          _      <- result match {
-                      case Left(e)  => logger.warn(e)(s"Failed to Schedule $key - ${e.getMessage}")
-                      case Right(_) => logger.info(s"Scheduled [$key]")
-                    }
+          _      <- logger.info(s"Scheduled [$key]")
         } yield result
 
       override def cancel(key: String): F[Unit] =

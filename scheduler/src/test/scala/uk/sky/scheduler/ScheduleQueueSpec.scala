@@ -1,6 +1,6 @@
 package uk.sky.scheduler
 
-import cats.effect.std.{MapRef, Queue}
+import cats.effect.std.{MapRef, Queue, Supervisor}
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.testkit.TestControl
 import cats.effect.{Deferred, IO, Outcome}
@@ -159,21 +159,27 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
   }
 
   private def withContext(test: TestContext => IO[Assertion]): IO[Assertion] =
-    for {
-      now        <- IO.realTimeInstant
-      repo       <- MapRef.ofScalaConcurrentTrieMap[IO, String, CancelableSchedule[IO]].map(Repository.apply)
-      deferred   <- Deferred[IO, Unit]
-      queue      <- Queue.unbounded[IO, ScheduleEvent]
-      schedule   <- IO.fromOption(scheduleEventArb.sample)(TestFailedException("Could not generate a schedule", 0))
-                      .map(_.focus(_.schedule.time).replace(now.plusSeconds(10).toEpochMilli))
-      testContext = new TestContext {
-                      override val repository: Repository[IO, String, CancelableSchedule[IO]] = repo
-                      override val allowEnqueue: Deferred[IO, Unit]                           = deferred
-                      override val eventQueue: Queue[IO, ScheduleEvent]                       = queue
-                      override val scheduleQueue: ScheduleQueue[IO]                           = ScheduleQueue(repo, deferred, queue)
-                      override val scheduleEvent: ScheduleEvent                               = schedule
-                    }
-      assertion  <- test(testContext)
-    } yield assertion
+    Supervisor[IO].use { supervisor =>
+      for {
+        now        <- IO.realTimeInstant
+        repo       <- MapRef.ofScalaConcurrentTrieMap[IO, String, CancelableSchedule[IO]].map(Repository.apply)
+        deferred   <- Deferred[IO, Unit]
+        queue      <- Queue.unbounded[IO, ScheduleEvent]
+        schedule   <- IO.fromOption(scheduleEventArb.sample)(TestFailedException("Could not generate a schedule", 0))
+                        .map(_.focus(_.schedule.time).replace(now.plusSeconds(10).toEpochMilli))
+        testContext = new TestContext {
+                        override val repository: Repository[IO, String, CancelableSchedule[IO]] = repo
+
+                        override val allowEnqueue: Deferred[IO, Unit] = deferred
+
+                        override val eventQueue: Queue[IO, ScheduleEvent] = queue
+
+                        override val scheduleQueue: ScheduleQueue[IO] = ScheduleQueue(repo, deferred, queue, supervisor)
+
+                        override val scheduleEvent: ScheduleEvent = schedule
+                      }
+        assertion  <- test(testContext)
+      } yield assertion
+    }
 
 }

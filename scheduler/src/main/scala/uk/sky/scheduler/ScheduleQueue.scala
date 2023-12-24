@@ -1,7 +1,6 @@
 package uk.sky.scheduler
 
-import cats.effect.std.Queue
-import cats.effect.syntax.all.*
+import cats.effect.std.{Queue, Supervisor}
 import cats.effect.{Async, Deferred, Fiber}
 import cats.syntax.all.*
 import cats.{Monad, Parallel}
@@ -23,20 +22,24 @@ object ScheduleQueue {
   def apply[F[_] : Async : Parallel](
       repository: Repository[F, String, CancelableSchedule[F]],
       allowEnqueue: Deferred[F, Unit],
-      queue: Queue[F, ScheduleEvent]
+      queue: Queue[F, ScheduleEvent],
+      supervisor: Supervisor[F]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Either[ScheduleError, Unit]] = {
       def delayScheduling(time: FiniteDuration): F[Unit] =
-        Async[F]
-          .delayBy(
-            for {
-              _ <- allowEnqueue.get                                     // Block until Queuing is allowed
-              _ <- queue.offer(scheduleEvent) &> repository.delete(key) // Offer & Delete in Parallel
-            } yield (),
-            time = time
-          )
-          .start
-          .flatMap(repository.set(key, _))
+        for {
+          cancelable <- supervisor.supervise(
+                          Async[F]
+                            .delayBy(
+                              for {
+                                _ <- allowEnqueue.get                                     // Block until Queuing is allowed
+                                _ <- queue.offer(scheduleEvent) &> repository.delete(key) // Offer & Delete in Parallel
+                              } yield (),
+                              time = time
+                            )
+                        )
+          _          <- repository.set(key, cancelable)
+        } yield ()
 
       for {
         previous <- repository.get(key)
@@ -78,10 +81,11 @@ object ScheduleQueue {
 
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
       eventQueue: Queue[F, ScheduleEvent],
-      allowEnqueue: Deferred[F, Unit]
+      allowEnqueue: Deferred[F, Unit],
+      supervisor: Supervisor[F]
   ): F[ScheduleQueue[F]] =
     for {
       repo <- Repository.live[F, String, CancelableSchedule[F]]("schedules")
-    } yield ScheduleQueue.observed(ScheduleQueue(repo, allowEnqueue, eventQueue))
+    } yield ScheduleQueue.observed(ScheduleQueue(repo, allowEnqueue, eventQueue, supervisor))
 
 }

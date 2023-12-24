@@ -2,7 +2,7 @@ package uk.sky.scheduler
 
 import cats.Parallel
 import cats.data.Reader
-import cats.effect.std.Queue
+import cats.effect.std.{Queue, Supervisor}
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Concurrent, Deferred, Resource}
 import cats.syntax.all.*
@@ -35,7 +35,8 @@ object Scheduler {
       for {
         eventQueue       <- Queue.unbounded[F, ScheduleEvent].toResource
         allowEnqueue     <- Deferred[F, Unit].toResource
-        scheduleQueue    <- ScheduleQueue.live[F](eventQueue, allowEnqueue).toResource
+        supervisor       <- Supervisor[F]
+        scheduleQueue    <- ScheduleQueue.live[F](eventQueue, allowEnqueue, supervisor).toResource
         eventSubscriber  <- EventSubscriber.live[F](config.scheduler, allowEnqueue).toResource
         schedulePublisher = SchedulePublisher.kafka[F](config.scheduler, eventQueue)
       } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)

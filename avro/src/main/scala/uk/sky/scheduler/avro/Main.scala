@@ -1,6 +1,7 @@
 package uk.sky.scheduler.avro
 
 import cats.effect.Resource.ExitCase
+import cats.effect.std.Console
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
 import fs2.*
@@ -9,7 +10,7 @@ import uk.sky.scheduler.kafka.avro.avroScheduleCodec
 
 object Main extends IOApp.Simple {
 
-  val schemaPath: Path = Path("target/schemas/schedule.avsc")
+  private val schemaPath: Path = Path("target/schemas/schedule.avsc")
 
   override def run: IO[Unit] = {
     for {
@@ -21,8 +22,8 @@ object Main extends IOApp.Simple {
     } yield ()
   }.onFinalizeCase {
     case ExitCase.Succeeded  => IO.println(s"Generated Schema file: $schemaPath")
-    case ExitCase.Errored(e) => IO.println(s"Error creating Schema file: $e")
-    case ExitCase.Canceled   => IO.println("Canceled")
+    case ExitCase.Errored(e) => Console[IO].errorln(s"Error creating Schema file: $e") *> Console[IO].printStackTrace(e)
+    case ExitCase.Canceled   => Console[IO].errorln("Canceled")
   }.compile.drain
 
 }

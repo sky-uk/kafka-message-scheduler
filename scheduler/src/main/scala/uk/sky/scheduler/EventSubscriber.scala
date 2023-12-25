@@ -9,7 +9,7 @@ import fs2.kafka.*
 import org.typelevel.log4cats.LoggerFactory
 import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
-import uk.sky.scheduler.config.ScheduleConfig
+import uk.sky.scheduler.config.KafkaConfig
 import uk.sky.scheduler.converters.*
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
@@ -24,7 +24,7 @@ object EventSubscriber {
   private type Output = Either[ScheduleError, Option[ScheduleEvent]]
 
   def kafka[F[_] : Async : Parallel : LoggerFactory](
-      config: ScheduleConfig,
+      config: KafkaConfig,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {
     type Input = JsonSchedule | AvroSchedule
@@ -78,17 +78,17 @@ object EventSubscriber {
       val avroConsumerSettings =
         ConsumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]]
           .withAutoOffsetReset(AutoOffsetReset.Earliest)
-          .withBootstrapServers(config.kafka.bootstrapServers)
-          .withProperties(config.kafka.properties)
+          .withBootstrapServers(config.bootstrapServers)
+          .withProperties(config.properties)
 
       val jsonConsumerSettings =
         ConsumerSettings[F, String, Either[ScheduleError, Option[JsonSchedule]]]
           .withAutoOffsetReset(AutoOffsetReset.Earliest)
-          .withBootstrapServers(config.kafka.bootstrapServers)
-          .withProperties(config.kafka.properties)
+          .withBootstrapServers(config.bootstrapServers)
+          .withProperties(config.properties)
 
       val avroStream =
-        config.kafka.topics.avro.toNel
+        config.topics.avro.toNel
           .fold(Stream.exec(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
             TopicLoader.loadAndRun(_, avroConsumerSettings)(exitCase =>
               avroLoadedRef.set(true) *> onLoadCompare(exitCase)
@@ -96,7 +96,7 @@ object EventSubscriber {
           )
 
       val jsonStream =
-        config.kafka.topics.json.toNel
+        config.topics.json.toNel
           .fold(Stream.exec(jsonLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
             TopicLoader.loadAndRun(_, jsonConsumerSettings)(exitCase =>
               jsonLoadedRef.set(true) *> onLoadCompare(exitCase)
@@ -132,7 +132,7 @@ object EventSubscriber {
   }
 
   def live[F[_] : Async : Parallel : LoggerFactory](
-      config: ScheduleConfig,
+      config: KafkaConfig,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] =
     kafka[F](config, loaded).map(observed)

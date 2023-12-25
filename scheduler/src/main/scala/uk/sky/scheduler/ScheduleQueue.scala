@@ -1,9 +1,12 @@
 package uk.sky.scheduler
 
+import cats.effect.kernel.Resource
 import cats.effect.std.{Queue, Supervisor}
+import cats.effect.syntax.all.*
 import cats.effect.{Async, Deferred, Fiber}
 import cats.syntax.all.*
 import cats.{Monad, Parallel}
+import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.domain.ScheduleEvent
@@ -13,6 +16,7 @@ import scala.concurrent.duration.*
 trait ScheduleQueue[F[_]] {
   def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit]
   def cancel(key: String): F[Unit]
+  def schedules: Stream[F, ScheduleEvent]
 }
 
 object ScheduleQueue {
@@ -56,6 +60,9 @@ object ScheduleQueue {
         case Some(started) => started.cancel &> repository.delete(key) // Cancel & Delete in Parallel
         case None          => Async[F].unit
       }
+
+    override def schedules: Stream[F, ScheduleEvent] =
+      Stream.fromQueueUnterminated(queue)
   }
 
   def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] =
@@ -73,15 +80,20 @@ object ScheduleQueue {
           _ <- delegate.cancel(key)
           _ <- logger.info(s"Canceled Schedule [$key]")
         } yield ()
+
+      override def schedules: Stream[F, ScheduleEvent] =
+        delegate.schedules.evalTapChunk { scheduleEvent =>
+          logger.debug(s"ScheduleEvent [${scheduleEvent.metadata.id}] received in Stream")
+        }
     }
 
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
-      eventQueue: Queue[F, ScheduleEvent],
-      allowEnqueue: Deferred[F, Unit],
-      supervisor: Supervisor[F]
-  ): F[ScheduleQueue[F]] =
+      allowEnqueue: Deferred[F, Unit]
+  ): Resource[F, ScheduleQueue[F]] =
     for {
-      repo <- Repository.live[F, String, CancelableSchedule[F]]("schedules")
+      repo       <- Repository.live[F, String, CancelableSchedule[F]]("schedules").toResource
+      supervisor <- Supervisor[F]
+      eventQueue <- Queue.unbounded[F, ScheduleEvent].toResource
     } yield ScheduleQueue.observed(ScheduleQueue(repo, allowEnqueue, eventQueue, supervisor))
 
 }

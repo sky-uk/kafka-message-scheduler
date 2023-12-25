@@ -17,7 +17,8 @@ final class TopicConfigSpec extends AsyncWordSpec, ScalaCheckPropertyChecks, Mat
 
       /** List("a", "b") -> ["a", "b"]
         */
-      def toConfigString: String = nel.map(s => s"\"$s\"").mkString(start = "[", sep = ", ", end = "]")
+      private def toConfigString: String =
+        nel.map(s => s"\"$s\"").mkString("[", ", ", "]")
     }
 
     given arbValidConfigString: Arbitrary[String] = Arbitrary(Gen.alphaStr)

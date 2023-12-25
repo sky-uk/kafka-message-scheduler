@@ -1,9 +1,8 @@
 package uk.sky.scheduler
 
-import cats.effect.kernel.Resource
 import cats.effect.std.{Queue, Supervisor}
 import cats.effect.syntax.all.*
-import cats.effect.{Async, Deferred, Fiber}
+import cats.effect.{Async, Deferred, Fiber, Resource}
 import cats.syntax.all.*
 import cats.{Monad, Parallel}
 import fs2.Stream
@@ -83,7 +82,7 @@ object ScheduleQueue {
 
       override def schedules: Stream[F, ScheduleEvent] =
         delegate.schedules.evalTapChunk { scheduleEvent =>
-          logger.debug(s"ScheduleEvent [${scheduleEvent.metadata.id}] received in Stream")
+          logger.debug(s"offered ScheduleEvent [${scheduleEvent.metadata.id}] to the Queue")
         }
     }
 

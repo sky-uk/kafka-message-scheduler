@@ -1,7 +1,6 @@
 package uk.sky.scheduler
 
 import cats.Parallel
-import cats.data.Reader
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Concurrent, Deferred, Resource}
 import cats.syntax.all.*
@@ -31,13 +30,11 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter]: Reader[Config, Resource[F, Scheduler[F, Unit]]] =
-    Reader { config =>
-      for {
-        allowEnqueue     <- Deferred[F, Unit].toResource
-        scheduleQueue    <- ScheduleQueue.live[F](allowEnqueue)
-        eventSubscriber  <- EventSubscriber.live[F](config.scheduler.kafka, allowEnqueue).toResource
-        schedulePublisher = SchedulePublisher.kafka[F](config.scheduler.kafka)
-      } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
-    }
+  def live[F[_] : Async : Parallel : LoggerFactory : Meter](config: Config): Resource[F, Scheduler[F, Unit]] =
+    for {
+      allowEnqueue     <- Deferred[F, Unit].toResource
+      eventSubscriber  <- EventSubscriber.live[F](config.scheduler.kafka, allowEnqueue).toResource
+      scheduleQueue    <- ScheduleQueue.live[F](allowEnqueue)
+      schedulePublisher = SchedulePublisher.kafka[F](config.scheduler.kafka)
+    } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
 }

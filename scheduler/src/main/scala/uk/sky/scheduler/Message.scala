@@ -1,5 +1,6 @@
 package uk.sky.scheduler
 
+import monocle.syntax.all.*
 import org.typelevel.ci.CIString
 import uk.sky.scheduler.Message.Headers
 import uk.sky.scheduler.Message.Headers.*
@@ -31,5 +32,7 @@ object Message {
 
   extension [T](message: Message[T]) {
     def expired: Boolean = message.headers.getHeader(expiredHeaderKey).contains(CIString(expiredHeaderValue))
+
+    def expire: Message[T] = message.focus(_.headers).modify(_.setHeader(expiredHeaderKey, expiredHeaderValue))
   }
 }

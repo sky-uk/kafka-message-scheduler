@@ -12,6 +12,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{Assertion, EitherValues, OptionValues}
 import uk.sky.scheduler.ScheduleQueue.CancelableSchedule
 import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
+import uk.sky.scheduler.util.testSyntax.*
 
 import scala.concurrent.duration.*
 
@@ -143,11 +144,6 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
         }
       }
     }
-  }
-
-  extension [A](fa: IO[A]) {
-    def testTimeout(timeout: FiniteDuration = 10.seconds): IO[A] =
-      fa.timeoutTo(timeout, IO.raiseError(TestFailedException(s"Operation did not complete within $timeout", 0)))
   }
 
   given Arbitrary[Metadata]                = Arbitrary(Gen.resultOf(Metadata.apply))

@@ -10,9 +10,10 @@ import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.{Repository, ScheduleQueue}
 
 object StubScheduleQueue {
-  def apply[F[_] : Async : Parallel]: Resource[F, ScheduleQueue[F]] =
+  def apply[F[_] : Async : Parallel](
+      allowEnqueue: Deferred[F, Unit]
+  ): Resource[F, ScheduleQueue[F]] =
     for {
-      allowEnqueue  <- Deferred[F, Unit].toResource
       repo          <- MapRef
                          .ofScalaConcurrentTrieMap[F, String, CancelableSchedule[F]]
                          .map(Repository[F, String, CancelableSchedule[F]](_))

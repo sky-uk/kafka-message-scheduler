@@ -27,21 +27,21 @@ object ScheduleQueue {
       queue: Queue[F, ScheduleEvent],
       supervisor: Supervisor[F]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
-    override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] = {
-      def delayScheduling(delay: FiniteDuration): F[CancelableSchedule[F]] =
-        for {
-          cancelable <- supervisor.supervise(
-                          Async[F]
-                            .delayBy(
-                              for {
-                                _ <- allowEnqueue.get                                     // Block until Queuing is allowed
-                                _ <- queue.offer(scheduleEvent) &> repository.delete(key) // Offer & Delete in Parallel
-                              } yield (),
-                              time = delay
-                            )
-                        )
-        } yield cancelable
+    private def delayScheduling(
+        key: String,
+        scheduleEvent: ScheduleEvent,
+        delay: FiniteDuration
+    ): F[Unit] =
+      Async[F]
+        .delayBy(
+          for {
+            _ <- allowEnqueue.get                                     // Block until Queuing is allowed
+            _ <- queue.offer(scheduleEvent) &> repository.delete(key) // Offer & Delete in Parallel
+          } yield (),
+          time = delay
+        )
 
+    override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
       for {
         previous   <- repository.get(key)
         _          <- previous.fold(Async[F].unit)(_.cancel) // Cancel the previous Schedule if it exists
@@ -49,10 +49,9 @@ object ScheduleQueue {
         delay       = Either
                         .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now.toEpochMilli).milliseconds)
                         .getOrElse(Long.MaxValue.nanos)
-        cancelable <- delayScheduling(delay)
+        cancelable <- supervisor.supervise(delayScheduling(key, scheduleEvent, delay))
         _          <- repository.set(key, cancelable)
       } yield ()
-    }
 
     override def cancel(key: String): F[Unit] =
       repository.get(key).flatMap {

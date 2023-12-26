@@ -1,7 +1,7 @@
 package uk.sky.scheduler
 
 import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
-import cats.effect.{IO, Resource}
+import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -10,6 +10,7 @@ import org.scalatest.{LoneElement, OptionValues}
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
+import uk.sky.scheduler.util.testSyntax.*
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
@@ -38,7 +39,7 @@ final class SchedulerFeatureSpec
       val outputJsonValue = "jsonValue"
 
       for {
-        scheduledTime <- IO.realTimeInstant.map(_.plusSeconds(5).toEpochMilli)
+        scheduledTime <- Clock[IO].epochMilli(_.plusSeconds(5))
         schedule       = createJsonSchedule(scheduledTime, outputTopic, outputJsonKey, outputJsonValue)
         _             <- kafkaUtil.produce[JsonSchedule]("json-schedules", "input-key-json" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
@@ -55,7 +56,7 @@ final class SchedulerFeatureSpec
       val outputAvroValue = "avroValue"
 
       for {
-        scheduledTime <- IO.realTimeInstant.map(_.plusSeconds(5).toEpochMilli)
+        scheduledTime <- Clock[IO].epochMilli(_.plusSeconds(5))
         schedule       = createAvroSchedule(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
         _             <- kafkaUtil.produce[AvroSchedule]("avro-schedules", "input-key-avro" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
@@ -91,8 +92,7 @@ final class SchedulerFeatureSpec
       val outputJsonValue = "jsonValue"
 
       for {
-
-        scheduledTime <- IO.realTimeInstant.map(_.toEpochMilli)
+        scheduledTime <- Clock[IO].epochMilli
         schedule       = createJsonSchedule(scheduledTime, outputTopic, outputJsonKey, outputJsonValue)
         _             <- kafkaUtil.produce[JsonSchedule]("json-schedules", scheduleKey -> schedule.some)
         inputMessages <- kafkaUtil.consumeLast[Option[String]]("json-schedules", 2)

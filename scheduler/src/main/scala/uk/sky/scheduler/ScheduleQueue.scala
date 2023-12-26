@@ -22,8 +22,8 @@ object ScheduleQueue {
   type CancelableSchedule[F[_]] = Fiber[F, Throwable, Unit]
 
   def apply[F[_] : Async : Parallel](
-      repository: Repository[F, String, CancelableSchedule[F]],
       allowEnqueue: Deferred[F, Unit],
+      repository: Repository[F, String, CancelableSchedule[F]],
       queue: Queue[F, ScheduleEvent],
       supervisor: Supervisor[F]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
@@ -91,8 +91,8 @@ object ScheduleQueue {
   ): Resource[F, ScheduleQueue[F]] =
     for {
       repo       <- Repository.live[F, String, CancelableSchedule[F]]("schedules").toResource
-      supervisor <- Supervisor[F]
       eventQueue <- Queue.unbounded[F, ScheduleEvent].toResource
-    } yield ScheduleQueue.observed(ScheduleQueue(repo, allowEnqueue, eventQueue, supervisor))
+      supervisor <- Supervisor[F]
+    } yield ScheduleQueue.observed(ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor))
 
 }

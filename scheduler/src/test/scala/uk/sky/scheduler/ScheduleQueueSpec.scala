@@ -178,7 +178,7 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
 
                         override val eventQueue: Queue[IO, ScheduleEvent] = queue
 
-                        override val scheduleQueue: ScheduleQueue[IO] = ScheduleQueue(repo, deferred, queue, supervisor)
+                        override val scheduleQueue: ScheduleQueue[IO] = ScheduleQueue(deferred, repo, queue, supervisor)
 
                         override val scheduleEvent: ScheduleEvent = schedule
                       }

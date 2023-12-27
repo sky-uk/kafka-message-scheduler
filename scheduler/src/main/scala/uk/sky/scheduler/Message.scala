@@ -29,7 +29,7 @@ object Message {
     final val expiredHeaderKey: String   = "schedule:expired"
     final val expiredHeaderValue: String = "true"
 
-    val empty: Headers = Map.empty[CIString, CIString]
+    final val empty: Headers = Map.empty[CIString, CIString]
   }
 
   extension [T](message: Message[T]) {

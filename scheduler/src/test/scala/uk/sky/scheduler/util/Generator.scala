@@ -11,6 +11,7 @@ import uk.sky.scheduler.Message
 import uk.sky.scheduler.Message.Headers
 import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.util.testSyntax.*
 
 object Generator {
   given Arbitrary[Metadata] = Arbitrary(Gen.resultOf(Metadata.apply))
@@ -21,10 +22,9 @@ object Generator {
 
   def generateSchedule[F[_] : Sync]: F[ScheduleEvent] =
     for {
-      schedule <- Sync[F]
-                    .delay(scheduleEventArb.sample)
-                    .flatMap(Sync[F].fromOption(_, TestFailedException("Could not generate a schedule", 0)))
-      now      <- Sync[F].delay(Instant.now().toEpochMilli)
+      maybeSchedule <- Sync[F].delay(scheduleEventArb.sample)
+      schedule      <- maybeSchedule.liftTo(TestFailedException("Could not generate a schedule", 0))
+      now           <- Sync[F].epochMilli
     } yield schedule.focus(_.schedule.time).replace(now)
 
   def generateSchedule[F[_] : Sync](f: Instant => Instant): F[ScheduleEvent] =

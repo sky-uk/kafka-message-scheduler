@@ -17,6 +17,12 @@ object Generator {
   given Arbitrary[Metadata] = Arbitrary(Gen.resultOf(Metadata.apply))
   given Arbitrary[Schedule] = Arbitrary(Gen.resultOf(Schedule.apply))
 
+  given Arbitrary[Headers] = Arbitrary {
+    for {
+      raw <- Arbitrary.arbitrary[Map[String, String]]
+    } yield Headers(raw)
+  }
+
   val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)
   given Arbitrary[ScheduleEvent]           = Arbitrary(scheduleEventArb)
 

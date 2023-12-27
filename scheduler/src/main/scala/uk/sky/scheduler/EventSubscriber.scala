@@ -21,13 +21,13 @@ trait EventSubscriber[F[_]] {
 }
 
 object EventSubscriber {
+  private type Input  = JsonSchedule | AvroSchedule
   private type Output = Either[ScheduleError, Option[ScheduleEvent]]
 
   def kafka[F[_] : Async : Parallel : LoggerFactory](
       config: KafkaConfig,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {
-    type Input = JsonSchedule | AvroSchedule
 
     def toEvent(cr: ConsumerRecord[String, Either[ScheduleError, Option[Input]]]): Message[Output] = {
       val key   = cr.key

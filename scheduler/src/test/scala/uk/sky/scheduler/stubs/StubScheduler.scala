@@ -25,14 +25,14 @@ final class StubScheduler[F[_] : Async : Parallel](
       .traverse(input.offer)
       .void
 
-  def consume(n: Int): F[List[ScheduleEvent]] =
+  def runStreamAndTake(n: Int): F[List[ScheduleEvent]] =
     stream
       .take(n)
       .compile
       .toList
       .testTimeout()
 
-  def backgroundStart: F[Unit] =
+  def runStreamInBackground: F[Unit] =
     stream.compile.drain.start.void
 
   def takeEvent: F[(String, Status)] =

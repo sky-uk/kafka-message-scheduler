@@ -5,13 +5,12 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.testkit.TestControl
 import cats.effect.{Deferred, IO, Outcome}
 import monocle.syntax.all.*
-import org.scalacheck.{Arbitrary, Gen}
-import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{Assertion, EitherValues, OptionValues}
 import uk.sky.scheduler.ScheduleQueue.CancelableSchedule
-import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
+import uk.sky.scheduler.domain.{Schedule, ScheduleEvent}
+import uk.sky.scheduler.util.Generator.*
 import uk.sky.scheduler.util.testSyntax.*
 
 import scala.concurrent.duration.*
@@ -146,10 +145,6 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
     }
   }
 
-  given Arbitrary[Metadata]                = Arbitrary(Gen.resultOf(Metadata.apply))
-  given Arbitrary[Schedule]                = Arbitrary(Gen.resultOf(Schedule.apply))
-  val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)
-
   private trait TestContext {
     val repository: Repository[IO, String, CancelableSchedule[IO]]
     val allowEnqueue: Deferred[IO, Unit]
@@ -161,12 +156,10 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
   private def withContext(test: TestContext => IO[Assertion]): IO[Assertion] =
     Supervisor[IO].use { supervisor =>
       for {
-        now        <- IO.realTimeInstant
         repo       <- MapRef.ofScalaConcurrentTrieMap[IO, String, CancelableSchedule[IO]].map(Repository.apply)
         deferred   <- Deferred[IO, Unit]
         queue      <- Queue.unbounded[IO, ScheduleEvent]
-        schedule   <- IO.fromOption(scheduleEventArb.sample)(TestFailedException("Could not generate a schedule", 0))
-                        .map(_.focus(_.schedule.time).replace(now.plusSeconds(10).toEpochMilli))
+        schedule   <- generateSchedule[IO](_.plusSeconds(10))
         testContext = new TestContext {
                         override val repository: Repository[IO, String, CancelableSchedule[IO]] = repo
 

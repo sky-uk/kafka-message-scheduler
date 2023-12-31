@@ -2,9 +2,8 @@ package uk.sky.scheduler.util
 
 import java.time.Instant
 
-import cats.Functor
+import cats.effect.Async
 import cats.effect.syntax.all.*
-import cats.effect.{Async, Clock}
 import cats.syntax.all.*
 import org.scalatest.exceptions.TestFailedException
 
@@ -23,13 +22,5 @@ object testSyntax {
         a   <- fa
         now <- Async[F].realTimeInstant
       } yield now -> a
-  }
-
-  extension [F[_] : Functor](c: Clock[F]) {
-    def epochMilli: F[Long] =
-      c.realTimeInstant.map(_.toEpochMilli)
-
-    def epochMilli(f: Instant => Instant): F[Long] =
-      c.realTimeInstant.map(f andThen (_.toEpochMilli))
   }
 }

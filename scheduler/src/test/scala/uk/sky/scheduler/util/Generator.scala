@@ -11,7 +11,7 @@ import uk.sky.scheduler.Message
 import uk.sky.scheduler.Message.Headers
 import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
-import uk.sky.scheduler.util.testSyntax.*
+import uk.sky.scheduler.syntax.all.*
 
 object Generator {
   given Arbitrary[Metadata] = Arbitrary(Gen.resultOf(Metadata.apply))

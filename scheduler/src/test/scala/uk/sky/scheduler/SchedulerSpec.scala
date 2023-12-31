@@ -8,6 +8,7 @@ import org.scalatest.{Assertion, LoneElement}
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.stubs.StubScheduler
+import uk.sky.scheduler.syntax.all.*
 import uk.sky.scheduler.util.Generator.*
 import uk.sky.scheduler.util.testSyntax.*
 

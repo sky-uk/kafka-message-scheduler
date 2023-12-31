@@ -9,6 +9,7 @@ import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.syntax.all.*
 
 import scala.concurrent.duration.*
 
@@ -45,9 +46,9 @@ object ScheduleQueue {
       for {
         previous   <- repository.get(key)
         _          <- previous.fold(Async[F].unit)(_.cancel) // Cancel the previous Schedule if it exists
-        now        <- Async[F].realTimeInstant
+        now        <- Async[F].epochMilli
         delay       = Either
-                        .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now.toEpochMilli).milliseconds)
+                        .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now).milliseconds)
                         .getOrElse(Long.MaxValue.nanos)
         cancelable <- supervisor.supervise(delayScheduling(key, scheduleEvent, delay))
         _          <- repository.set(key, cancelable)

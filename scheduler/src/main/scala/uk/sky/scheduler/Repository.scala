@@ -4,6 +4,7 @@ import cats.effect.Sync
 import cats.effect.std.MapRef
 import cats.syntax.all.*
 import cats.{Functor, Monad, Parallel}
+import mouse.all.*
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Meter
 
@@ -29,21 +30,6 @@ object Repository {
       override def delete(key: K): F[Unit]        = underlying.delete(key).void
     }
 
-  // Observed Helpers
-  extension [F[_] : Monad, V](maybeF: F[Option[V]]) {
-    private def ifPresent(record: F[Unit]): F[Option[V]] =
-      maybeF.flatTap {
-        case Some(_) => record
-        case None    => Monad[F].unit
-      }
-
-    private def ifNotPresent(record: F[Unit]): F[Option[V]] =
-      maybeF.flatTap {
-        case Some(_) => Monad[F].unit
-        case None    => record
-      }
-  }
-
   private val totalAttribute  = Attribute("counter.type", "total")
   private val setAttribute    = Attribute("counter.type", "set")
   private val deleteAttribute = Attribute("counter.type", "delete")
@@ -56,13 +42,17 @@ object Repository {
         private val underlying = RepositoryImpl(mapRef)
 
         override def set(key: K, value: V): F[Unit] =
-          underlying.set(key, value).ifNotPresent(counter.inc(totalAttribute) &> counter.inc(setAttribute)).void
+          underlying
+            .set(key, value)
+            .foldF(counter.inc(totalAttribute) &> counter.inc(setAttribute))(_ => Monad[F].unit)
 
         override def get(key: K): F[Option[V]] =
           underlying.get(key)
 
         override def delete(key: K): F[Unit] =
-          underlying.delete(key).ifPresent(counter.dec(totalAttribute) &> counter.inc(deleteAttribute)).void
+          underlying
+            .delete(key)
+            .foldF(Monad[F].unit)(_ => counter.dec(totalAttribute) &> counter.inc(deleteAttribute))
       }
     }
 

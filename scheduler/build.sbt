@@ -33,6 +33,7 @@ libraryDependencies ++= Seq(
   ScalaTest.scalaTest,
   TopicLoader.topicLoader,
   Typelevel.caseInsensitive,
+  Typelevel.mouse,
   Vulcan.core,
   Vulcan.generic
 )

@@ -46,7 +46,7 @@ lazy val it = Project("integration-test", file("it"))
       composeFile             := "it/docker/docker-compose.yml"
     )
   }
-  .dependsOn(scheduler)
+  .dependsOn(scheduler % "compile->compile;test->test")
 
 lazy val root = Project("kafka-message-scheduler", file("."))
   .aggregate(scheduler, avro, it)

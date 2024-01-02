@@ -7,6 +7,7 @@ import fs2.kafka.*
 import uk.sky.scheduler.config.KafkaConfig
 import uk.sky.scheduler.converters.*
 import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.kafka.*
 
 trait SchedulePublisher[F[_], O] {
   def publish: Pipe[F, ScheduleEvent, O]
@@ -15,15 +16,11 @@ trait SchedulePublisher[F[_], O] {
 object SchedulePublisher {
   def kafka[F[_] : Async](config: KafkaConfig): SchedulePublisher[F, Unit] = {
 
-    given outputSerializer: ValueSerializer[F, Option[Array[Byte]]] =
-      Serializer.identity.option
-
     val producerSettings: ProducerSettings[F, Array[Byte], Option[Array[Byte]]] =
-      ProducerSettings[F, Array[Byte], Option[Array[Byte]]]
-        .withBootstrapServers(config.bootstrapServers)
-        .withProperties(KafkaConfig.atLeastOnce)
-        .withProperties(KafkaConfig.performant)
-        .withProperties(config.properties)
+      config
+        .producerSettings[F, Array[Byte], Option[Array[Byte]]]
+        .atLeastOnce
+        .performant
 
     new SchedulePublisher[F, Unit] {
       override def publish: Pipe[F, ScheduleEvent, Unit] = scheduleEventStream =>
@@ -31,11 +28,12 @@ object SchedulePublisher {
           .stream(producerSettings)
           .flatMap { producer =>
             scheduleEventStream.evalMapChunk { scheduleEvent =>
-              val scheduleProducerRecord = scheduleEvent.toProducerRecord
-              val tombstone              = scheduleEvent.toTombstone
-              producer.produce(ProducerRecords(List(scheduleProducerRecord, tombstone)))
+              producer.produce {
+                ProducerRecords(List(scheduleEvent.toProducerRecord, scheduleEvent.toTombstone))
+              }
             }
-              .parEvalMapUnbounded(identity)
+              .groupWithin(config.producer.batchSize, config.producer.timeout)
+              .evalMapChunk(_.sequence)
           }
           .void
     }

@@ -3,10 +3,11 @@ package uk.sky.scheduler.converters
 import java.nio.charset.StandardCharsets
 
 import cats.syntax.all.*
-import fs2.kafka.{Header, Headers, ProducerRecord}
+import fs2.kafka.*
 import io.scalaland.chimney.dsl.*
 import uk.sky.scheduler.Message
 import uk.sky.scheduler.domain.*
+import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
@@ -58,4 +59,29 @@ extension (scheduleEvent: ScheduleEvent) {
       key = scheduleEvent.metadata.id.getBytes(StandardCharsets.UTF_8),
       value = none[Array[Byte]]
     ).withHeaders(Headers(Header(Message.Headers.expiredHeaderKey, Message.Headers.expiredHeaderValue)))
+}
+
+extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]]) {
+  def toMessage: Message[Either[ScheduleError, Option[ScheduleEvent]]] = {
+    val key   = cr.key
+    val topic = cr.topic
+
+    val payload: Either[ScheduleError, Option[ScheduleEvent]] = cr.value match {
+      case Left(error)        => ScheduleError.DecodeError(key, error.getMessage).asLeft
+      case Right(None)        => none[ScheduleEvent].asRight[ScheduleError]
+      case Right(Some(input)) =>
+        val scheduleEvent = input match {
+          case avroSchedule: AvroSchedule => avroSchedule.scheduleEvent(key, topic)
+          case jsonSchedule: JsonSchedule => jsonSchedule.scheduleEvent(key, topic)
+        }
+        scheduleEvent.some.asRight[ScheduleError]
+    }
+
+    Message[Either[ScheduleError, Option[ScheduleEvent]]](
+      key = key,
+      source = topic,
+      value = payload,
+      headers = Message.Headers(cr.headers.toChain.map(header => header.key -> header.as[String]).toList.toMap)
+    )
+  }
 }

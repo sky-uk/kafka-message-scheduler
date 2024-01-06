@@ -8,6 +8,7 @@ import cats.syntax.all.*
 import uk.sky.scheduler.*
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.message.Message
 import uk.sky.scheduler.util.testSyntax.*
 
 final class StubScheduler[F[_] : Async : Parallel](

@@ -4,9 +4,10 @@ import cats.effect.Async
 import cats.effect.std.Queue
 import cats.syntax.all.*
 import fs2.*
+import uk.sky.scheduler.EventSubscriber
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
-import uk.sky.scheduler.{EventSubscriber, Message}
+import uk.sky.scheduler.message.Message
 
 final case class StubEventSubscriber[F[_] : Async](
     input: Queue[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]]

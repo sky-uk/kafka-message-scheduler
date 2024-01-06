@@ -9,7 +9,6 @@ import org.scalatest.wordspec.FixtureAsyncWordSpec
 import org.scalatest.{LoneElement, OptionValues}
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
-import uk.sky.scheduler.util.testSyntax.*
 import uk.sky.scheduler.syntax.all.*
 import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
 

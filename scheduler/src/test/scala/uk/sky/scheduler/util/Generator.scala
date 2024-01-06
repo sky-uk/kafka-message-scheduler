@@ -7,20 +7,19 @@ import cats.syntax.all.*
 import monocle.syntax.all.*
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.exceptions.TestFailedException
-import uk.sky.scheduler.Message
-import uk.sky.scheduler.Message.Headers
 import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.message.{Message, Metadata => MessageMetadata}
 import uk.sky.scheduler.syntax.all.*
 
 object Generator {
   given Arbitrary[Metadata] = Arbitrary(Gen.resultOf(Metadata.apply))
   given Arbitrary[Schedule] = Arbitrary(Gen.resultOf(Schedule.apply))
 
-  given Arbitrary[Headers] = Arbitrary {
+  given Arbitrary[MessageMetadata] = Arbitrary {
     for {
       raw <- Arbitrary.arbitrary[Map[String, String]]
-    } yield Headers(raw)
+    } yield MessageMetadata.fromMap(raw)
   }
 
   val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)
@@ -45,38 +44,40 @@ object Generator {
       key: String,
       source: String,
       scheduleEvent: Option[ScheduleEvent],
-      headers: Headers,
+      metadata: MessageMetadata,
       expire: Boolean
   ): Message[Either[ScheduleError, Option[ScheduleEvent]]] = {
     val m = Message(
       key = key,
       source = source,
       value = scheduleEvent.asRight[ScheduleError],
-      headers = headers
+      metadata = metadata
     )
 
     if (expire) m.expire else m
   }
 
   extension (scheduleEvent: ScheduleEvent) {
-    def update(headers: Headers = Headers.empty): Message[Either[ScheduleError, Option[ScheduleEvent]]] =
+    def update(
+        metadata: MessageMetadata = MessageMetadata.empty
+    ): Message[Either[ScheduleError, Option[ScheduleEvent]]] =
       message(
         key = scheduleEvent.metadata.id,
         source = scheduleEvent.metadata.scheduleTopic,
         scheduleEvent = scheduleEvent.some,
-        headers = headers,
+        metadata = metadata,
         expire = false
       )
 
     def delete(
-        headers: Headers = Headers.empty,
+        metadata: MessageMetadata = MessageMetadata.empty,
         expire: Boolean = false
     ): Message[Either[ScheduleError, Option[ScheduleEvent]]] =
       message(
         key = scheduleEvent.metadata.id,
         source = scheduleEvent.metadata.scheduleTopic,
         scheduleEvent = none[ScheduleEvent],
-        headers = headers,
+        metadata = metadata,
         expire = expire
       )
   }

@@ -15,6 +15,7 @@ import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, AvroSchedule}
 import uk.sky.scheduler.kafka.json.{jsonDeserializer, JsonSchedule}
+import uk.sky.scheduler.message.Message
 
 trait EventSubscriber[F[_]] {
   def messages: Stream[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]]
@@ -93,7 +94,7 @@ object EventSubscriber {
             logger.error(error)(s"Error decoding [$key] from $source - ${error.getMessage}")
 
           case Right(None) =>
-            val deleteType = if (message.expired) "expired" else "canceled"
+            val deleteType = if (message.isExpired) "expired" else "canceled"
             logger.info(s"Decoded DELETE type=[$deleteType] for [$key] from $source")
 
           case Right(Some(_)) =>

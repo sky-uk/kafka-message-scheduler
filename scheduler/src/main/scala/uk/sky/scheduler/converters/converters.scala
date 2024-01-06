@@ -5,11 +5,11 @@ import java.nio.charset.StandardCharsets
 import cats.syntax.all.*
 import fs2.kafka.*
 import io.scalaland.chimney.dsl.*
-import uk.sky.scheduler.Message
 import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
+import uk.sky.scheduler.message.{Message, Metadata => MessageMetadata}
 import uk.sky.scheduler.syntax.all.*
 
 extension (schedule: JsonSchedule) {
@@ -58,7 +58,7 @@ extension (scheduleEvent: ScheduleEvent) {
       topic = scheduleEvent.metadata.scheduleTopic,
       key = scheduleEvent.metadata.id.getBytes(StandardCharsets.UTF_8),
       value = none[Array[Byte]]
-    ).withHeaders(Headers(Header(Message.Headers.expiredHeaderKey, Message.Headers.expiredHeaderValue)))
+    ).withHeaders(Headers(Header(MessageMetadata.expiredKey, MessageMetadata.expiredValue)))
 }
 
 extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]]) {
@@ -81,7 +81,7 @@ extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule 
       key = key,
       source = topic,
       value = payload,
-      headers = Message.Headers(cr.headers.toChain.map(header => header.key -> header.as[String]).toList.toMap)
+      metadata = MessageMetadata.fromMap(cr.headers.toChain.map(header => header.key -> header.as[String]).toList.toMap)
     )
   }
 }

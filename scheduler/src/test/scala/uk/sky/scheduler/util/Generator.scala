@@ -9,12 +9,14 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.exceptions.TestFailedException
 import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
-import uk.sky.scheduler.message.{Message, Metadata => MessageMetadata}
+import uk.sky.scheduler.kafka.json.JsonSchedule
+import uk.sky.scheduler.message.{Message, Metadata as MessageMetadata}
 import uk.sky.scheduler.syntax.all.*
 
 object Generator {
-  given Arbitrary[Metadata] = Arbitrary(Gen.resultOf(Metadata.apply))
-  given Arbitrary[Schedule] = Arbitrary(Gen.resultOf(Schedule.apply))
+  given Arbitrary[Metadata]     = Arbitrary(Gen.resultOf(Metadata.apply))
+  given Arbitrary[Schedule]     = Arbitrary(Gen.resultOf(Schedule.apply))
+  given Arbitrary[JsonSchedule] = Arbitrary(Gen.resultOf(JsonSchedule.apply))
 
   given Arbitrary[MessageMetadata] = Arbitrary {
     for {

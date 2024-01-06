@@ -5,20 +5,20 @@ import cats.laws.discipline.arbitrary.*
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import pureconfig.ConfigSource
 
-final class TopicConfigSpec extends AsyncWordSpec, ScalaCheckPropertyChecks, Matchers, EitherValues {
+final class TopicConfigSpec extends AnyWordSpec, ScalaCheckPropertyChecks, Matchers, EitherValues {
 
   "TopicConfig.topicConfigReader" should {
 
-    extension (nel: List[String]) {
+    extension (l: List[String]) {
 
       /** List("a", "b") -> ["a", "b"]
         */
       private def toConfigString: String =
-        nel.map(s => s"\"$s\"").mkString("[", ", ", "]")
+        l.map(s => s"\"$s\"").mkString("[", ", ", "]")
     }
 
     given arbValidConfigString: Arbitrary[String] = Arbitrary(Gen.alphaStr)

@@ -15,8 +15,6 @@ final case class Metadata(private val value: Map[CIString, String]) {
   def set(key: String, value: String): Metadata = map(_.updated(CIString(key), value))
 
   def remove(key: String): Metadata = map(_.removed(CIString(key)))
-
-  def toMap: Map[CIString, String] = value
 }
 
 object Metadata {

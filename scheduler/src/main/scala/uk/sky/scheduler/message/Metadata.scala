@@ -15,6 +15,8 @@ final case class Metadata(private val value: Map[CIString, String]) {
   def set(key: String, value: String): Metadata = map(_.updated(CIString(key), value))
 
   def remove(key: String): Metadata = map(_.removed(CIString(key)))
+
+  def exists(key: String, value: String): Boolean = get(key).exists(_.equalsIgnoreCase(value))
 }
 
 object Metadata {
@@ -22,7 +24,7 @@ object Metadata {
     Metadata(metadata.map(CIString(_) -> _))
 
   extension (metadata: Metadata) {
-    def isExpired: Boolean = metadata.get(expiredKey).exists(_.equalsIgnoreCase(expiredValue))
+    def isExpired: Boolean = metadata.exists(expiredKey, expiredValue)
     def expire: Metadata   = metadata.set(expiredKey, expiredValue)
   }
 

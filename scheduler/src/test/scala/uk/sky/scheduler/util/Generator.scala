@@ -24,6 +24,8 @@ object Generator {
     } yield MessageMetadata.fromMap(raw)
   }
 
+  given [T : Arbitrary]: Arbitrary[Message[T]] = Arbitrary(Gen.resultOf(Message.apply[T]))
+
   val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)
   given Arbitrary[ScheduleEvent]           = Arbitrary(scheduleEventArb)
 

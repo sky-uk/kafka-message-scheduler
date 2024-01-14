@@ -13,7 +13,7 @@ object Dependencies {
   }
 
   object Chimney {
-    lazy val chimney = "io.scalaland" %% "chimney" % "0.8.4"
+    lazy val chimney = "io.scalaland" %% "chimney" % "0.8.5"
   }
 
   object Circe {
@@ -50,8 +50,8 @@ object Dependencies {
   }
 
   object OpenTelemetry {
-    private lazy val version      = "1.33.0"
-    private lazy val alphaVersion = "1.33.0-alpha"
+    private lazy val version      = "1.34.1"
+    private lazy val alphaVersion = "1.34.1-alpha"
     private lazy val agentVersion = "1.32.0"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"       % version      % Runtime
@@ -91,7 +91,7 @@ object Dependencies {
   }
 
   object Vulcan {
-    private lazy val version = "1.9.0"
+    private lazy val version = "1.10.1"
 
     val core    = "com.github.fd4s" %% "vulcan"         % version
     val generic = "com.github.fd4s" %% "vulcan-generic" % version % Test

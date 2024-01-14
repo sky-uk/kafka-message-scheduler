@@ -82,7 +82,9 @@ object ScheduleQueue {
 
       override def schedules: Stream[F, ScheduleEvent] =
         delegate.schedules.evalTapChunk { scheduleEvent =>
-          logger.debug(s"offered ScheduleEvent [${scheduleEvent.metadata.id}] to the Queue")
+          logger.info(
+            s"Scheduled [${scheduleEvent.metadata.id}] to ${scheduleEvent.schedule.topic} due at ${scheduleEvent.schedule.time}"
+          )
         }
     }
 

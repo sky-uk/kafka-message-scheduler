@@ -3,10 +3,13 @@ package uk.sky.scheduler
 import cats.effect.Resource.ExitCase
 import cats.effect.{Async, Deferred, Ref}
 import cats.syntax.all.*
-import cats.{Monad, Parallel}
+import cats.{Monad, Parallel, Show}
 import fs2.*
 import fs2.kafka.*
+import mouse.all.*
 import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.otel4s.Attribute
+import org.typelevel.otel4s.metrics.Meter
 import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
 import uk.sky.scheduler.config.KafkaConfig
@@ -63,17 +66,17 @@ object EventSubscriber {
       val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[AvroSchedule]]]] =
         config.topics.avro.toNel
           .fold(Stream.exec(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
-            TopicLoader.loadAndRun(_, avroConsumerSettings)(exitCase =>
+            TopicLoader.loadAndRun(_, avroConsumerSettings) { exitCase =>
               avroLoadedRef.set(true) *> onLoadCompare(exitCase)
-            )
+            }
           )
 
       val jsonStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule]]]] =
         config.topics.json.toNel
           .fold(Stream.exec(jsonLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
-            TopicLoader.loadAndRun(_, jsonConsumerSettings)(exitCase =>
+            TopicLoader.loadAndRun(_, jsonConsumerSettings) { exitCase =>
               jsonLoadedRef.set(true) *> onLoadCompare(exitCase)
-            )
+            }
           )
 
       override def messages: Stream[F, Message[Output]] =
@@ -81,32 +84,62 @@ object EventSubscriber {
     }
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: EventSubscriber[F]): EventSubscriber[F] = {
-    val logger = LoggerFactory[F].getLogger
+  def observed[F[_] : Monad : Parallel : LoggerFactory : Meter](delegate: EventSubscriber[F]): F[EventSubscriber[F]] = {
+    given scheduleErrorType: Show[ScheduleError] = Show.show {
+      case _: ScheduleError.InvalidAvroError => "invalid-avro"
+      case _: ScheduleError.NotJsonError     => "not-json"
+      case _: ScheduleError.InvalidJsonError => "invalid-json"
+      case _: ScheduleError.DecodeError      => "decode"
+    }
 
-    new EventSubscriber[F] {
-      override def messages: Stream[F, Message[Output]] = delegate.messages.evalTapChunk { message =>
-        val key    = message.key
-        val source = message.source
+    def updateAttributes(source: String) = Seq(
+      Attribute("message.type", "update"),
+      Attribute("message.source", source)
+    )
 
-        message.value match {
-          case Left(error) =>
-            logger.error(error)(s"Error decoding [$key] from $source - ${error.getMessage}")
+    def deleteAttributes(source: String, deleteType: String) = Seq(
+      Attribute("message.type", "delete"),
+      Attribute("message.source", source),
+      Attribute("message.delete.type", deleteType)
+    )
 
-          case Right(None) =>
-            val deleteType = if (message.isExpired) "expired" else "canceled"
-            logger.info(s"Decoded DELETE type=[$deleteType] for [$key] from $source")
+    def errorAttributes(source: String, error: ScheduleError) = Seq(
+      Attribute("message.type", "error"),
+      Attribute("message.source", source),
+      Attribute("message.error.type", error.show)
+    )
 
-          case Right(Some(_)) =>
-            logger.info(s"Decoded UPDATE for [$key] from $source")
+    Meter[F].counter("event-subscriber").create.map { counter =>
+      val logger = LoggerFactory[F].getLogger
+
+      new EventSubscriber[F] {
+        override def messages: Stream[F, Message[Output]] = delegate.messages.evalTapChunk { message =>
+          import message.*
+
+          val logCtx = Map("key" -> key, "source" -> source)
+
+          message.value match {
+            case Right(Some(_)) =>
+              logger.info(logCtx)(s"Decoded UPDATE for [$key] from $source") &>
+                counter.inc(updateAttributes(source)*)
+
+            case Right(None) =>
+              val deleteType = message.isExpired.fold("expired", "canceled")
+              logger.info(logCtx)(s"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
+                counter.inc(deleteAttributes(source, deleteType)*)
+
+            case Left(error) =>
+              logger.error(logCtx, error)(s"Error decoding [$key] from $source - ${error.getMessage}") &>
+                counter.inc(errorAttributes(source, error)*)
+          }
         }
       }
     }
   }
 
-  def live[F[_] : Async : Parallel : LoggerFactory](
+  def live[F[_] : Async : Parallel : LoggerFactory : Meter](
       config: KafkaConfig,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] =
-    kafka[F](config, loaded).map(observed)
+    kafka[F](config, loaded).flatMap(observed)
 }

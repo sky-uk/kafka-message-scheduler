@@ -1,5 +1,5 @@
 addSbtPlugin("com.eed3si9n"   % "sbt-buildinfo"       % "0.11.0")
-addSbtPlugin("com.github.sbt" % "sbt-release"         % "1.1.0")
+addSbtPlugin("com.github.sbt" % "sbt-release"         % "1.4.0")
 addSbtPlugin("com.github.sbt" % "sbt-javaagent"       % "0.1.8")
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.16")
 addSbtPlugin("com.tapad"      % "sbt-docker-compose"  % "1.0.35")

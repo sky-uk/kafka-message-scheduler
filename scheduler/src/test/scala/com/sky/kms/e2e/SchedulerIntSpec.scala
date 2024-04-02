@@ -33,7 +33,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
           println(s">>> Created schedule: $schedule")
 
           val published = publish(schedule)
-          println(s">>> Published; $published")
+          println(s">>> Published: $published")
 
           published.foreach { _ =>
             val now = OffsetDateTime.now()

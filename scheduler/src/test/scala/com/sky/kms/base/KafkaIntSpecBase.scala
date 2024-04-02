@@ -30,10 +30,13 @@ trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
     cr.poll(kafkaConsumerTimeout.toJava).iterator().asScala
   }
 
-  def consumeFirstFrom[T : Deserializer](topic: String): ConsumerRecord[Array[Byte], T] =
+  def consumeFirstFrom[T : Deserializer](topic: String): ConsumerRecord[Array[Byte], T] = {
+    println(s">>> consumeFirstFrom: $kafkaConfig")
+    println(s">>> isRunning: ${EmbeddedKafka.isRunning}")
     withConsumer { cr: KafkaConsumer[Array[Byte], T] =>
       subscribeAndPoll(topic)(cr).next()
     }
+  }
 
   def consumeSomeFrom[T : Deserializer](topic: String, numMsgs: Int): List[ConsumerRecord[String, T]] =
     withConsumer { cr: KafkaConsumer[String, T] =>

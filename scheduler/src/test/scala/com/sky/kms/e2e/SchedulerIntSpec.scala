@@ -73,7 +73,9 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
       schedule.time
     }
 
-    def assertMessagesWrittenFrom(time: OffsetDateTime, schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
+    def assertMessagesWrittenFrom(time: OffsetDateTime, schedules: List[(ScheduleId, ScheduleEvent)]): Unit = {
+      println(s">>> Schedules: $schedules")
+      println("<BLANK>")
       schedules.foreach { case (_, schedule) =>
         val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
 
@@ -92,6 +94,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
             (k, v.toList)
           }
       }
+    }
 
     def assertTombstoned(schedules: List[(ScheduleId, ScheduleEvent)]): Unit =
       schedules.groupBy(_._2.inputTopic).foreach { case (topic, schedulesByInputTopic) =>

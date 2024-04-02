@@ -7,6 +7,7 @@ import com.sky.kms.domain.*
 import com.sky.kms.utils.TestDataUtils.*
 import eu.timepit.refined.auto.*
 import io.github.embeddedkafka.Codecs.*
+import io.github.embeddedkafka.EmbeddedKafkaConfig
 
 class SchedulerIntSpec extends SchedulerIntSpecBase {
 
@@ -69,6 +70,8 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
 
     def publish: List[(ScheduleId, ScheduleEvent)] => List[OffsetDateTime] = _.map { case (id, scheduleEvent) =>
       val schedule = scheduleEvent.toSchedule
+      val c        = implicitly[EmbeddedKafkaConfig]
+      println(s">>> Publish. scheduleEvent.inputTopic: ${scheduleEvent.inputTopic} || id: $id || config: $c")
       publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
       schedule.time
     }

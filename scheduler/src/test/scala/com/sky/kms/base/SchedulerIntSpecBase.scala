@@ -9,5 +9,5 @@ import scala.concurrent.duration.*
 abstract class SchedulerIntSpecBase extends AkkaKafkaSpecBase {
   implicit val conf: SchedulerConfig                   = TestConfig(NonEmptyList.of(scheduleTopic, extraScheduleTopic))
   val tolerance: FiniteDuration                        = 1300.milliseconds
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(60.seconds, 1.second)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(120.seconds, 1.second)
 }

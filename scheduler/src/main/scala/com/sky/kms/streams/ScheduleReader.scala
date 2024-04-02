@@ -51,9 +51,7 @@ object ScheduleReader extends LazyLogging {
 
   def toSchedulingMessage(readResult: In): Either[ApplicationError, SchedulingMessage] =
     readResult.map { case (scheduleId, scheduleOpt) =>
-      val r = scheduleOpt.fold[SchedulingMessage](Cancel(scheduleId))(CreateOrUpdate(scheduleId, _))
-      println(s">>> toSchedulingMessage: $r")
-      r
+      scheduleOpt.fold[SchedulingMessage](Cancel(scheduleId))(CreateOrUpdate(scheduleId, _))
     }
 
   def configure(actorRef: ActorRef)(implicit system: ActorSystem): Configured[ScheduleReader[Future[Control]]] =

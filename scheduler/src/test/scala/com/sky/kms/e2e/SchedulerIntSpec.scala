@@ -25,28 +25,34 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
     }
 
     "schedule a past message to be sent to Kafka immediately and delete it after it has been emitted" in new TestContext {
+      println("-" * 90)
       withRunningKafka {
         withSchedulerApp {
           val schedule =
             createSchedules(1, forTopics = List(scheduleTopic, extraScheduleTopic), fromNow = -100000L)
 
+          println(s">>> Kafka config: $kafkaConfig")
+          println("<BLANK>")
           println(s">>> Created schedule: $schedule")
+          println("<BLANK>")
 
           val published = publish(schedule)
           println(s">>> Published: $published")
+          println("<BLANK>")
 
           published.foreach { _ =>
             val now = OffsetDateTime.now()
             assertMessagesWrittenFrom(OffsetDateTime.now(), schedule)
             println(s">>> assertMessagesWrittenFrom... now: $now || schedule: $schedule")
+            println("<BLANK>")
           }
 
           println(s">>> About to assertTombstoned. Schedule: $schedule")
+          println("<BLANK>")
           assertTombstoned(schedule)
         }
-      }
+      }(kafkaConfig)
     }
-
   }
 
   private class TestContext {
@@ -71,6 +77,8 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
       schedules.foreach { case (_, schedule) =>
         val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
 
+        println(s">>> Consumer Record: $cr")
+        println("<BLANK>")
         cr.key should contain theSameElementsInOrderAs schedule.key
 
         schedule.value match {

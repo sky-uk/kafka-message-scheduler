@@ -63,13 +63,14 @@ object ScheduledMessagePublisher {
   }
 
   val toProducerRecord: PublishableMessage => ProducerRecord[Array[Byte], Array[Byte]] = {
-    case ScheduledMessage(_, outputTopic, key, value, headers) => {
-      val r = new ProducerRecord(outputTopic, null, key, value.orNull, headers.asKafkaHeaders)
+    case ScheduledMessage(_, outputTopic, key, value, headers) =>
+      val r: ProducerRecord[Array[Byte], Array[Byte]] =
+        new ProducerRecord(outputTopic, null, key, value.orNull, headers.asKafkaHeaders)
       println(s">>> 'case ScheduledMessage': $r")
       r
-    }
-    case ScheduleDeletion(id, outputTopic, headers)            => {
-      val r = new ProducerRecord(outputTopic, null, id.getBytes, null, headers.asKafkaHeaders)
+    case ScheduleDeletion(id, outputTopic, headers)            =>
+      val r: ProducerRecord[Array[Byte], Array[Byte]] =
+        new ProducerRecord(outputTopic, null, id.getBytes, null, headers.asKafkaHeaders)
       println(s">>> 'case ScheduleDeletion': $r")
       r
   }

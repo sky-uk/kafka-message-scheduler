@@ -35,11 +35,11 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
           val published = publish(schedule)
           println(s">>> Published; $published")
 
-          published.foreach(_ => {
+          published.foreach { _ =>
             val now = OffsetDateTime.now()
             assertMessagesWrittenFrom(OffsetDateTime.now(), schedule)
             println(s">>> assertMessagesWrittenFrom... now: $now || schedule: $schedule")
-          })
+          }
 
           println(s">>> About to assertTombstoned. Schedule: $schedule")
           assertTombstoned(schedule)

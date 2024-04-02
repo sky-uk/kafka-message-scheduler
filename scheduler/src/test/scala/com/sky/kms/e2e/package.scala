@@ -9,7 +9,10 @@ package object e2e {
   def withSchedulerApp[T](
       scenario: => T
   )(implicit conf: SchedulerConfig, system: ActorSystem): T =
-    withRunningScheduler(SchedulerApp.configure apply AppConfig(conf))(_ => scenario)
+    withRunningScheduler(SchedulerApp.configure apply AppConfig(conf)) { _ =>
+      println(s">>> Scheduler Conf: ${AppConfig(conf)}")
+      scenario
+    }
 
   def withRunningScheduler[T](
       schedulerApp: SchedulerApp

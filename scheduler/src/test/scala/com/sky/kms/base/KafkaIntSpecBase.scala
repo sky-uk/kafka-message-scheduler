@@ -34,7 +34,7 @@ trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
     val c = implicitly[EmbeddedKafkaConfig]
     println(s">>> ConsumeFirstFrom: $topic || Config: $c")
     withConsumer { cr: KafkaConsumer[Array[Byte], T] =>
-      println(s">>> withConsumer: ${cr.listTopics()}")
+      println(s">>> withConsumer: ${cr.listTopics()} || Subscribe and Pool from: $topic")
       subscribeAndPoll(topic)(cr).next()
     }
   }

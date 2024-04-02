@@ -30,7 +30,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
       withRunningKafka {
         withSchedulerApp {
           val schedule =
-            createSchedules(1, forTopics = List(scheduleTopic, extraScheduleTopic), fromNow = -100000L)
+            createSchedules(1, forTopics = List(scheduleTopic), fromNow = -100000L)
 
           println(s">>> Kafka config: $kafkaConfig")
           println("<BLANK>")
@@ -72,6 +72,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
       val schedule = scheduleEvent.toSchedule
       val c        = implicitly[EmbeddedKafkaConfig]
       println(s">>> Publish. scheduleEvent.inputTopic: ${scheduleEvent.inputTopic} || id: $id || config: $c")
+      println("<BLANK>")
       publishToKafka(scheduleEvent.inputTopic, id, schedule.toAvro)
       schedule.time
     }
@@ -80,6 +81,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
       println(s">>> Schedules: $schedules")
       println("<BLANK>")
       schedules.foreach { case (_, schedule) =>
+        createCustomTopic(schedule.outputTopic)
         println(s">>> Schedule Output Topic: ${schedule.outputTopic}")
         val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
 

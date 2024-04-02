@@ -32,6 +32,10 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
           val schedule =
             createSchedules(1, forTopics = List(scheduleTopic), fromNow = -100000L)
 
+          val outputTopicName = schedule.map(_._2.outputTopic).toSet.headOption.getOrElse("Not Topic Name Found")
+          println(s">>> Create output topic before publishing: $outputTopicName")
+          createCustomTopic(outputTopicName)
+
           println(s">>> Kafka config: $kafkaConfig")
           println("<BLANK>")
           println(s">>> Created schedule: $schedule")
@@ -81,7 +85,6 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
       println(s">>> Schedules: $schedules")
       println("<BLANK>")
       schedules.foreach { case (_, schedule) =>
-        createCustomTopic(schedule.outputTopic)
         println(s">>> Schedule Output Topic: ${schedule.outputTopic}")
         val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
 

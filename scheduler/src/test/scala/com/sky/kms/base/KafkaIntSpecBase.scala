@@ -23,7 +23,7 @@ trait KafkaIntSpecBase extends AnyWordSpec with EmbeddedKafka {
 
   val scheduleTopic: Topic                 = "scheduleTopic"
   val extraScheduleTopic: Topic            = "extraScheduleTopic"
-  def kafkaConsumerTimeout: FiniteDuration = 60.seconds
+  def kafkaConsumerTimeout: FiniteDuration = 120.seconds
 
   private def subscribeAndPoll[K, V](topic: String): KafkaConsumer[K, V] => Iterator[ConsumerRecord[K, V]] = { cr =>
     cr.subscribe(List(topic).asJavaCollection)

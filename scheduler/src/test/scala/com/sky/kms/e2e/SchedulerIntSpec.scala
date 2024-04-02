@@ -80,6 +80,7 @@ class SchedulerIntSpec extends SchedulerIntSpecBase {
       println(s">>> Schedules: $schedules")
       println("<BLANK>")
       schedules.foreach { case (_, schedule) =>
+        println(s">>> Schedule Output Topic: ${schedule.outputTopic}")
         val cr = consumeFirstFrom[Array[Byte]](schedule.outputTopic)
 
         println(s">>> Consumer Record: $cr")

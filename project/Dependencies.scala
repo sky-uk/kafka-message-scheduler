@@ -3,13 +3,16 @@ import sbt.*
 object Dependencies {
 
   object Cats {
+    private lazy val catsEffectVersion = "3.5.4"
+    private lazy val log4sVersion      = "2.6.0"
+
     lazy val core             = "org.typelevel" %% "cats-core"                     % "2.10.0"
-    lazy val effect           = "org.typelevel" %% "cats-effect"                   % "3.5.2"
-    lazy val log4cats         = "org.typelevel" %% "log4cats-core"                 % "2.6.0"
-    lazy val log4catsSlf4j    = "org.typelevel" %% "log4cats-slf4j"                % "2.6.0"
-    lazy val effectTesting    = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0" % Test
-    lazy val testKit          = "org.typelevel" %% "cats-effect-testkit"           % "3.5.2" % Test
-    lazy val testkitScalatest = "org.typelevel" %% "cats-testkit-scalatest"        % "2.1.5" % Test
+    lazy val effect           = "org.typelevel" %% "cats-effect"                   % catsEffectVersion
+    lazy val log4cats         = "org.typelevel" %% "log4cats-core"                 % log4sVersion
+    lazy val log4catsSlf4j    = "org.typelevel" %% "log4cats-slf4j"                % log4sVersion
+    lazy val effectTesting    = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0"           % Test
+    lazy val testKit          = "org.typelevel" %% "cats-effect-testkit"           % catsEffectVersion % Test
+    lazy val testkitScalatest = "org.typelevel" %% "cats-testkit-scalatest"        % "2.1.5"           % Test
   }
 
   object Chimney {
@@ -24,8 +27,8 @@ object Dependencies {
   }
 
   object Fs2 {
-    private lazy val version      = "3.9.3"
-    private lazy val kafkaVersion = "3.2.0"
+    private lazy val version      = "3.10.2"
+    private lazy val kafkaVersion = "3.4.0"
 
     lazy val core        = "co.fs2"          %% "fs2-core"         % version
     lazy val io          = "co.fs2"          %% "fs2-io"           % version
@@ -34,11 +37,11 @@ object Dependencies {
   }
 
   object Janino {
-    val janino = "org.codehaus.janino" % "janino" % "3.1.11" % Runtime
+    val janino = "org.codehaus.janino" % "janino" % "3.1.12" % Runtime
   }
 
   object Logback {
-    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.4.14" % Runtime
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.5" % Runtime
   }
 
   object Logstash {
@@ -50,9 +53,9 @@ object Dependencies {
   }
 
   object OpenTelemetry {
-    private lazy val version      = "1.34.1"
-    private lazy val alphaVersion = "1.34.1-alpha"
-    private lazy val agentVersion = "1.32.0"
+    private lazy val version      = "1.37.0"
+    private lazy val alphaVersion = "1.37.0-alpha"
+    private lazy val agentVersion = "2.3.0"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"       % version      % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus" % alphaVersion % Runtime
@@ -70,7 +73,7 @@ object Dependencies {
   }
 
   object PureConfig {
-    private lazy val version = "0.17.4"
+    private lazy val version = "0.17.6"
 
     lazy val core       = "com.github.pureconfig" %% "pureconfig-core"        % version
     lazy val cats       = "com.github.pureconfig" %% "pureconfig-cats"        % version
@@ -78,16 +81,16 @@ object Dependencies {
   }
 
   object ScalaTest {
-    lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.17" % Test
+    lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.18" % Test
   }
 
   object TopicLoader {
-    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.4"
+    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.5"
   }
 
   object Typelevel {
     val caseInsensitive = "org.typelevel" %% "case-insensitive" % "1.4.0"
-    val mouse           = "org.typelevel" %% "mouse"            % "1.2.2"
+    val mouse           = "org.typelevel" %% "mouse"            % "1.2.3"
   }
 
   object Vulcan {

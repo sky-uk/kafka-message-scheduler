@@ -10,23 +10,23 @@ import org.apache.kafka.common.config.SslConfigs
 
 import scala.concurrent.duration.FiniteDuration
 
-private val redacted = "*".repeat(8)
+private val Redacted = "*".repeat(8)
 
-given kafkaConfigEncoder: Encoder[KafkaConfig] = semiauto
+private[config] given kafkaConfigEncoder: Encoder[KafkaConfig] = semiauto
   .deriveEncoder[KafkaConfig]
   .contramap(
     _.focus(_.properties)
       .modify(
-        _.updatedWith(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG)(_.as(redacted))
-          .updatedWith(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG)(_.as(redacted))
-          .updatedWith(SslConfigs.SSL_KEY_PASSWORD_CONFIG)(_.as(redacted))
+        _.updatedWith(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG)(_.as(Redacted))
+          .updatedWith(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG)(_.as(Redacted))
+          .updatedWith(SslConfigs.SSL_KEY_PASSWORD_CONFIG)(_.as(Redacted))
       )
   )
 
-given configFiniteDurationEncoder: Encoder[FiniteDuration] =
+private[config] given configFiniteDurationEncoder: Encoder[FiniteDuration] =
   Encoder.instance(fd => s"${fd.length} ${fd.unit.toString.toLowerCase}".asJson)
 
-given schedulerConfigEncoder: Encoder[ScheduleConfig] = semiauto.deriveEncoder[ScheduleConfig]
-given configEncoder: Encoder[Config]                  = semiauto.deriveEncoder[Config]
+private[config] given schedulerConfigEncoder: Encoder[ScheduleConfig] = semiauto.deriveEncoder[ScheduleConfig]
+private[config] given configEncoder: Encoder[Config]                  = semiauto.deriveEncoder[Config]
 
 given configShow: Show[Config] = Show.show(_.asJson.noSpaces)

@@ -20,6 +20,14 @@ ThisBuild / versionScheme := Some("early-semver")
 Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / scalafmtOnCompile    := true
 
+lazy val domain = project
+  .settings(CommonSettings.default)
+
+lazy val protobuf = project
+  .settings(CommonSettings.default)
+  .settings(CommonSettings.protobuf)
+  .dependsOn(domain)
+
 lazy val scheduler = project
   .settings(CommonSettings.default)
   .settings {
@@ -34,10 +42,7 @@ lazy val scheduler = project
       )
     )
   }
-
-lazy val protobuf = project
-  .settings(CommonSettings.default)
-  .settings(CommonSettings.protobuf)
+  .dependsOn(domain, protobuf)
 
 val schema    = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 lazy val avro = project

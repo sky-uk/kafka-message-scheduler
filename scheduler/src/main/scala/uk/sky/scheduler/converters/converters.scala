@@ -9,7 +9,7 @@ import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
-import uk.sky.scheduler.message.{Message, Metadata => MessageMetadata}
+import uk.sky.scheduler.message.{Message, Metadata as MessageMetadata}
 import uk.sky.scheduler.syntax.all.*
 
 extension (schedule: JsonSchedule) {

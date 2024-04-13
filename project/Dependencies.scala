@@ -97,8 +97,9 @@ object Dependencies {
   }
 
   object Typelevel {
-    val caseInsensitive = "org.typelevel" %% "case-insensitive" % "1.4.0"
-    val mouse           = "org.typelevel" %% "mouse"            % "1.2.3"
+    val caseInsensitive = "org.typelevel" %% "case-insensitive"   % "1.4.0"
+    val mouse           = "org.typelevel" %% "mouse"              % "1.2.3"
+    val scalafix        = "org.typelevel" %% "typelevel-scalafix" % "0.2.0"
   }
 
   object Vulcan {

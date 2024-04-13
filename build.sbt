@@ -11,6 +11,8 @@ ThisBuild / homepage     := Some(url(scmUrl))
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
+ThisBuild / scalafixDependencies += Dependencies.Typelevel.scalafix
+
 ThisBuild / dynverSeparator := "-"
 
 ThisBuild / versionScheme := Some("early-semver")

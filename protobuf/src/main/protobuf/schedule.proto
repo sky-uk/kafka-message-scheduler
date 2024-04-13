@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package uk.sky.scheduler.proto.v1;
+
+service Scheduler {
+  rpc Schedule (ScheduleRequest) returns (ScheduleEvent) {}
+}
+
+message ScheduleRequest {
+  string id = 1;
+}
+
+message ScheduleEvent {
+  message Metadata {
+    string id = 1;
+    string scheduleTopic = 2;
+  }
+
+  message Schedule {
+    int64 time = 1;
+    string topic = 2;
+    bytes key = 3;
+    optional bytes value = 4;
+    map<string, bytes> headers = 5;
+  }
+
+  Metadata metadata = 1;
+  Schedule schedule = 2;
+}

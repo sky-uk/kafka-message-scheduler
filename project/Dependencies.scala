@@ -52,6 +52,10 @@ object Dependencies {
     lazy val core = "dev.optics" %% "monocle-core" % "3.2.0"
   }
 
+  object Netty {
+    lazy val grpc = "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion
+  }
+
   object OpenTelemetry {
     private lazy val version      = "1.37.0"
     private lazy val alphaVersion = "1.37.0-alpha"
@@ -78,6 +82,10 @@ object Dependencies {
     lazy val core       = "com.github.pureconfig" %% "pureconfig-core"        % version
     lazy val cats       = "com.github.pureconfig" %% "pureconfig-cats"        % version
     lazy val catsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % version
+  }
+
+  object ScalaPb {
+    val runtime = "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
   }
 
   object ScalaTest {

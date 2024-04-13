@@ -33,6 +33,10 @@ lazy val scheduler = project
     )
   }
 
+lazy val protobuf = project
+  .settings(CommonSettings.default)
+  .settings(CommonSettings.protobuf)
+
 val schema    = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 lazy val avro = project
   .dependsOn(scheduler)
@@ -49,7 +53,7 @@ lazy val it = Project("integration-test", file("it"))
   .dependsOn(scheduler % "compile->compile;test->test")
 
 lazy val root = Project("kafka-message-scheduler", file("."))
-  .aggregate(scheduler, avro, it)
+  .aggregate(scheduler, protobuf, avro, it)
 
 run / fork  := true
 Test / fork := true

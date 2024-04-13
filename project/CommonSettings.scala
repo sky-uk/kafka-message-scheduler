@@ -14,4 +14,8 @@ object CommonSettings {
     Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
   )
 
+  val protobuf: Seq[Def.Setting[?]] = Seq(
+    tpolecatExcludeOptions += ScalacOptions.warnValueDiscard
+  )
+
 }

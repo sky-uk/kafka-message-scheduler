@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import cats.{Eq, Functor}
 import monocle.syntax.all.*
 
-case class Message[V](key: String, source: String, value: V, metadata: Metadata) {
+final case class Message[V](key: String, source: String, value: V, metadata: Metadata) {
   def map[B](f: V => B): Message[B] = this.copy(value = f(this.value))
 }
 

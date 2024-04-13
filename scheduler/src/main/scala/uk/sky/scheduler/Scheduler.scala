@@ -24,9 +24,8 @@ class Scheduler[F[_] : Concurrent, O](
   }
 
   def stream: Stream[F, O] =
-    scheduleEvents.drain.merge {
-      scheduleQueue.schedules.through(schedulePublisher.publish)
-    }
+    scheduleEvents.drain
+      .merge(scheduleQueue.schedules.through(schedulePublisher.publish))
 }
 
 object Scheduler {

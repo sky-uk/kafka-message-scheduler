@@ -23,7 +23,7 @@ Global / scalafmtOnCompile    := true
 lazy val domain = project
   .settings(CommonSettings.default)
 
-lazy val protobuf = project
+lazy val grpc = project
   .settings(CommonSettings.default)
   .settings(CommonSettings.protobuf)
   .dependsOn(domain)
@@ -42,7 +42,7 @@ lazy val scheduler = project
       )
     )
   }
-  .dependsOn(domain, protobuf)
+  .dependsOn(domain, grpc)
 
 val schema    = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 lazy val avro = project
@@ -60,7 +60,7 @@ lazy val it = Project("integration-test", file("it"))
   .dependsOn(scheduler % "compile->compile;test->test")
 
 lazy val root = Project("kafka-message-scheduler", file("."))
-  .aggregate(scheduler, protobuf, avro, it)
+  .aggregate(scheduler, avro, it)
 
 run / fork  := true
 Test / fork := true

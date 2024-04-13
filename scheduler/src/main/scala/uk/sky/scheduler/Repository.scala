@@ -37,7 +37,7 @@ object Repository {
   def observed[F[_] : Monad : Parallel : Meter, K, V](name: String)(
       mapRef: MapRef[F, K, Option[V]]
   ): F[Repository[F, K, V]] =
-    Meter[F].upDownCounter(s"$name-repository-size").create.map { counter =>
+    Meter[F].upDownCounter[Long](s"$name-repository-size").create.map { counter =>
       new Repository[F, K, V] {
         private val underlying = RepositoryImpl(mapRef)
 

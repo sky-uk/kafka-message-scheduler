@@ -66,10 +66,10 @@ object Dependencies {
   }
 
   object Otel4s {
-    private lazy val version = "0.4.0"
+    private lazy val version = "0.5.0"
 
-    lazy val java    = "org.typelevel" %% "otel4s-java"    % version
-    lazy val testkit = "org.typelevel" %% "otel4s-testkit" % version % Test
+    lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
+    lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test
   }
 
   object PureConfig {

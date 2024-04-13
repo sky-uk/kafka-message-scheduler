@@ -109,7 +109,7 @@ object EventSubscriber {
       Attribute("message.error.type", error.show)
     )
 
-    Meter[F].counter("event-subscriber").create.map { counter =>
+    Meter[F].counter[Long]("event-subscriber").create.map { counter =>
       val logger = LoggerFactory[F].getLogger
 
       new EventSubscriber[F] {

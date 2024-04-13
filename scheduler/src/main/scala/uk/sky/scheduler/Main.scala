@@ -6,8 +6,8 @@ import cats.syntax.all.*
 import fs2.*
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
-import org.typelevel.otel4s.java.OtelJava
 import org.typelevel.otel4s.metrics.Meter
+import org.typelevel.otel4s.oteljava.OtelJava
 import pureconfig.ConfigSource
 import pureconfig.module.catseffect.syntax.*
 import uk.sky.scheduler.config.Config.given

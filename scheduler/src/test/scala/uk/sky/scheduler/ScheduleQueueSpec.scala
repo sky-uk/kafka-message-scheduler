@@ -10,6 +10,7 @@ import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{Assertion, EitherValues, OptionValues}
 import uk.sky.scheduler.ScheduleQueue.CancelableSchedule
 import uk.sky.scheduler.domain.{Schedule, ScheduleEvent}
+import uk.sky.scheduler.repository.Repository
 import uk.sky.scheduler.util.Generator.*
 import uk.sky.scheduler.util.testSyntax.*
 
@@ -156,22 +157,24 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
   private def withContext(test: TestContext => IO[Assertion]): IO[Assertion] =
     Supervisor[IO].use { supervisor =>
       for {
-        repo       <- MapRef.ofScalaConcurrentTrieMap[IO, String, CancelableSchedule[IO]].map(Repository.apply)
-        deferred   <- Deferred[IO, Unit]
-        queue      <- Queue.unbounded[IO, ScheduleEvent]
-        schedule   <- generateSchedule[IO](_.plusSeconds(10))
-        testContext = new TestContext {
-                        override val repository: Repository[IO, String, CancelableSchedule[IO]] = repo
+        fiberRepo         <- MapRef.ofScalaConcurrentTrieMap[IO, String, CancelableSchedule[IO]].map(Repository.apply)
+        scheduleEventRepo <- MapRef.ofScalaConcurrentTrieMap[IO, String, ScheduleEvent].map(Repository.apply)
+        deferred          <- Deferred[IO, Unit]
+        queue             <- Queue.unbounded[IO, ScheduleEvent]
+        schedule          <- generateSchedule[IO](_.plusSeconds(10))
+        testContext        = new TestContext {
+                               override val repository: Repository[IO, String, CancelableSchedule[IO]] = fiberRepo
 
-                        override val allowEnqueue: Deferred[IO, Unit] = deferred
+                               override val allowEnqueue: Deferred[IO, Unit] = deferred
 
-                        override val eventQueue: Queue[IO, ScheduleEvent] = queue
+                               override val eventQueue: Queue[IO, ScheduleEvent] = queue
 
-                        override val scheduleQueue: ScheduleQueue[IO] = ScheduleQueue(deferred, repo, queue, supervisor)
+                               override val scheduleQueue: ScheduleQueue[IO] =
+                                 ScheduleQueue(deferred, fiberRepo, scheduleEventRepo, queue, supervisor)
 
-                        override val scheduleEvent: ScheduleEvent = schedule
-                      }
-        assertion  <- test(testContext)
+                               override val scheduleEvent: ScheduleEvent = schedule
+                             }
+        assertion         <- test(testContext)
       } yield assertion
     }
 

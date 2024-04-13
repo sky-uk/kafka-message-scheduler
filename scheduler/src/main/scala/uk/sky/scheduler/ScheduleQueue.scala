@@ -9,6 +9,7 @@ import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.repository.Repository
 import uk.sky.scheduler.syntax.all.*
 
 import scala.concurrent.duration.*
@@ -24,7 +25,8 @@ object ScheduleQueue {
 
   def apply[F[_] : Async : Parallel](
       allowEnqueue: Deferred[F, Unit],
-      repository: Repository[F, String, CancelableSchedule[F]],
+      fiberRepository: Repository[F, String, CancelableSchedule[F]],
+      scheduleEventRepository: Repository[F, String, ScheduleEvent],
       queue: Queue[F, ScheduleEvent],
       supervisor: Supervisor[F]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
@@ -36,27 +38,28 @@ object ScheduleQueue {
       Async[F]
         .delayBy(
           for {
-            _ <- allowEnqueue.get                                     // Block until Queuing is allowed
-            _ <- queue.offer(scheduleEvent) &> repository.delete(key) // Offer & Delete in Parallel
+            _ <- allowEnqueue.get // Block until queuing is allowed
+            // Offer & Delete in parallel
+            _ <- queue.offer(scheduleEvent) &> fiberRepository.delete(key) &> scheduleEventRepository.delete(key)
           } yield (),
           time = delay
         )
 
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
       for {
-        previous   <- repository.get(key)
+        previous   <- fiberRepository.get(key)
         _          <- previous.fold(Async[F].unit)(_.cancel) // Cancel the previous Schedule if it exists
         now        <- Async[F].epochMilli
         delay       = Either
                         .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now).milliseconds)
                         .getOrElse(Long.MaxValue.nanos)
         cancelable <- supervisor.supervise(delayScheduling(key, scheduleEvent, delay))
-        _          <- repository.set(key, cancelable)
+        _          <- fiberRepository.set(key, cancelable) &> scheduleEventRepository.set(key, scheduleEvent)
       } yield ()
 
     override def cancel(key: String): F[Unit] =
-      repository.get(key).flatMap {
-        case Some(started) => started.cancel &> repository.delete(key) // Cancel & Delete in Parallel
+      fiberRepository.get(key).flatMap {
+        case Some(started) => started.cancel &> fiberRepository.delete(key) // Cancel & Delete in Parallel
         case None          => Async[F].unit
       }
 
@@ -92,9 +95,18 @@ object ScheduleQueue {
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, ScheduleQueue[F]] =
     for {
-      repo       <- Repository.live[F, String, CancelableSchedule[F]]("schedules").toResource
-      eventQueue <- Queue.unbounded[F, ScheduleEvent].toResource
-      supervisor <- Supervisor[F]
-    } yield ScheduleQueue.observed(ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor))
+      fiberRepository         <- Repository.live[F, String, CancelableSchedule[F]]("schedule-fibers").toResource
+      scheduleEventRepository <- Repository.live[F, String, ScheduleEvent]("schedule-events").toResource
+      eventQueue              <- Queue.unbounded[F, ScheduleEvent].toResource
+      supervisor              <- Supervisor[F]
+    } yield ScheduleQueue.observed(
+      ScheduleQueue(
+        allowEnqueue,
+        fiberRepository,
+        scheduleEventRepository,
+        eventQueue,
+        supervisor
+      )
+    )
 
 }

@@ -1,4 +1,4 @@
-package uk.sky.scheduler
+package uk.sky.scheduler.repository
 
 import cats.effect.Sync
 import cats.effect.std.MapRef

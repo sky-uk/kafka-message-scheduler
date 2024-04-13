@@ -23,10 +23,13 @@ Global / scalafmtOnCompile    := true
 lazy val domain = project
   .settings(CommonSettings.default)
 
+lazy val common = project
+  .settings(CommonSettings.default)
+
 lazy val grpc = project
   .settings(CommonSettings.default)
   .settings(CommonSettings.protobuf)
-  .dependsOn(domain)
+  .dependsOn(domain, common)
 
 lazy val scheduler = project
   .settings(CommonSettings.default)

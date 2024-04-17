@@ -1,22 +1,28 @@
-package uk.sky.scheduler.grpc
+package uk.sky.scheduler.grpc.v1
 
 import java.util.concurrent.TimeUnit
 
-import cats.effect.MonadCancelThrow
+import cats.effect.syntax.all.*
+import cats.effect.{Async, MonadCancelThrow, Resource}
 import cats.syntax.all.*
-import io.grpc.Status
+import com.google.protobuf.ByteString
+import io.grpc.{ServerServiceDefinition, Status}
+import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
+import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.grpc.Converters.given
+import uk.sky.scheduler.grpc.Metadata
 import uk.sky.scheduler.otel.Otel
-import uk.sky.scheduler.proto.v1.{ScheduleEvent, ScheduleRequest, SchedulerFs2Grpc}
+import uk.sky.scheduler.proto.v1
 import uk.sky.scheduler.repository.Repository
 
 class SchedulerGrpc[F[_] : MonadCancelThrow](repository: Repository[F, String, ScheduleEvent])
-    extends SchedulerFs2Grpc[F, Metadata] {
-  override def schedule(request: ScheduleRequest, ctx: Metadata): F[ScheduleEvent] =
+    extends v1.SchedulerFs2Grpc[F, Metadata] {
+  override def schedule(request: v1.ScheduleRequest, ctx: Metadata): F[v1.ScheduleEvent] =
     repository.get(request.id).flatMap {
       case Some(scheduleEvent) =>
         scheduleEvent
-          .transformInto[ScheduleEvent]
+          .transformInto[v1.ScheduleEvent]
           .pure[F]
 
       case None =>
@@ -28,12 +34,13 @@ class SchedulerGrpc[F[_] : MonadCancelThrow](repository: Repository[F, String, S
 }
 
 object Scheduler {
-  def observed[F[_] : MonadCancelThrow : Otel](delegate: SchedulerGrpc[F]): F[SchedulerFs2Grpc[F, Metadata]] =
+
+  def observed[F[_] : MonadCancelThrow : Otel](delegate: SchedulerGrpc[F]): F[v1.SchedulerFs2Grpc[F, Metadata]] =
     Otel[F].meter.histogram[Double]("scheduler-grpc-request").create.map { histogram =>
       val logger = Otel[F].loggerFactory.getLogger
 
-      new SchedulerFs2Grpc[F, Metadata] {
-        override def schedule(request: ScheduleRequest, ctx: Metadata): F[ScheduleEvent] =
+      new v1.SchedulerFs2Grpc[F, Metadata] {
+        override def schedule(request: v1.ScheduleRequest, ctx: Metadata): F[v1.ScheduleEvent] =
           Otel[F].tracer.joinOrRoot(ctx) {
             histogram.recordDuration(TimeUnit.MILLISECONDS).surround {
               Otel[F].tracer.span("scheduler-grpc-request").surround {
@@ -45,4 +52,12 @@ object Scheduler {
           }
       }
     }
+
+  def live[F[_] : Async : Otel](
+      repository: Repository[F, String, ScheduleEvent]
+  ): Resource[F, ServerServiceDefinition] =
+    for {
+      observed                <- Scheduler.observed[F](SchedulerGrpc(repository)).toResource
+      serverServiceDefinition <- v1.SchedulerFs2Grpc.serviceResource(observed, Metadata.from)
+    } yield serverServiceDefinition
 }

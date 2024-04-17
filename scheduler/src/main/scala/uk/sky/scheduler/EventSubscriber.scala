@@ -9,7 +9,6 @@ import fs2.kafka.*
 import mouse.all.*
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.Attribute
-import org.typelevel.otel4s.metrics.Meter
 import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
 import uk.sky.scheduler.config.KafkaConfig
@@ -19,6 +18,7 @@ import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, AvroSchedule}
 import uk.sky.scheduler.kafka.json.{jsonDeserializer, JsonSchedule}
 import uk.sky.scheduler.message.Message
+import uk.sky.scheduler.otel.Otel
 
 trait EventSubscriber[F[_]] {
   def messages: Stream[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]]
@@ -27,10 +27,11 @@ trait EventSubscriber[F[_]] {
 object EventSubscriber {
   private type Output = Either[ScheduleError, Option[ScheduleEvent]]
 
-  def kafka[F[_] : Async : Parallel : LoggerFactory](
+  def kafka[F[_] : Async : Parallel : Otel](
       config: KafkaConfig,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {
+    given LoggerFactory[F] = Otel[F].loggerFactory
 
     val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]] = {
       given Deserializer[F, Either[ScheduleError, Option[AvroSchedule]]] =
@@ -84,7 +85,7 @@ object EventSubscriber {
     }
   }
 
-  def observed[F[_] : Monad : Parallel : LoggerFactory : Meter](delegate: EventSubscriber[F]): F[EventSubscriber[F]] = {
+  def observed[F[_] : Monad : Parallel : Otel](delegate: EventSubscriber[F]): F[EventSubscriber[F]] = {
     given scheduleErrorType: Show[ScheduleError] = Show.show {
       case _: ScheduleError.InvalidAvroError => "invalid-avro"
       case _: ScheduleError.NotJsonError     => "not-json"
@@ -109,8 +110,8 @@ object EventSubscriber {
       Attribute("message.error.type", error.show)
     )
 
-    Meter[F].counter[Long]("event-subscriber").create.map { counter =>
-      val logger = LoggerFactory[F].getLogger
+    Otel[F].meter.counter[Long]("event-subscriber").create.map { counter =>
+      val logger = Otel[F].loggerFactory.getLogger
 
       new EventSubscriber[F] {
         override def messages: Stream[F, Message[Output]] = delegate.messages.evalTapChunk { message =>
@@ -137,7 +138,7 @@ object EventSubscriber {
     }
   }
 
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter](
+  def live[F[_] : Async : Parallel : Otel](
       config: KafkaConfig,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] =

@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import cats.{Functor, Monad, Parallel}
 import mouse.all.*
 import org.typelevel.otel4s.Attribute
-import org.typelevel.otel4s.metrics.Meter
+import uk.sky.scheduler.otel.Otel
 
 trait Repository[F[_], K, V] {
   def set(key: K, value: V): F[Unit]
@@ -34,10 +34,10 @@ object Repository {
   private val setAttribute    = Attribute("counter.type", "set")
   private val deleteAttribute = Attribute("counter.type", "delete")
 
-  def observed[F[_] : Monad : Parallel : Meter, K, V](name: String)(
+  def observed[F[_] : Monad : Parallel : Otel, K, V](name: String)(
       mapRef: MapRef[F, K, Option[V]]
   ): F[Repository[F, K, V]] =
-    Meter[F].upDownCounter[Long](s"$name-repository-size").create.map { counter =>
+    Otel[F].meter.upDownCounter[Long](s"$name-repository-size").create.map { counter =>
       new Repository[F, K, V] {
         private val underlying = RepositoryImpl(mapRef)
 
@@ -56,6 +56,6 @@ object Repository {
       }
     }
 
-  def live[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
+  def live[F[_] : Sync : Parallel : Otel, K, V](name: String): F[Repository[F, K, V]] =
     MapRef.ofScalaConcurrentTrieMap[F, K, V].flatMap(observed(name))
 }

@@ -6,9 +6,8 @@ import cats.effect.{Async, Deferred, Fiber, Resource}
 import cats.syntax.all.*
 import cats.{Monad, Parallel}
 import fs2.Stream
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.otel.Otel
 import uk.sky.scheduler.repository.Repository
 import uk.sky.scheduler.syntax.all.*
 
@@ -67,9 +66,9 @@ object ScheduleQueue {
       Stream.fromQueueUnterminated(queue)
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] =
+  def observed[F[_] : Monad : Otel](delegate: ScheduleQueue[F]): ScheduleQueue[F] =
     new ScheduleQueue[F] {
-      val logger = LoggerFactory[F].getLogger
+      val logger = Otel[F].loggerFactory.getLogger
 
       override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
         for {
@@ -91,7 +90,7 @@ object ScheduleQueue {
         }
     }
 
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter](
+  def live[F[_] : Async : Parallel : Otel](
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, ScheduleQueue[F]] =
     for {

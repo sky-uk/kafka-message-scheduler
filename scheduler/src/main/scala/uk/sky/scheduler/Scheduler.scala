@@ -5,10 +5,9 @@ import cats.effect.syntax.all.*
 import cats.effect.{Async, Concurrent, Deferred, Resource}
 import cats.syntax.all.*
 import fs2.Stream
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.otel.Otel
 
 class Scheduler[F[_] : Concurrent, O](
     eventSubscriber: EventSubscriber[F],
@@ -29,7 +28,7 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter](config: Config): Resource[F, Scheduler[F, Unit]] =
+  def live[F[_] : Async : Parallel : Otel](config: Config): Resource[F, Scheduler[F, Unit]] =
     for {
       allowEnqueue     <- Deferred[F, Unit].toResource
       eventSubscriber  <- EventSubscriber.live[F](config.scheduler.kafka, allowEnqueue).toResource

@@ -8,6 +8,7 @@ import fs2.Stream
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.otel.Otel
+import uk.sky.scheduler.repository.Repository
 
 class Scheduler[F[_] : Concurrent, O](
     eventSubscriber: EventSubscriber[F],
@@ -28,11 +29,14 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Async : Parallel : Otel](config: Config): Resource[F, Scheduler[F, Unit]] =
+  def live[F[_] : Async : Parallel : Otel](
+      config: Config,
+      scheduleEventRepository: Repository[F, String, ScheduleEvent]
+  ): Resource[F, Scheduler[F, Unit]] =
     for {
       allowEnqueue     <- Deferred[F, Unit].toResource
       eventSubscriber  <- EventSubscriber.live[F](config.scheduler.kafka, allowEnqueue).toResource
-      scheduleQueue    <- ScheduleQueue.live[F](allowEnqueue)
+      scheduleQueue    <- ScheduleQueue.live[F](allowEnqueue, scheduleEventRepository)
       schedulePublisher = SchedulePublisher.kafka[F](config.scheduler.kafka)
     } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
 }

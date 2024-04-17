@@ -16,10 +16,10 @@ import uk.sky.scheduler.otel.Otel
 import uk.sky.scheduler.proto.v1
 import uk.sky.scheduler.repository.Repository
 
-class SchedulerGrpc[F[_] : MonadCancelThrow](repository: Repository[F, String, ScheduleEvent])
+class SchedulerGrpc[F[_] : MonadCancelThrow](scheduleEventRepository: Repository[F, String, ScheduleEvent])
     extends v1.SchedulerFs2Grpc[F, Metadata] {
   override def schedule(request: v1.ScheduleRequest, ctx: Metadata): F[v1.ScheduleEvent] =
-    repository.get(request.id).flatMap {
+    scheduleEventRepository.get(request.id).flatMap {
       case Some(scheduleEvent) =>
         scheduleEvent
           .transformInto[v1.ScheduleEvent]
@@ -54,10 +54,10 @@ object Scheduler {
     }
 
   def live[F[_] : Async : Otel](
-      repository: Repository[F, String, ScheduleEvent]
+      scheduleEventRepository: Repository[F, String, ScheduleEvent]
   ): Resource[F, ServerServiceDefinition] =
     for {
-      observed                <- Scheduler.observed[F](SchedulerGrpc(repository)).toResource
+      observed                <- Scheduler.observed[F](SchedulerGrpc(scheduleEventRepository)).toResource
       serverServiceDefinition <- v1.SchedulerFs2Grpc.serviceResource(observed, Metadata.from)
     } yield serverServiceDefinition
 }

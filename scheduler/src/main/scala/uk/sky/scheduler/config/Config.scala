@@ -11,7 +11,7 @@ import scala.concurrent.duration.FiniteDuration
 
 final case class Config(scheduler: ScheduleConfig) derives ConfigReader
 
-final case class ScheduleConfig(kafka: KafkaConfig) derives ConfigReader
+final case class ScheduleConfig(kafka: KafkaConfig, grpc: GrpcConfig) derives ConfigReader
 
 final case class KafkaConfig(
     topics: TopicConfig,
@@ -54,3 +54,5 @@ object TopicConfig {
 }
 
 final case class KafkaProducerConfig(batchSize: Int, timeout: FiniteDuration) derives ConfigReader
+
+final case class GrpcConfig(port: Int)

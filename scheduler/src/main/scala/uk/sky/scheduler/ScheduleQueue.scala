@@ -91,13 +91,13 @@ object ScheduleQueue {
     }
 
   def live[F[_] : Async : Parallel : Otel](
-      allowEnqueue: Deferred[F, Unit]
+      allowEnqueue: Deferred[F, Unit],
+      scheduleEventRepository: Repository[F, String, ScheduleEvent]
   ): Resource[F, ScheduleQueue[F]] =
     for {
-      fiberRepository         <- Repository.live[F, String, CancelableSchedule[F]]("schedule-fibers").toResource
-      scheduleEventRepository <- Repository.live[F, String, ScheduleEvent]("schedule-events").toResource
-      eventQueue              <- Queue.unbounded[F, ScheduleEvent].toResource
-      supervisor              <- Supervisor[F]
+      fiberRepository <- Repository.live[F, String, CancelableSchedule[F]]("schedule-fibers").toResource
+      eventQueue      <- Queue.unbounded[F, ScheduleEvent].toResource
+      supervisor      <- Supervisor[F]
     } yield ScheduleQueue.observed(
       ScheduleQueue(
         allowEnqueue,

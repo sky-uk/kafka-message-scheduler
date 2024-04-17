@@ -52,8 +52,9 @@ object Dependencies {
     lazy val core = "dev.optics" %% "monocle-core" % "3.2.0"
   }
 
-  object Netty {
-    lazy val grpc = "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion
+  object Grpc {
+    lazy val netty    = "io.grpc" % "grpc-netty-shaded" % scalapb.compiler.Version.grpcJavaVersion
+    lazy val services = "io.grpc" % "grpc-services"     % scalapb.compiler.Version.grpcJavaVersion
   }
 
   object OpenTelemetry {

@@ -8,8 +8,8 @@ import fs2.*
 import fs2.kafka.*
 import mouse.all.*
 import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Meter
+import org.typelevel.otel4s.{Attribute, Attributes}
 import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
 import uk.sky.scheduler.config.KafkaConfig
@@ -53,17 +53,18 @@ object EventSubscriber {
 
       /** If both topics have finished loading, complete the Deferred to allow Queueing schedules.
         */
-      def onLoadCompare(exitCase: ExitCase): F[Unit] =
+      private def onLoadCompare(exitCase: ExitCase): F[Unit] =
         exitCase match {
           case ExitCase.Succeeded                      =>
             for {
-              results <- (avroLoadedRef.get, jsonLoadedRef.get).parTupled
-              _       <- if (results.forall(_ == true)) loaded.complete(()).void else Async[F].unit
+              avroLoaded <- avroLoadedRef.get
+              jsonLoaded <- jsonLoadedRef.get
+              _          <- Async[F].whenA(avroLoaded && jsonLoaded)(loaded.complete(()))
             } yield ()
           case ExitCase.Errored(_) | ExitCase.Canceled => Async[F].unit
         }
 
-      val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[AvroSchedule]]]] =
+      private val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[AvroSchedule]]]] =
         config.topics.avro.toNel
           .fold(Stream.exec(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
             TopicLoader.loadAndRun(_, avroConsumerSettings) { exitCase =>
@@ -71,7 +72,7 @@ object EventSubscriber {
             }
           )
 
-      val jsonStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule]]]] =
+      private val jsonStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule]]]] =
         config.topics.json.toNel
           .fold(Stream.exec(jsonLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
             TopicLoader.loadAndRun(_, jsonConsumerSettings) { exitCase =>
@@ -92,18 +93,18 @@ object EventSubscriber {
       case _: ScheduleError.DecodeError      => "decode"
     }
 
-    def updateAttributes(source: String) = Seq(
+    def updateAttributes(source: String) = Attributes(
       Attribute("message.type", "update"),
       Attribute("message.source", source)
     )
 
-    def deleteAttributes(source: String, deleteType: String) = Seq(
+    def deleteAttributes(source: String, deleteType: String) = Attributes(
       Attribute("message.type", "delete"),
       Attribute("message.source", source),
       Attribute("message.delete.type", deleteType)
     )
 
-    def errorAttributes(source: String, error: ScheduleError) = Seq(
+    def errorAttributes(source: String, error: ScheduleError) = Attributes(
       Attribute("message.type", "error"),
       Attribute("message.source", source),
       Attribute("message.error.type", error.show)
@@ -121,16 +122,16 @@ object EventSubscriber {
           message.value match {
             case Right(Some(_)) =>
               logger.info(logCtx)(s"Decoded UPDATE for [$key] from $source") &>
-                counter.inc(updateAttributes(source)*)
+                counter.inc(updateAttributes(source))
 
             case Right(None) =>
               val deleteType = message.isExpired.fold("expired", "canceled")
               logger.info(logCtx)(s"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
-                counter.inc(deleteAttributes(source, deleteType)*)
+                counter.inc(deleteAttributes(source, deleteType))
 
             case Left(error) =>
               logger.error(logCtx, error)(s"Error decoding [$key] from $source - ${error.getMessage}") &>
-                counter.inc(errorAttributes(source, error)*)
+                counter.inc(errorAttributes(source, error))
           }
         }
       }

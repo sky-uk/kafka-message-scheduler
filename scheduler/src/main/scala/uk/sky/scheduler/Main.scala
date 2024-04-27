@@ -15,7 +15,7 @@ import uk.sky.scheduler.config.{configShow, Config}
 
 object Main extends IOApp.Simple {
 
-  val appName             = "kafka-message-scheduler"
+  val appName: String     = "kafka-message-scheduler"
   given LoggerFactory[IO] = Slf4jFactory.create[IO]
   val logger              = LoggerFactory.getLogger[IO]
 

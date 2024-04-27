@@ -63,8 +63,8 @@ extension (scheduleEvent: ScheduleEvent) {
 
 extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]]) {
   def toMessage: Message[Either[ScheduleError, Option[ScheduleEvent]]] = {
-    val key   = cr.key
-    val topic = cr.topic
+    val key: String   = cr.key
+    val topic: String = cr.topic
 
     val payload: Either[ScheduleError, Option[ScheduleEvent]] = cr.value match {
       case Left(error)        => ScheduleError.DecodeError(key, error.getMessage).asLeft
@@ -77,11 +77,15 @@ extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule 
         scheduleEvent.some.asRight[ScheduleError]
     }
 
+    // TODO - test dropping null keys
+    val headers: Map[String, String] =
+      cr.headers.toChain.toList.flatMap(header => header.as[Option[String]].map(header.key -> _)).toMap
+
     Message[Either[ScheduleError, Option[ScheduleEvent]]](
       key = key,
       source = topic,
       value = payload,
-      metadata = MessageMetadata.fromMap(cr.headers.toChain.map(header => header.key -> header.as[String]).toList.toMap)
+      metadata = MessageMetadata.fromMap(headers)
     )
   }
 }

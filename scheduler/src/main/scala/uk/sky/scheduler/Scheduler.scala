@@ -3,7 +3,6 @@ package uk.sky.scheduler
 import cats.Parallel
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Concurrent, Deferred, Resource}
-import cats.syntax.all.*
 import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
@@ -15,11 +14,11 @@ class Scheduler[F[_] : Concurrent, O](
     scheduleQueue: ScheduleQueue[F],
     schedulePublisher: SchedulePublisher[F, O]
 ) {
-  private val scheduleEvents = eventSubscriber.messages.evalMapChunk { message =>
+  private val scheduleEvents = eventSubscriber.messages.evalTapChunk { message =>
     message.value match {
       case Left(_)               => scheduleQueue.cancel(message.key)
-      case Right(None)           => if (message.isExpired) Concurrent[F].unit else scheduleQueue.cancel(message.key)
-      case Right(Some(schedule)) => scheduleQueue.schedule(message.key, schedule).void
+      case Right(None)           => Concurrent[F].unlessA(message.isExpired)(scheduleQueue.cancel(message.key))
+      case Right(Some(schedule)) => scheduleQueue.schedule(message.key, schedule)
     }
   }
 

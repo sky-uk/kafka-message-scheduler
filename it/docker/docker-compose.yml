@@ -5,6 +5,7 @@ services:
     image: kafka-message-scheduler:latest<localBuild>
     ports:
       - "9000:9000"
+    restart: "on-failure"
     environment:
       OTEL_METRICS_EXPORTER: prometheus
       OTEL_EXPORTER_PROMETHEUS_PORT: 9000

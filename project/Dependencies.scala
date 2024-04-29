@@ -20,7 +20,7 @@ object Dependencies {
   }
 
   object Circe {
-    private lazy val version = "0.14.6"
+    private lazy val version = "0.14.7"
 
     lazy val generic = "io.circe" %% "circe-generic" % version
     lazy val parser  = "io.circe" %% "circe-parser"  % version
@@ -28,7 +28,7 @@ object Dependencies {
 
   object Fs2 {
     private lazy val version      = "3.10.2"
-    private lazy val kafkaVersion = "3.4.0"
+    private lazy val kafkaVersion = "3.5.1"
 
     lazy val core        = "co.fs2"          %% "fs2-core"         % version
     lazy val io          = "co.fs2"          %% "fs2-io"           % version
@@ -41,7 +41,7 @@ object Dependencies {
   }
 
   object Logback {
-    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.5" % Runtime
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.6" % Runtime
   }
 
   object Logstash {
@@ -57,10 +57,9 @@ object Dependencies {
     private lazy val alphaVersion = "1.37.0-alpha"
     private lazy val agentVersion = "2.3.0"
 
-    lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"       % version      % Runtime
-    lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus" % alphaVersion % Runtime
-    lazy val sdkAutoconfigure   =
-      "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % version
+    lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version      % Runtime
+    lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % alphaVersion % Runtime
+    lazy val sdkAutoconfigure   = "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % version      % Runtime
 
     lazy val javaAgent = "io.opentelemetry.javaagent" % "opentelemetry-javaagent" % agentVersion % Runtime
   }

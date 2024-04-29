@@ -23,13 +23,9 @@ lazy val scheduler = project
   .settings {
     Seq(
       dockerRepository     := sys.env.get("DOCKER_REPOSITORY"),
-      dockerBaseImage      := "alpine:3.17.2",
+      dockerBaseImage      := "eclipse-temurin:21-jre-jammy",
       Docker / packageName := "kafka-message-scheduler",
-      dockerUpdateLatest   := true,
-      dockerCommands ++= Seq(
-        Cmd("USER", "root"),
-        Cmd("RUN", "apk add --no-cache bash openjdk17")
-      )
+      dockerUpdateLatest   := true
     )
   }
 

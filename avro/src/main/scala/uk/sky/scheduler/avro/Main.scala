@@ -21,7 +21,7 @@ object Main extends IOApp.Simple {
                   .through(Files[IO].writeAll(schemaPath))
     } yield ()
   }.onFinalizeCase {
-    case ExitCase.Succeeded  => IO.println(s"Generated Schema file: $schemaPath")
+    case ExitCase.Succeeded  => IO.println(s"Generated Schema file: ${schemaPath.absolute}")
     case ExitCase.Errored(e) => Console[IO].errorln(s"Error creating Schema file: $e") *> Console[IO].printStackTrace(e)
     case ExitCase.Canceled   => Console[IO].errorln("Canceled")
   }.compile.drain

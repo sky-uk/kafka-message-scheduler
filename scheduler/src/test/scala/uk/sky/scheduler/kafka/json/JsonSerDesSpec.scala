@@ -13,8 +13,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{EitherValues, OptionValues}
 import uk.sky.scheduler.circe.given
+import uk.sky.scheduler.converters.base64.*
 import uk.sky.scheduler.error.ScheduleError
-import uk.sky.scheduler.syntax.all.*
 import uk.sky.scheduler.util.ScheduleMatchers
 
 final class JsonSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues, ScheduleMatchers {

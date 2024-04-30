@@ -6,9 +6,9 @@ import cats.effect.IO
 import cats.syntax.all.*
 import fs2.kafka.ValueSerializer
 import uk.sky.scheduler.circe.scheduleEncoder
+import uk.sky.scheduler.converters.base64.*
 import uk.sky.scheduler.kafka.avro.{avroBinarySerializer, avroScheduleCodec, AvroSchedule}
 import uk.sky.scheduler.kafka.json.{jsonSerializer, JsonSchedule}
-import uk.sky.scheduler.syntax.all.*
 
 trait ScheduleHelpers {
   def createJsonSchedule(

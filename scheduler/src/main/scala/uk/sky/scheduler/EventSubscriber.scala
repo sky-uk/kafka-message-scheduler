@@ -13,7 +13,7 @@ import org.typelevel.otel4s.{Attribute, Attributes}
 import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
 import uk.sky.scheduler.config.KafkaConfig
-import uk.sky.scheduler.converters.*
+import uk.sky.scheduler.converters.all.*
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, AvroSchedule}

@@ -8,7 +8,7 @@ import uk.sky.scheduler.kafka.json.JsonSchedule
 
 private given Show[AvroSchedule] = Show.show { schedule =>
   s"AvroSchedule(time=${schedule.time}, topic=${schedule.topic}, key=${schedule.key.toList}, value=${schedule.value
-      .map(_.toList)}, headers=${schedule.headers.view.mapValues(_.toList).toMap})"
+      .map(_.toList)}, headers=${schedule.headers.map(_.view.mapValues(_.toList).toMap)})"
 }
 
 private given Show[JsonSchedule] = Show.show { schedule =>
@@ -16,13 +16,20 @@ private given Show[JsonSchedule] = Show.show { schedule =>
 }
 
 private class AvroScheduleMatcher(right: AvroSchedule) extends Matcher[AvroSchedule] {
+  private def matchHeaders(left: Option[Map[String, Array[Byte]]], right: Option[Map[String, Array[Byte]]]): Boolean =
+    (left, right) match {
+      case (None, None)              => true
+      case (Some(left), Some(right)) => left.view.mapValues(_.toList).toMap === right.view.mapValues(_.toList).toMap
+      case _                         => false
+    }
+
   override def apply(left: AvroSchedule): MatchResult =
     MatchResult(
       left.time === right.time &&
         left.topic === right.topic &&
         left.key.toList === right.key.toList &&
         left.value.map(_.toList) === right.value.map(_.toList) &&
-        left.headers.view.mapValues(_.toList).toMap === right.headers.view.mapValues(_.toList).toMap,
+        matchHeaders(left.headers, right.headers),
       s"${left.show} did not equal ${right.show}",
       s"${left.show} equals ${right.show}"
     )

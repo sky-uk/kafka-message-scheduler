@@ -4,20 +4,11 @@ import java.nio.charset.StandardCharsets
 
 import cats.syntax.all.*
 import fs2.kafka.{Header, Headers, ProducerRecord}
-import io.scalaland.chimney.dsl.*
 import uk.sky.scheduler.domain.ScheduleEvent
-import uk.sky.scheduler.kafka.avro.AvroSchedule
-import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.Metadata
 
 private trait ScheduleEventConverter {
   extension (scheduleEvent: ScheduleEvent) {
-    def toJsonSchedule: JsonSchedule =
-      scheduleEvent.schedule.transformInto[JsonSchedule]
-
-    def toAvroSchedule: AvroSchedule =
-      scheduleEvent.schedule.transformInto[AvroSchedule]
-
     def toProducerRecord: ProducerRecord[Array[Byte], Option[Array[Byte]]] =
       ProducerRecord(
         topic = scheduleEvent.schedule.topic,

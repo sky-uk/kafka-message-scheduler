@@ -14,12 +14,12 @@ given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
     field("time", _.time, doc = "The time to execute the Schedule, in epoch milliseconds.".some),
     field("topic", _.topic, doc = "The topic to send the Schedule to.".some),
     field("key", _.key, doc = "The key identifying the payload.".some),
-    field("value", _.value, doc = "The payload to be sent.".some),
+    field("value", _.value, doc = "The payload to be sent. null indicates a tombstone.".some),
     field(
       "headers",
       _.headers,
-      doc = "Extra metadata to send with the payload.".some,
-      default = Map.empty[String, Array[Byte]].some
+      doc = "Optional extra metadata to send with the payload.".some,
+      default = none[Map[String, Array[Byte]]].some
     )
   ).mapN(AvroSchedule.apply)
 }

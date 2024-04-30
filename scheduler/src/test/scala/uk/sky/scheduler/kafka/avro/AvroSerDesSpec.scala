@@ -17,13 +17,15 @@ import vulcan.{AvroError, Codec}
 
 final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues, ScheduleMatchers {
 
-  val scheduleWithHeaders = AvroSchedule(
+  private val scheduleWithHeaders = AvroSchedule(
     time = Long.MinValue,
     topic = "topic",
     key = "key".getBytes(StandardCharsets.UTF_8),
     value = "value".getBytes(StandardCharsets.UTF_8).some,
-    headers = Map("headerKey" -> "headerValue".getBytes(StandardCharsets.UTF_8))
+    headers = Map("headerKey" -> "headerValue".getBytes(StandardCharsets.UTF_8)).some
   )
+
+  private val scheduleWithoutHeaders: AvroSchedule = scheduleWithHeaders.copy(headers = none[Map[String, Array[Byte]]])
 
   "avro SerDes" should {
 
@@ -41,11 +43,18 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
   }
 
   "avroBinaryDeserializer" should {
-    "deserialize a Schedule" in {
+    "deserialize a Schedule with headers" in {
       for {
         avroBinary   <- Codec.toBinary[AvroSchedule](scheduleWithHeaders).liftAvro[IO]
         deserialized <- avroBinaryDeserializer[IO, AvroSchedule].deserialize("test", Headers.empty, avroBinary)
       } yield deserialized.value should equalSchedule(scheduleWithHeaders)
+    }
+
+    "deserialize a Schedule without headers" in {
+      for {
+        avroBinary   <- Codec.toBinary[AvroSchedule](scheduleWithoutHeaders).liftAvro[IO]
+        deserialized <- avroBinaryDeserializer[IO, AvroSchedule].deserialize("test", Headers.empty, avroBinary)
+      } yield deserialized.value should equalSchedule(scheduleWithoutHeaders)
     }
 
     "error if not valid Avro" in {
@@ -57,8 +66,7 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
   }
 
   extension [R](either: Either[AvroError, R]) {
-    def liftAvro[F[_] : MonadCancelThrow]: F[R] = MonadCancelThrow[F].fromEither(
-      either.leftMap(avroError => TestFailedException(s"AvroError - ${avroError.message}", 0))
-    )
+    def liftAvro[F[_] : MonadCancelThrow]: F[R] =
+      either.leftMap(avroError => TestFailedException(s"AvroError - ${avroError.message}", 0)).liftTo[F]
   }
 }

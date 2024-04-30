@@ -31,7 +31,7 @@ trait ScheduleHelpers {
       topic: String,
       key: String,
       value: String,
-      headers: Map[String, Array[Byte]] = Map.empty
+      headers: Option[Map[String, Array[Byte]]] = None
   ): AvroSchedule =
     AvroSchedule(
       time = time,

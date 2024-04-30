@@ -5,5 +5,5 @@ final case class AvroSchedule(
     topic: String,
     key: Array[Byte],
     value: Option[Array[Byte]],
-    headers: Map[String, Array[Byte]]
+    headers: Option[Map[String, Array[Byte]]]
 )

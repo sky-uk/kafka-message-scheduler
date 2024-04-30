@@ -11,8 +11,6 @@ import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.Metadata
 
 private trait ScheduleEventConverter {
-  import base64.given
-
   extension (scheduleEvent: ScheduleEvent) {
     def toJsonSchedule: JsonSchedule =
       scheduleEvent.schedule.transformInto[JsonSchedule]

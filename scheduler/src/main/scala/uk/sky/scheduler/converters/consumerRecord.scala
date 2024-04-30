@@ -10,8 +10,6 @@ import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.{Message, Metadata as MessageMetadata}
 
 private trait ConsumerRecordConverter {
-  import base64.given
-
   extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]]) {
     def toMessage: Message[Either[ScheduleError, Option[ScheduleEvent]]] = {
       val key: String   = cr.key

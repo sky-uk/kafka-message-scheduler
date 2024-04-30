@@ -11,11 +11,16 @@ given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
   namespace = "com.sky.kms.domain.Schedule"
 ) { field =>
   (
-    field("time", _.time),
-    field("topic", _.topic),
-    field("key", _.key),
-    field("value", _.value),
-    field("headers", _.headers, default = Map.empty[String, Array[Byte]].some)
+    field("time", _.time, doc = "The time to execute the Schedule, in epoch milliseconds.".some),
+    field("topic", _.topic, doc = "The topic to send the Schedule to.".some),
+    field("key", _.key, doc = "The key identifying the payload.".some),
+    field("value", _.value, doc = "The payload to be sent.".some),
+    field(
+      "headers",
+      _.headers,
+      doc = "Extra metadata to send with the payload.".some,
+      default = Map.empty[String, Array[Byte]].some
+    )
   ).mapN(AvroSchedule.apply)
 }
 

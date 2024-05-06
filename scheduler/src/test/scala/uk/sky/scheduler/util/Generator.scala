@@ -4,6 +4,7 @@ import java.time.Instant
 
 import cats.effect.Sync
 import cats.syntax.all.*
+import fs2.kafka.ProducerRecord
 import monocle.syntax.all.*
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.exceptions.TestFailedException
@@ -25,6 +26,10 @@ object Generator {
   }
 
   given [T : Arbitrary]: Arbitrary[Message[T]] = Arbitrary(Gen.resultOf(Message.apply[T]))
+
+  given [K : Arbitrary, V : Arbitrary]: Arbitrary[ProducerRecord[K, V]] = Arbitrary(
+    Gen.resultOf(ProducerRecord.apply[K, V])
+  )
 
   val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)
   given Arbitrary[ScheduleEvent]           = Arbitrary(scheduleEventArb)

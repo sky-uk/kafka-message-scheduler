@@ -1,7 +1,8 @@
 package uk.sky.scheduler.util
 
-import cats.Show
 import cats.syntax.all.*
+import cats.{Eq, Show}
+import fs2.kafka.ProducerRecord
 import org.scalatest.matchers.{MatchResult, Matcher}
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
@@ -41,8 +42,30 @@ private class JsonScheduleMatcher(right: JsonSchedule) extends Matcher[JsonSched
     )
 }
 
+private class ProducerRecordMatcher[K : Eq : Show, V : Eq : Show](right: ProducerRecord[K, V])
+    extends Matcher[ProducerRecord[K, V]] {
+  override def apply(left: ProducerRecord[K, V]): MatchResult =
+    MatchResult(
+      left.topic === right.topic &&
+        left.partition === right.partition &&
+        left.timestamp === right.timestamp &&
+        left.key === right.key &&
+        left.value === right.value &&
+        left.headers === right.headers,
+      s"${left.show} did not equal ${right.show}",
+      s"${left.show} equals ${right.show}"
+    )
+}
+
 trait ScheduleMatchers {
   def equalSchedule(expectedSchedule: AvroSchedule): AvroScheduleMatcher = AvroScheduleMatcher(expectedSchedule)
 
   def equalSchedule(expectedSchedule: JsonSchedule): JsonScheduleMatcher = JsonScheduleMatcher(expectedSchedule)
+}
+
+trait ProducerRecordMatchers {
+  def equalProducerRecord[K : Eq : Show, V : Eq : Show](
+      expectedProducerRecord: ProducerRecord[K, V]
+  ): ProducerRecordMatcher[K, V] =
+    ProducerRecordMatcher(expectedProducerRecord)
 }

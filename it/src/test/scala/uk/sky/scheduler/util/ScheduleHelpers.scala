@@ -31,14 +31,14 @@ trait ScheduleHelpers {
       topic: String,
       key: String,
       value: String,
-      headers: Option[Map[String, Array[Byte]]] = None
+      optionalHeaders: Option[Map[String, Array[Byte]]] = None
   ): AvroSchedule =
     AvroSchedule(
       time = time,
       topic = topic,
       key = key.getBytes(StandardCharsets.UTF_8),
       value = value.getBytes(StandardCharsets.UTF_8).some,
-      headers = headers
+      optionalHeaders = optionalHeaders
     )
 
   given ValueSerializer[IO, JsonSchedule] = jsonSerializer[IO, JsonSchedule]

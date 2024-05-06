@@ -25,8 +25,7 @@ private trait ConsumerRecordConverter {
           val metadata = Metadata(key, topic)
 
           val schedule = input match {
-            case avroSchedule: AvroSchedule =>
-              avroSchedule.into[Schedule].withFieldComputed(_.headers, _.headers.getOrElse(Map.empty)).transform
+            case avroSchedule: AvroSchedule => avroSchedule.transformInto[Schedule]
             case jsonSchedule: JsonSchedule => jsonSchedule.transformInto[Schedule]
           }
 

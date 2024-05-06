@@ -5,5 +5,7 @@ final case class AvroSchedule(
     topic: String,
     key: Array[Byte],
     value: Option[Array[Byte]],
-    headers: Option[Map[String, Array[Byte]]]
-)
+    optionalHeaders: Option[Map[String, Array[Byte]]]
+) {
+  val headers: Map[String, Array[Byte]] = optionalHeaders.getOrElse(Map.empty[String, Array[Byte]])
+}

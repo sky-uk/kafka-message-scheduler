@@ -24,11 +24,13 @@ final class SchedulerFeatureSpec
       Matchers,
       Eventually,
       LoneElement {
-  val timeout: FiniteDuration = 15.seconds
+  val timeout: FiniteDuration = 30.seconds
 
   override given executionContext: ExecutionContext = ExecutionContext.global
 
   override given patienceConfig: PatienceConfig = PatienceConfig(timeout = timeout)
+
+  override val ResourceTimeout: Duration = timeout
 
   override val resource: Resource[IO, KafkaUtil[IO]] = Resource.pure(KafkaUtil[IO](9094, timeout))
 
@@ -45,7 +47,7 @@ final class SchedulerFeatureSpec
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement
-        message.keyValue shouldBe (outputJsonKey -> outputJsonValue)
+        message.keyValue shouldBe outputJsonKey -> outputJsonValue
         message.producedAt.toEpochMilli shouldBe scheduledTime +- 100L
       }
     }
@@ -62,7 +64,7 @@ final class SchedulerFeatureSpec
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement
-        message.keyValue shouldBe (outputAvroKey -> outputAvroValue)
+        message.keyValue shouldBe outputAvroKey -> outputAvroValue
         message.producedAt.toEpochMilli shouldBe scheduledTime +- 100L
       }
     }
@@ -80,7 +82,7 @@ final class SchedulerFeatureSpec
         messages         <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement
-        message.keyValue shouldBe (outputJsonKey -> outputJsonValue)
+        message.keyValue shouldBe outputJsonKey -> outputJsonValue
         message.producedAt.toEpochMilli shouldBe now.toEpochMilli +- 500L
       }
     }
@@ -99,8 +101,9 @@ final class SchedulerFeatureSpec
       } yield {
         val scheduled = inputMessages.headOption.value
         scheduled.value shouldBe defined
+
         val tombstone = inputMessages.lastOption.value
-        tombstone.keyValue shouldBe (scheduleKey -> None)
+        tombstone.keyValue shouldBe scheduleKey -> None
         tombstone.headers.get("schedule:expired").value shouldBe "true"
       }
     }

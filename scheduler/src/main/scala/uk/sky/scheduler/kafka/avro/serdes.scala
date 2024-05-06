@@ -15,12 +15,7 @@ given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
     field("topic", _.topic, doc = "The topic to send the Schedule to.".some),
     field("key", _.key, doc = "The key identifying the payload.".some),
     field("value", _.value, doc = "The payload to be sent. null indicates a tombstone.".some),
-    field(
-      "headers",
-      _.headers,
-      doc = "Optional extra metadata to send with the payload.".some,
-      default = none[Map[String, Array[Byte]]].some
-    )
+    field("headers", _.optionalHeaders, doc = "Optional extra metadata to send with the payload.".some)
   ).mapN(AvroSchedule.apply)
 }
 

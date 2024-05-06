@@ -22,10 +22,11 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
     topic = "topic",
     key = "key".getBytes(StandardCharsets.UTF_8),
     value = "value".getBytes(StandardCharsets.UTF_8).some,
-    headers = Map("headerKey" -> "headerValue".getBytes(StandardCharsets.UTF_8)).some
+    optionalHeaders = Map("headerKey" -> "headerValue".getBytes(StandardCharsets.UTF_8)).some
   )
 
-  private val scheduleWithoutHeaders: AvroSchedule = scheduleWithHeaders.copy(headers = none[Map[String, Array[Byte]]])
+  private val scheduleWithoutHeaders: AvroSchedule =
+    scheduleWithHeaders.copy(optionalHeaders = none[Map[String, Array[Byte]]])
 
   "avro SerDes" should {
 

@@ -15,6 +15,7 @@ import com.sky.kms.domain.*
 import com.sky.kms.streams.ScheduleReader.In
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, Deserializer, StringDeserializer}
+import uk.sky.kafka.topicloader.TopicLoader.loadAndRun
 
 import scala.concurrent.Future
 
@@ -61,8 +62,7 @@ object ScheduleReader extends LazyLogging {
 
       ScheduleReader(
         Eval.always(
-          TopicLoader
-            .loadAndRun[String, Array[Byte]](config.scheduleTopics.map(_.value))
+          loadAndRun[String, Array[Byte]](config.scheduleTopics.map(_.value))
             .map(scheduleConsumerRecordDecoder(_))
         ),
         actorRef,

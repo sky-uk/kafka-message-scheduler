@@ -1,7 +1,7 @@
 package uk.sky.scheduler.message
 
 import cats.syntax.all.*
-import cats.{Eq, Functor}
+import cats.{Eq, Functor, Show}
 import monocle.syntax.all.*
 
 final case class Message[V](key: String, source: String, value: V, metadata: Metadata) {
@@ -19,6 +19,10 @@ object Message {
       x.source === y.source &&
       x.value === y.value &&
       x.metadata === y.metadata
+
+  given [V : Show]: Show[Message[V]] = Show.show { case Message(key, source, value, metadata) =>
+    s"""Message(key=${key.show}, source=${source.show}, value=${value.show}, metadata=${metadata.show})"""
+  }
 
   given Functor[Message] = new Functor[Message] {
     override def map[A, B](fa: Message[A])(f: A => B): Message[B] =

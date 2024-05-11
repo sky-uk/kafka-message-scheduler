@@ -1,9 +1,11 @@
 package uk.sky.scheduler.message
 
-import cats.{Eq, Monoid}
+import cats.syntax.all.*
+import cats.{Eq, Monoid, Show}
+import org.typelevel.ci
 import org.typelevel.ci.CIString
 
-final case class Metadata(private val value: Map[CIString, String]) {
+final case class Metadata(value: Map[CIString, String]) {
 
   def map(f: Map[CIString, String] => Map[CIString, String]): Metadata =
     this.copy(value = f(this.value))
@@ -34,6 +36,8 @@ object Metadata {
   val empty: Metadata = Metadata(Map.empty[CIString, String])
 
   given Eq[Metadata] = Eq.by[Metadata, Map[CIString, String]](_.value)
+
+  given Show[Metadata] = _.value.show
 
   given Monoid[Metadata] = new Monoid[Metadata] {
     override def empty: Metadata = Metadata.empty

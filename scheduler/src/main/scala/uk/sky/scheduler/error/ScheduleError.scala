@@ -1,5 +1,6 @@
 package uk.sky.scheduler.error
 
+import cats.{Eq, Show}
 import org.apache.avro.Schema
 
 enum ScheduleError(val message: String) extends Throwable(message) {
@@ -13,4 +14,10 @@ enum ScheduleError(val message: String) extends Throwable(message) {
       extends ScheduleError(s"JSON '$payload' did not conform to Schema with error: $error")
 
   case DecodeError(key: String, error: String) extends ScheduleError(s"Failed to decode [$key] with error: $error")
+}
+
+object ScheduleError {
+  given Eq[ScheduleError] = Eq.fromUniversalEquals
+
+  given Show[ScheduleError] = _.message
 }

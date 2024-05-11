@@ -4,12 +4,13 @@ import java.time.Instant
 
 import cats.effect.Sync
 import cats.syntax.all.*
-import fs2.kafka.ProducerRecord
+import fs2.kafka.{ConsumerRecord, ProducerRecord}
 import monocle.syntax.all.*
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.exceptions.TestFailedException
 import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.{Message, Metadata as MessageMetadata}
 import uk.sky.scheduler.syntax.all.*
@@ -18,6 +19,7 @@ object Generator {
   given Arbitrary[Metadata]     = Arbitrary(Gen.resultOf(Metadata.apply))
   given Arbitrary[Schedule]     = Arbitrary(Gen.resultOf(Schedule.apply))
   given Arbitrary[JsonSchedule] = Arbitrary(Gen.resultOf(JsonSchedule.apply))
+  given Arbitrary[AvroSchedule] = Arbitrary(Gen.resultOf(AvroSchedule.apply))
 
   given Arbitrary[MessageMetadata] = Arbitrary {
     for {
@@ -29,6 +31,10 @@ object Generator {
 
   given [K : Arbitrary, V : Arbitrary]: Arbitrary[ProducerRecord[K, V]] = Arbitrary(
     Gen.resultOf(ProducerRecord.apply[K, V])
+  )
+
+  given [K : Arbitrary, V : Arbitrary]: Arbitrary[ConsumerRecord[K, V]] = Arbitrary(
+    Gen.resultOf(ConsumerRecord.apply[K, V])
   )
 
   val scheduleEventArb: Gen[ScheduleEvent] = Gen.resultOf(ScheduleEvent.apply)

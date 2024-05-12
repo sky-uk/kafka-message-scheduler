@@ -3,7 +3,6 @@ package uk.sky.scheduler.converters
 import java.nio.charset.StandardCharsets
 
 import cats.syntax.all.*
-import cats.{Eq, Show}
 import fs2.kafka.{Header, Headers, ProducerRecord}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -20,15 +19,10 @@ class ScheduleEventConverterSpec
       ProducerRecordMatchers,
       ScheduleEventConverter {
 
-  private given Eq[Array[Byte]]   = Eq.by(_.toList)
-  private given Show[Array[Byte]] = Show.show(_.mkString("Array(", ", ", ")"))
-
   "toProducerRecord" should {
     "Convert a ScheduleEvent into a ProducerRecord" in forAll {
       (producerRecord: ProducerRecord[Array[Byte], Option[Array[Byte]]], metadata: Metadata) =>
-        val headers = producerRecord.headers.toChain.toList.map { header =>
-          header.key -> header.value
-        }.toMap
+        val headers = producerRecord.headers.toChain.toList.map(header => header.key -> header.value).toMap
 
         val schedule = Schedule(
           time = Long.MaxValue,

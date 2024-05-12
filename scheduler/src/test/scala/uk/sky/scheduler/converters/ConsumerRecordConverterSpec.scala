@@ -110,7 +110,7 @@ class ConsumerRecordConverterSpec
         value = none[JsonSchedule | AvroSchedule].asRight[ScheduleError]
       ).withHeaders(nonNullHeaders concat nullHeaders)
 
-      consumerRecord.toMessage.metadata.value.toList.loneElement shouldBe (CIString("foo") -> "bar")
+      consumerRecord.toMessage.metadata.value should contain only (CIString("foo") -> "bar")
     }
 
   }

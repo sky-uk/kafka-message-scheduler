@@ -1,70 +1,13 @@
 package uk.sky.scheduler.util
 
 import cats.syntax.all.*
-import cats.{Eq, Show}
 import fs2.kafka.ProducerRecord
 import org.scalatest.matchers.{MatchResult, Matcher}
-import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
+import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.Message
-
-private given Show[AvroSchedule] = Show.show { schedule =>
-  s"AvroSchedule(time=${schedule.time}, topic=${schedule.topic}, key=${schedule.key.toList}, value=${schedule.value
-      .map(_.toList)}, headers=${schedule.headers.view.mapValues(_.toList).toMap})"
-}
-
-private given Show[JsonSchedule] = Show.show { schedule =>
-  s"AvroSchedule(time=${schedule.time}, topic=${schedule.topic}, key=${schedule.key}, value=${schedule.value}, headers=${schedule.headers})"
-}
-
-private given Show[Metadata] = Show.show { metadata =>
-  s"Metadata(id=${metadata.id}, scheduleTopic=${metadata.scheduleTopic})"
-}
-
-private given Show[Schedule] = Show.show { schedule =>
-  s"ScheduleEvent(time=${schedule.time}, topic=${schedule.topic}, key=${schedule.key.toList}, value=${schedule.value
-      .map(_.toList)}, headers=${schedule.headers.view.mapValues(_.toList).toMap})"
-}
-
-private given Show[ScheduleEvent] = Show.show { scheduleEvent =>
-  s"ScheduleEvent(metadata=${scheduleEvent.metadata.show}, schedule=${scheduleEvent.schedule.show})"
-}
-
-private given Eq[AvroSchedule] = Eq.instance((left, right) =>
-  left.time === right.time &&
-    left.topic === right.topic &&
-    left.key.toList === right.key.toList &&
-    left.value.map(_.toList) === right.value.map(_.toList) &&
-    left.headers.view.mapValues(_.toList).toMap === right.headers.view.mapValues(_.toList).toMap
-)
-
-private given Eq[JsonSchedule] = Eq.instance((left, right) =>
-  left.time === right.time &&
-    left.topic === right.topic &&
-    left.key === right.key &&
-    left.value === right.value &&
-    left.headers === right.headers
-)
-
-private given Eq[Metadata] = Eq.instance((left, right) =>
-  left.id == right.id &&
-    left.scheduleTopic === right.scheduleTopic
-)
-
-private given Eq[Schedule] = Eq.instance((left, right) =>
-  left.time === right.time &&
-    left.topic === right.topic &&
-    left.key.toList === right.key.toList &&
-    left.value.map(_.toList) === right.value.map(_.toList) &&
-    left.headers.view.mapValues(_.toList).toMap === right.headers.view.mapValues(_.toList).toMap
-)
-
-private given Eq[ScheduleEvent] = Eq.instance((left, right) =>
-  left.metadata === right.metadata &&
-    left.schedule === right.schedule
-)
 
 private class AvroScheduleMatcher(right: AvroSchedule) extends Matcher[AvroSchedule] {
   override def apply(left: AvroSchedule): MatchResult =
@@ -84,16 +27,11 @@ private class JsonScheduleMatcher(right: JsonSchedule) extends Matcher[JsonSched
     )
 }
 
-private class ProducerRecordMatcher[K : Eq : Show, V : Eq : Show](right: ProducerRecord[K, V])
-    extends Matcher[ProducerRecord[K, V]] {
-  override def apply(left: ProducerRecord[K, V]): MatchResult =
+private class ProducerRecordMatcher(right: ProducerRecord[Array[Byte], Option[Array[Byte]]])
+    extends Matcher[ProducerRecord[Array[Byte], Option[Array[Byte]]]] {
+  override def apply(left: ProducerRecord[Array[Byte], Option[Array[Byte]]]): MatchResult =
     MatchResult(
-      left.topic === right.topic &&
-        left.partition === right.partition &&
-        left.timestamp === right.timestamp &&
-        left.key === right.key &&
-        left.value === right.value &&
-        left.headers === right.headers,
+      left === right,
       s"${left.show} did not equal ${right.show}",
       s"${left.show} equals ${right.show}"
     )
@@ -109,6 +47,10 @@ private class MessageMatcher(right: Message[Either[ScheduleError, Option[Schedul
     )
 }
 
+/** We deal with `Array[Byte]` which doesn't support universal equals. To get around this, we can use a custom Eq to
+  * convert to another data type and assert they are equal. Below are some convenience traits to mix in to tests.
+  */
+
 trait ScheduleMatchers {
   def equalSchedule(expectedSchedule: AvroSchedule): AvroScheduleMatcher = AvroScheduleMatcher(expectedSchedule)
 
@@ -116,10 +58,9 @@ trait ScheduleMatchers {
 }
 
 trait ProducerRecordMatchers {
-  def equalProducerRecord[K : Eq : Show, V : Eq : Show](
-      expectedProducerRecord: ProducerRecord[K, V]
-  ): ProducerRecordMatcher[K, V] =
-    ProducerRecordMatcher(expectedProducerRecord)
+  def equalProducerRecord(
+      expectedProducerRecord: ProducerRecord[Array[Byte], Option[Array[Byte]]]
+  ): ProducerRecordMatcher = ProducerRecordMatcher(expectedProducerRecord)
 }
 
 trait MessageMatchers {

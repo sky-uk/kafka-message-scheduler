@@ -33,7 +33,7 @@ lazy val scheduler = (project in file("scheduler"))
   .settings(compilerSettings)
   .settings(
     libraryDependencies ++= Dependencies.all,
-    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
+    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
     run / fork               := true,
     Test / fork              := true,
     javaAgents += "io.kamon"  % "kanela-agent" % "1.0.18",

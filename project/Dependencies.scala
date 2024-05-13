@@ -47,7 +47,7 @@ object Dependencies {
   }
 
   object Refined {
-    private val version = "0.9.28"
+    private val version = "0.9.29"
     val refined         = "eu.timepit" %% "refined"            % version
     val pureconfig      = "eu.timepit" %% "refined-pureconfig" % version
     val scalaCheck      = "eu.timepit" %% "refined-scalacheck" % version % Test

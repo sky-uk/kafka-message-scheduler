@@ -24,7 +24,7 @@ object Dependencies {
   }
 
   object Kafka {
-    private val version = "3.1.0"
+    private val version = "3.1.2"
     val kafkaClients    = "org.apache.kafka"  % "kafka-clients" % version
     val kafka           = "org.apache.kafka" %% "kafka"         % version % Test
     val base            = Seq(kafkaClients)

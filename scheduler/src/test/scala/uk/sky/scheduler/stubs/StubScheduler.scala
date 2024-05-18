@@ -3,7 +3,7 @@ package uk.sky.scheduler.stubs
 import cats.Parallel
 import cats.effect.std.Queue
 import cats.effect.syntax.all.*
-import cats.effect.{Async, Deferred, Resource}
+import cats.effect.{Async, Deferred, Fiber, Resource}
 import cats.syntax.all.*
 import uk.sky.scheduler.*
 import uk.sky.scheduler.domain.ScheduleEvent
@@ -18,13 +18,14 @@ final class StubScheduler[F[_] : Async : Parallel](
     scheduleQueue: ScheduleQueue[F],
     schedulePublisher: SchedulePublisher[F, ScheduleEvent]
 ) extends Scheduler[F, ScheduleEvent](eventSubscriber, scheduleQueue, schedulePublisher) {
-  def runStreamInBackground: F[Unit] =
-    stream
-      .evalTap(event => events.offer(TestEvent.Expired(event)))
-      .compile
-      .drain
-      .start
-      .void
+  def runStreamInBackground: Resource[F, Fiber[F, Throwable, Unit]] =
+    Resource.make {
+      stream
+        .evalTap(event => events.offer(TestEvent.Expired(event)))
+        .compile
+        .drain
+        .start
+    }(_.cancel)
 
   def produce(
       messages: Message[Either[ScheduleError, Option[ScheduleEvent]]]*

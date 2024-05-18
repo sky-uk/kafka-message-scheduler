@@ -97,6 +97,7 @@ final class SchedulerFeatureSpec
         scheduledTime <- Clock[IO].epochMilli
         schedule       = createJsonSchedule(scheduledTime, outputTopic, outputJsonKey, outputJsonValue)
         _             <- kafkaUtil.produce[JsonSchedule]("json-schedules", scheduleKey -> schedule.some)
+        _             <- IO.sleep(1.second)
         inputMessages <- kafkaUtil.consumeLast[Option[String]]("json-schedules", 2)
       } yield {
         val scheduled = inputMessages.headOption.value

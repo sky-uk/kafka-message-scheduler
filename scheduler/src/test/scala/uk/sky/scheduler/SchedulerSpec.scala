@@ -74,7 +74,7 @@ final class SchedulerSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, LoneElem
       test: StubScheduler[IO] => IO[Assertion]
   ): IO[Assertion] =
     StubScheduler[IO].use { stubScheduler =>
-      stubScheduler.runStreamInBackground *> test(stubScheduler)
+      stubScheduler.runStreamInBackground.surround(test(stubScheduler))
     }
 
 }

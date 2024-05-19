@@ -28,16 +28,27 @@ object ScheduleQueue {
       queue: Queue[F, ScheduleEvent],
       supervisor: Supervisor[F]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
+
+    /** Delay offering a schedule to the queue by [[delay]]. This has 3 guarantees:
+      *
+      *   - It will not offer a schedule until [[allowEnqueue]] has been completed. This prevents schedules being
+      *     prematurely fired on startup, if there are pending updates yet to be read.
+      *   - It will not delete a schedule from the repository until [[storeLock]] has been completed. This prevents a
+      *     race condition between storing a schedule and deleting it - for example, if a schedule is to be fired
+      *     immediately the fiber will run `delete` on the repository <b>then</b> store the canceled fiber.
+      *   - If offering a schedule to the queue fails, we guarantee that it will be removed from the repository.
+      */
     private def delayScheduling(
         key: String,
         scheduleEvent: ScheduleEvent,
-        delay: FiniteDuration
+        delay: FiniteDuration,
+        storeLock: Deferred[F, Unit]
     ): F[Unit] =
       Async[F]
         .delayBy(
           for {
-            _ <- allowEnqueue.get                                     // Block until Queuing is allowed
-            _ <- queue.offer(scheduleEvent) &> repository.delete(key) // Offer & Delete in Parallel
+            _ <- allowEnqueue.get
+            _ <- queue.offer(scheduleEvent).guarantee(storeLock.get *> repository.delete(key))
           } yield (),
           time = delay
         )
@@ -47,16 +58,19 @@ object ScheduleQueue {
         previous   <- repository.get(key)
         _          <- previous.fold(Async[F].unit)(_.cancel) // Cancel the previous Schedule if it exists
         now        <- Async[F].epochMilli
-        delay       = Either
+        delay      <- Either
                         .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now).milliseconds)
                         .getOrElse(Long.MaxValue.nanos)
-        cancelable <- supervisor.supervise(delayScheduling(key, scheduleEvent, delay))
+                        .pure
+        storeLock  <- Deferred[F, Unit]
+        cancelable <- supervisor.supervise(delayScheduling(key, scheduleEvent, delay, storeLock))
         _          <- repository.set(key, cancelable)
+        _          <- storeLock.complete(())
       } yield ()
 
     override def cancel(key: String): F[Unit] =
       repository.get(key).flatMap {
-        case Some(started) => started.cancel &> repository.delete(key) // Cancel & Delete in Parallel
+        case Some(started) => started.cancel.guarantee(repository.delete(key))
         case None          => Async[F].unit
       }
 

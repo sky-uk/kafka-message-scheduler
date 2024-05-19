@@ -98,7 +98,7 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
       }
 
       "offer a ScheduleEvent to the Queue immediately if the specified time has passed" in withContext {
-        case TestContext(_, allowEnqueue, eventQueue, scheduleQueue, scheduleEvent) =>
+        case TestContext(repository, allowEnqueue, eventQueue, scheduleQueue, scheduleEvent) =>
           for {
             _           <- allowEnqueue.complete(())
             now         <- IO.realTimeInstant
@@ -108,9 +108,11 @@ final class ScheduleQueueSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, Opti
             _           <- control.tick
             interval    <- control.nextInterval
             _           <- control.tickAll
+            stored      <- repository.get("key")
             result      <- eventQueue.tryTake
           } yield {
             interval.toMillis should be < now.toEpochMilli
+            stored shouldBe empty
             result.value shouldBe pastSchedule
           }
       }

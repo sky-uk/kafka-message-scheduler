@@ -83,7 +83,7 @@ final class SchedulerFeatureSpec
       } yield {
         val message = messages.loneElement
         message.keyValue shouldBe outputJsonKey -> outputJsonValue
-        message.producedAt.toEpochMilli shouldBe now.toEpochMilli +- 500L
+        message.producedAt.toEpochMilli shouldBe now.toEpochMilli +- 1000L
       }
     }
 

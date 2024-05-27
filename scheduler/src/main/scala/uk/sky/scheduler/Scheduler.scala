@@ -8,17 +8,18 @@ import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.message.Message
 
 class Scheduler[F[_] : Concurrent, O](
     eventSubscriber: EventSubscriber[F],
     scheduleQueue: ScheduleQueue[F],
     schedulePublisher: SchedulePublisher[F, O]
 ) {
-  private val scheduleEvents = eventSubscriber.messages.evalTapChunk { message =>
-    message.value match {
-      case Left(_)               => scheduleQueue.cancel(message.key)
-      case Right(None)           => Concurrent[F].unlessA(message.isExpired)(scheduleQueue.cancel(message.key))
-      case Right(Some(schedule)) => scheduleQueue.schedule(message.key, schedule)
+  private val scheduleEvents = eventSubscriber.messages.evalTapChunk { case Message(key, source, value, metadata) =>
+    value match {
+      case Left(_)               => scheduleQueue.cancel(key)
+      case Right(None)           => Concurrent[F].unlessA(metadata.isExpired)(scheduleQueue.cancel(key))
+      case Right(Some(schedule)) => scheduleQueue.schedule(key, schedule)
     }
   }
 

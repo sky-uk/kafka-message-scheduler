@@ -31,7 +31,7 @@ object SchedulePublisher {
               }
             }
               .groupWithin(config.producer.batchSize, config.producer.timeout)
-              .evalMapChunk(_.sequence)
+              .evalMap(_.sequence)
           }
           .void
     }

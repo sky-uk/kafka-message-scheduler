@@ -112,6 +112,7 @@ object ScheduleQueue {
       repo       <- Repository.live[F, String, CancelableSchedule[F]]("schedules").toResource
       eventQueue <- Queue.unbounded[F, ScheduleEvent].toResource
       supervisor <- Supervisor[F]
-    } yield ScheduleQueue.observed(ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor))
+      impl       <- Resource.pure(ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor))
+    } yield ScheduleQueue.observed(impl)
 
 }

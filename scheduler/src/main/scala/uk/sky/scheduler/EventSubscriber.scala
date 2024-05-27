@@ -114,26 +114,25 @@ object EventSubscriber {
       val logger = LoggerFactory[F].getLogger
 
       new EventSubscriber[F] {
-        override def messages: Stream[F, Message[Output]] = delegate.messages.evalTapChunk { message =>
-          import message.*
+        override def messages: Stream[F, Message[Output]] =
+          delegate.messages.evalTapChunk { case Message(key, source, value, metadata) =>
+            val logCtx = Map("key" -> key, "source" -> source)
 
-          val logCtx = Map("key" -> key, "source" -> source)
+            value match {
+              case Right(Some(_)) =>
+                logger.info(logCtx)(s"Decoded UPDATE for [$key] from $source") &>
+                  counter.inc(updateAttributes(source))
 
-          message.value match {
-            case Right(Some(_)) =>
-              logger.info(logCtx)(s"Decoded UPDATE for [$key] from $source") &>
-                counter.inc(updateAttributes(source))
+              case Right(None) =>
+                val deleteType = metadata.isExpired.fold("expired", "canceled")
+                logger.info(logCtx)(s"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
+                  counter.inc(deleteAttributes(source, deleteType))
 
-            case Right(None) =>
-              val deleteType = message.isExpired.fold("expired", "canceled")
-              logger.info(logCtx)(s"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
-                counter.inc(deleteAttributes(source, deleteType))
-
-            case Left(error) =>
-              logger.error(logCtx, error)(s"Error decoding [$key] from $source - ${error.getMessage}") &>
-                counter.inc(errorAttributes(source, error))
+              case Left(error) =>
+                logger.error(logCtx, error)(s"Error decoding [$key] from $source - ${error.getMessage}") &>
+                  counter.inc(errorAttributes(source, error))
+            }
           }
-        }
       }
     }
   }

@@ -32,7 +32,6 @@ private trait ConsumerRecordConverter {
           ScheduleEvent(metadata, schedule).some.asRight[ScheduleError]
       }
 
-      // TODO - test dropping null keys
       val headers: Map[String, String] =
         cr.headers.toChain.toList.flatMap(header => header.as[Option[String]].map(header.key -> _)).toMap
 

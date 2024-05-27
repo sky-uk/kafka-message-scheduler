@@ -4,7 +4,7 @@ object Dependencies {
 
   object Cats {
     private lazy val catsEffectVersion = "3.5.4"
-    private lazy val log4sVersion      = "2.6.0"
+    private lazy val log4sVersion      = "2.7.0"
 
     lazy val core             = "org.typelevel" %% "cats-core"                     % "2.10.0"
     lazy val effect           = "org.typelevel" %% "cats-effect"                   % catsEffectVersion
@@ -16,7 +16,7 @@ object Dependencies {
   }
 
   object Chimney {
-    lazy val chimney = "io.scalaland" %% "chimney" % "0.8.5"
+    lazy val chimney = "io.scalaland" %% "chimney" % "1.0.0"
   }
 
   object Circe {
@@ -53,9 +53,9 @@ object Dependencies {
   }
 
   object OpenTelemetry {
-    private lazy val version      = "1.37.0"
-    private lazy val alphaVersion = "1.37.0-alpha"
-    private lazy val agentVersion = "2.3.0"
+    private lazy val version      = "1.38.0"
+    private lazy val alphaVersion = "1.38.0-alpha"
+    private lazy val agentVersion = "2.4.0"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version      % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % alphaVersion % Runtime
@@ -65,7 +65,7 @@ object Dependencies {
   }
 
   object Otel4s {
-    private lazy val version = "0.6.0"
+    private lazy val version = "0.7.0"
 
     lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
     lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test

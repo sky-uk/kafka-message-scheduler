@@ -37,6 +37,9 @@ object ScheduleQueue {
       *     race condition between storing a schedule and deleting it - for example, if a schedule is to be fired
       *     immediately the fiber will run `delete` on the repository <b>then</b> store the canceled fiber.
       *   - If offering a schedule to the queue fails, we guarantee that it will be removed from the repository.
+      *
+      * Note that offering to the underlying queue is uncancelable. This means that a schedule can only be canceled
+      * while in the waiting state and not after it is submitted for scheduling.
       */
     private def delayScheduling(
         key: String,
@@ -48,7 +51,7 @@ object ScheduleQueue {
         .delayBy(
           for {
             _ <- allowEnqueue.get
-            _ <- queue.offer(scheduleEvent).guarantee(storeLock.get *> repository.delete(key))
+            _ <- queue.offer(scheduleEvent).uncancelable.guarantee(storeLock.get >> repository.delete(key))
           } yield (),
           time = delay
         )

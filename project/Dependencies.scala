@@ -15,7 +15,7 @@ object Dependencies {
   }
 
   object Cats {
-    private val version = "2.7.0"
+    private val version = "2.12.0"
     val core            = "org.typelevel"    %% "cats-core"      % version
     val testKit         = "org.typelevel"    %% "cats-testkit"   % version % Test
     val scalatest       = "com.ironcorelabs" %% "cats-scalatest" % "3.1.1" % Test

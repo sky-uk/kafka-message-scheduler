@@ -31,7 +31,7 @@ class ConsumerRecordConverterSpec
   private given b64EncodeTransformer: Transformer[Array[Byte], String] =
     (src: Array[Byte]) => Base64.getEncoder.encodeToString(src)
 
-  given Arbitrary[ScheduleError] = Arbitrary(Gen.const(ScheduleError.DecodeError("foo", "bar")))
+  given Arbitrary[ScheduleError] = Arbitrary(Gen.const(ScheduleError.DecodeError("foo", Throwable())))
 
   "ConsumerRecordConverter" should {
     "transform an update into a Message" in forAll { (scheduleEvent: ScheduleEvent) =>
@@ -88,7 +88,7 @@ class ConsumerRecordConverterSpec
         value = scheduleError.asLeft[Option[JsonSchedule | AvroSchedule]]
       ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map((k, v) => Header(k, v))))
 
-      val decodeError = ScheduleError.DecodeError(scheduleEvent.metadata.id, scheduleError.getMessage)
+      val decodeError = ScheduleError.DecodeError(scheduleEvent.metadata.id, scheduleError)
       val message     = Message[Either[ScheduleError, Option[ScheduleEvent]]](
         key = consumerRecord.key,
         source = consumerRecord.topic,

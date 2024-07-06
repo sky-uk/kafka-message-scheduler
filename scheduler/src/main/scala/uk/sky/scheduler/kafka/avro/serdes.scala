@@ -30,7 +30,7 @@ def avroBinaryDeserializer[F[_] : Sync, V : Codec]: ValueDeserializer[F, Either[
       maybeDeserialized <- Sync[F].delay {
                              Codec
                                .fromBinary[V](bytes, schema)
-                               .leftMap(e => ScheduleError.InvalidAvroError(schema, e.message))
+                               .leftMap(e => ScheduleError.InvalidAvroError(schema, e.throwable))
                            }
     } yield maybeDeserialized
 

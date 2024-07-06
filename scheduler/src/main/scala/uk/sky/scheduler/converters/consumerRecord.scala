@@ -17,7 +17,7 @@ private trait ConsumerRecordConverter {
       val topic: String = cr.topic
 
       val payload: Either[ScheduleError, Option[ScheduleEvent]] = cr.value match {
-        case Left(error) => ScheduleError.DecodeError(key, error.getMessage).asLeft[Option[ScheduleEvent]]
+        case Left(error) => ScheduleError.DecodeError(key, error).asLeft[Option[ScheduleEvent]]
 
         case Right(None) => none[ScheduleEvent].asRight[ScheduleError]
 
@@ -33,7 +33,7 @@ private trait ConsumerRecordConverter {
       }
 
       val headers: Map[String, String] =
-        cr.headers.toChain.toList.flatMap(header => header.as[Option[String]].map(header.key -> _)).toMap
+        cr.headers.toChain.toList.view.flatMap(header => header.as[Option[String]].map(header.key -> _)).toMap
 
       Message[Either[ScheduleError, Option[ScheduleEvent]]](
         key = key,

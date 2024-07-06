@@ -30,8 +30,8 @@ object Metadata {
     def expire: Metadata   = metadata.set(expiredKey, expiredValue)
   }
 
-  val expiredKey: String   = "schedule:expired"
-  val expiredValue: String = "true"
+  inline val expiredKey   = "schedule:expired"
+  inline val expiredValue = "true"
 
   val empty: Metadata = Metadata(Map.empty[CIString, String])
 

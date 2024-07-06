@@ -1,5 +1,3 @@
-import com.typesafe.sbt.packager.docker.Cmd
-
 lazy val scala3 = "3.3.1"
 lazy val scmUrl = "https://github.com/sky-uk/kafka-message-scheduler"
 

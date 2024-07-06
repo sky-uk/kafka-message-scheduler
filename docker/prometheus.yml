@@ -6,4 +6,4 @@ scrape_configs:
 
   - job_name: kafka-message-scheduler
     static_configs:
-      - targets: [ 'kafka-message-scheduler:9000' ]
+      - targets: [ 'kafka-message-scheduler:9401' ]

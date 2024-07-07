@@ -2,9 +2,9 @@ package uk.sky.scheduler.config
 
 import cats.Show
 import cats.syntax.all.*
-import io.circe.Encoder
 import io.circe.generic.semiauto
 import io.circe.syntax.*
+import io.circe.{Encoder, Json}
 import monocle.syntax.all.*
 import org.apache.kafka.common.config.SslConfigs
 
@@ -34,6 +34,12 @@ private given configFiniteDurationEncoder: Encoder[FiniteDuration] =
 
 private given schedulerConfigEncoder: Encoder[ScheduleConfig] = semiauto.deriveEncoder[ScheduleConfig]
 
-private given configEncoder: Encoder[Config] = semiauto.deriveEncoder[Config]
+private given configMetadataEncoder: Encoder[Config.Metadata] = semiauto.deriveEncoder[Config.Metadata]
+
+private val versionAsJson: Json = Json.obj(
+  "metadata" -> Config.metadata.asJson
+)
+
+private given configEncoder: Encoder[Config] = semiauto.deriveEncoder[Config].mapJson(_.deepMerge(versionAsJson))
 
 given configShow: Show[Config] = Show.show(_.asJson.noSpaces)

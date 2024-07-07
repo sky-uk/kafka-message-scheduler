@@ -1,5 +1,6 @@
 package uk.sky.scheduler.config
 
+import buildinfo.BuildInfo
 import cats.effect.{Resource, Sync}
 import fs2.kafka.*
 import pureconfig.ConfigReader.Result
@@ -10,6 +11,12 @@ import uk.sky.scheduler.config.TopicConfig.topicConfigReader
 import scala.concurrent.duration.FiniteDuration
 
 final case class Config(scheduler: ScheduleConfig) derives ConfigReader
+
+object Config {
+  final case class Metadata private[config] (appName: String, version: String)
+
+  val metadata: Metadata = Metadata(appName = BuildInfo.name, version = BuildInfo.version)
+}
 
 final case class ScheduleConfig(kafka: KafkaConfig) derives ConfigReader
 

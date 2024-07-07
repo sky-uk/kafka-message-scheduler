@@ -46,7 +46,7 @@ class ScheduleEventConverterSpec
           key = producerRecord.key.getBytes(StandardCharsets.UTF_8),
           value = none[Array[Byte]]
         )
-          .withHeaders(Headers(Header(MessageMetadata.expiredKey, MessageMetadata.expiredValue)))
+          .withHeaders(Headers(Header(MessageMetadata.expiredKey.toString, MessageMetadata.expiredValue)))
 
         val metadata = Metadata(
           id = producerRecord.key,

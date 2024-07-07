@@ -21,7 +21,7 @@ private trait ScheduleEventConverter {
         topic = scheduleEvent.metadata.scheduleTopic,
         key = scheduleEvent.metadata.id.getBytes(StandardCharsets.UTF_8),
         value = none[Array[Byte]]
-      ).withHeaders(Headers(Header(Metadata.expiredKey, Metadata.expiredValue)))
+      ).withHeaders(Headers(Header(Metadata.expiredKey.toString, Metadata.expiredValue)))
   }
 }
 

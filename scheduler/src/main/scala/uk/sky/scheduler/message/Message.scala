@@ -11,14 +11,12 @@ final case class Message[V](key: String, source: String, value: V, metadata: Met
 object Message {
   extension [T](message: Message[T]) {
     def isExpired: Boolean = message.metadata.isExpired
-    def expire: Message[T] = message.focus(_.metadata).modify(_.expire)
+    def expire: Message[T] = message.focus(_.metadata).modify(_ + (Metadata.expiredKey -> Metadata.expiredValue))
   }
 
-  given [V : Eq]: Eq[Message[V]] = (x, y) =>
-    x.key === y.key &&
-      x.source === y.source &&
-      x.value === y.value &&
-      x.metadata === y.metadata
+  given [V : Eq]: Eq[Message[V]] = Eq.by { case Message(key, source, value, metadata) =>
+    (key, source, value, metadata)
+  }
 
   given [V : Show]: Show[Message[V]] = Show.show { case Message(key, source, value, metadata) =>
     s"""Message(key=${key.show}, source=${source.show}, value=${value.show}, metadata=${metadata.show})"""

@@ -8,6 +8,8 @@ import fs2.kafka.{ConsumerRecord, ProducerRecord}
 import monocle.syntax.all.*
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.exceptions.TestFailedException
+import org.typelevel.ci.CIString
+import org.typelevel.ci.testing.arbitraries.*
 import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.AvroSchedule
@@ -23,8 +25,8 @@ object Generator {
 
   given Arbitrary[MessageMetadata] = Arbitrary {
     for {
-      raw <- Arbitrary.arbitrary[Map[String, String]]
-    } yield MessageMetadata.fromMap(raw)
+      raw <- Arbitrary.arbitrary[Map[CIString, String]]
+    } yield MessageMetadata(raw)
   }
 
   given [T : Arbitrary]: Arbitrary[Message[T]] = Arbitrary(Gen.resultOf(Message.apply[T]))

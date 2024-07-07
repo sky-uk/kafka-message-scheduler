@@ -4,11 +4,14 @@ import cats.syntax.all.*
 import fs2.kafka.ConsumerRecord
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
+import org.typelevel.ci.CIString
 import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.{Message, Metadata as MessageMetadata}
+
+import scala.util.chaining.*
 
 private trait ConsumerRecordConverter {
   extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]]) {
@@ -32,14 +35,17 @@ private trait ConsumerRecordConverter {
           ScheduleEvent(metadata, schedule).some.asRight[ScheduleError]
       }
 
-      val headers: Map[String, String] =
-        cr.headers.toChain.toList.view.flatMap(header => header.as[Option[String]].map(header.key -> _)).toMap
+      val metadata: MessageMetadata =
+        cr.headers.toChain.toList.view
+          .flatMap(header => header.as[Option[String]].map(header.key -> _))
+          .map(CIString(_) -> _)
+          .pipe(MessageMetadata(_))
 
       Message[Either[ScheduleError, Option[ScheduleEvent]]](
         key = key,
         source = topic,
         value = payload,
-        metadata = MessageMetadata.fromMap(headers)
+        metadata = metadata
       )
     }
   }

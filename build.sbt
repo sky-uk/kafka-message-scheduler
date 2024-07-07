@@ -18,6 +18,7 @@ Global / scalafmtOnCompile    := true
 
 lazy val scheduler = project
   .settings(CommonSettings.default)
+  .settings(CommonSettings.buildInfo)
   .settings {
     Seq(
       dockerRepository     := sys.env.get("DOCKER_REPOSITORY"),

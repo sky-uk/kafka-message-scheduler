@@ -12,7 +12,7 @@ object Main extends IOApp.Simple {
 
   private val schemaPath: Path = Path("target/schemas/schedule.avsc")
 
-  override def run: IO[Unit] = {
+  private val stream: Stream[IO, Unit] =
     for {
       schema <- Stream.fromEither[IO](avroScheduleCodec.schema.leftMap(_.throwable))
       _      <- Stream.eval(Files[IO].createDirectories(Path("target/schemas")))
@@ -20,10 +20,17 @@ object Main extends IOApp.Simple {
                   .through(text.utf8.encode)
                   .through(Files[IO].writeAll(schemaPath))
     } yield ()
-  }.onFinalizeCase {
-    case ExitCase.Succeeded  => IO.println(s"Generated Schema file: ${schemaPath.absolute}")
-    case ExitCase.Errored(e) => Console[IO].errorln(s"Error creating Schema file: $e") *> Console[IO].printStackTrace(e)
-    case ExitCase.Canceled   => Console[IO].errorln("Canceled")
-  }.compile.drain
+
+  override def run: IO[Unit] =
+    stream.onFinalizeCase {
+      case ExitCase.Succeeded =>
+        IO.println(s"Generated Schema file: ${schemaPath.absolute}")
+
+      case ExitCase.Errored(e) =>
+        Console[IO].errorln(s"Error creating Schema file: $e") *> Console[IO].printStackTrace(e)
+
+      case ExitCase.Canceled =>
+        Console[IO].errorln("Canceled")
+    }.compile.drain
 
 }

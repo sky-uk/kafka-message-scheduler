@@ -2,7 +2,7 @@ import Dependencies.*
 
 import scala.sys.process.Process
 
-enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging)
+enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
 
 libraryDependencies ++= Seq(
   Cats.core,

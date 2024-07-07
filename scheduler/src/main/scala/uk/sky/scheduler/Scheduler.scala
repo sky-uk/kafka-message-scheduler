@@ -32,8 +32,8 @@ object Scheduler {
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](config: Config): Resource[F, Scheduler[F, Unit]] =
     for {
       allowEnqueue     <- Deferred[F, Unit].toResource
-      eventSubscriber  <- EventSubscriber.live[F](config.scheduler.kafka, allowEnqueue).toResource
+      eventSubscriber  <- EventSubscriber.live[F](config.kafka, allowEnqueue).toResource
       scheduleQueue    <- ScheduleQueue.live[F](allowEnqueue)
-      schedulePublisher = SchedulePublisher.kafka[F](config.scheduler.kafka)
+      schedulePublisher = SchedulePublisher.kafka[F](config.kafka)
     } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
 }

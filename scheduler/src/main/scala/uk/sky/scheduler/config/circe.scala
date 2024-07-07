@@ -32,8 +32,6 @@ private given kafkaConfigEncoder: Encoder[KafkaConfig] = semiauto
 private given configFiniteDurationEncoder: Encoder[FiniteDuration] =
   Encoder.instance(fd => s"${fd.length} ${fd.unit.toString.toLowerCase}".asJson)
 
-private given schedulerConfigEncoder: Encoder[ScheduleConfig] = semiauto.deriveEncoder[ScheduleConfig]
-
 private given configMetadataEncoder: Encoder[Config.Metadata] = semiauto.deriveEncoder[Config.Metadata]
 
 private val versionAsJson: Json = Json.obj(

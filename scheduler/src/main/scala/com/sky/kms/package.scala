@@ -7,9 +7,9 @@ import cats.data.Reader
 import cats.syntax.all.*
 import com.sksamuel.avro4s.{AvroInputStream, AvroSchema, Decoder, SchemaFor}
 import com.sky.kms.avro.*
+import com.sky.kms.domain.*
 import com.sky.kms.domain.ApplicationError.*
 import com.sky.kms.domain.Schedule.{ScheduleNoHeaders, ScheduleWithHeaders}
-import com.sky.kms.domain.*
 import com.sky.kms.kafka.ConsumerRecordDecoder
 import com.sky.kms.streams.ScheduleReader
 import org.apache.kafka.clients.consumer.ConsumerRecord

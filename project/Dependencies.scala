@@ -30,10 +30,9 @@ object Dependencies {
     private lazy val version      = "3.11.0"
     private lazy val kafkaVersion = "3.5.1"
 
-    lazy val core        = "co.fs2"          %% "fs2-core"         % version
-    lazy val io          = "co.fs2"          %% "fs2-io"           % version
-    lazy val kafka       = "com.github.fd4s" %% "fs2-kafka"        % kafkaVersion
-    lazy val kafkaVulcan = "com.github.fd4s" %% "fs2-kafka-vulcan" % kafkaVersion
+    lazy val core  = "co.fs2"          %% "fs2-core"  % version
+    lazy val io    = "co.fs2"          %% "fs2-io"    % version
+    lazy val kafka = "com.github.fd4s" %% "fs2-kafka" % kafkaVersion
   }
 
   object Janino {
@@ -74,7 +73,6 @@ object Dependencies {
     private lazy val version = "0.17.7"
 
     lazy val core       = "com.github.pureconfig" %% "pureconfig-core"        % version
-    lazy val cats       = "com.github.pureconfig" %% "pureconfig-cats"        % version
     lazy val catsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % version
   }
 
@@ -88,7 +86,7 @@ object Dependencies {
 
   object Typelevel {
     val caseInsensitive        = "org.typelevel" %% "case-insensitive"         % "1.4.0"
-    val caseInsensitiveTesting = "org.typelevel" %% "case-insensitive-testing" % "1.4.0"
+    val caseInsensitiveTesting = "org.typelevel" %% "case-insensitive-testing" % "1.4.0" % Test
     val mouse                  = "org.typelevel" %% "mouse"                    % "1.3.2"
   }
 

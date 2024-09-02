@@ -1,11 +1,11 @@
 package uk.sky.scheduler.converters
 
-import java.nio.charset.StandardCharsets
-
 import cats.syntax.all.*
 import fs2.kafka.{Header, Headers, ProducerRecord}
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.message.Metadata
+
+import java.nio.charset.StandardCharsets
 
 private trait ScheduleEventConverter {
   extension (scheduleEvent: ScheduleEvent) {

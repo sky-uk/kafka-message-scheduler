@@ -13,7 +13,7 @@ import scala.concurrent.duration.FiniteDuration
 final case class Config(kafka: KafkaConfig) derives ConfigReader
 
 object Config {
-  final case class Metadata private[config] (appName: String, version: String)
+  private[config] final case class Metadata(appName: String, version: String)
 
   val metadata: Metadata = Metadata(appName = BuildInfo.name, version = BuildInfo.version)
 }

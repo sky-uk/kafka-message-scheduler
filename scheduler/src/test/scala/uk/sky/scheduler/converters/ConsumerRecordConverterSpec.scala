@@ -1,7 +1,5 @@
 package uk.sky.scheduler.converters
 
-import java.util.Base64
-
 import cats.syntax.all.*
 import fs2.kafka.{ConsumerRecord, Header, Headers}
 import io.scalaland.chimney.Transformer
@@ -19,6 +17,8 @@ import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.{Message, Metadata}
 import uk.sky.scheduler.util.Generator.given
 import uk.sky.scheduler.util.MessageMatchers
+
+import java.util.Base64
 
 class ConsumerRecordConverterSpec
     extends AnyWordSpec,

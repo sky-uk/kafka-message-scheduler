@@ -1,7 +1,5 @@
 package uk.sky.scheduler.util
 
-import java.time.Instant
-
 import cats.effect.Sync
 import cats.syntax.all.*
 import fs2.kafka.{ConsumerRecord, ProducerRecord}
@@ -16,6 +14,8 @@ import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.{Message, Metadata as MessageMetadata}
 import uk.sky.scheduler.syntax.all.*
+
+import java.time.Instant
 
 object Generator {
   given Arbitrary[Metadata]     = Arbitrary(Gen.resultOf(Metadata.apply))

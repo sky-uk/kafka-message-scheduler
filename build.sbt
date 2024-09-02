@@ -1,4 +1,4 @@
-lazy val scala3 = "3.3.3"
+lazy val scala3 = "3.5.0"
 lazy val scmUrl = "https://github.com/sky-uk/kafka-message-scheduler"
 
 ThisBuild / scalaVersion := scala3

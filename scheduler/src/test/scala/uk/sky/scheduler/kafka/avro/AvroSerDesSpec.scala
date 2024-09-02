@@ -1,7 +1,5 @@
 package uk.sky.scheduler.kafka.avro
 
-import java.nio.charset.StandardCharsets
-
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.{IO, MonadCancelThrow}
 import cats.syntax.all.*
@@ -14,6 +12,8 @@ import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.util.ScheduleMatchers
 import vulcan.generic.*
 import vulcan.{AvroError, Codec}
+
+import java.nio.charset.StandardCharsets
 
 final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues, ScheduleMatchers {
 

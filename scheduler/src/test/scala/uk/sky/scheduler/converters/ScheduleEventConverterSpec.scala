@@ -1,7 +1,5 @@
 package uk.sky.scheduler.converters
 
-import java.nio.charset.StandardCharsets
-
 import cats.syntax.all.*
 import fs2.kafka.{Header, Headers, ProducerRecord}
 import org.scalatest.matchers.should.Matchers
@@ -11,6 +9,8 @@ import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
 import uk.sky.scheduler.message.Metadata as MessageMetadata
 import uk.sky.scheduler.util.Generator.given
 import uk.sky.scheduler.util.ProducerRecordMatchers
+
+import java.nio.charset.StandardCharsets
 
 class ScheduleEventConverterSpec
     extends AnyWordSpec,

@@ -1,10 +1,10 @@
 package uk.sky.scheduler.syntax
 
-import java.time.Instant
-
 import cats.Applicative
 import cats.effect.Clock
 import cats.syntax.all.*
+
+import java.time.Instant
 
 trait ClockSyntax {
   extension [F[_] : Applicative](c: Clock[F]) {

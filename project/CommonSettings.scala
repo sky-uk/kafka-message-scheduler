@@ -7,8 +7,7 @@ import sbtbuildinfo.BuildInfoKeys.*
 
 object CommonSettings {
 
-  val buildInfo: Def.Setting[?] =
-    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion)
+  val buildInfo: Def.Setting[?] = buildInfoKeys := Seq[BuildInfoKey](name, version)
 
   val default: Seq[Def.Setting[?]] = Seq(
     tpolecatScalacOptions ++= Set(

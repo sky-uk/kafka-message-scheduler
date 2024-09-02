@@ -1,12 +1,11 @@
 package uk.sky.scheduler.util
 
-import java.time.Instant
-
 import cats.effect.Async
 import cats.effect.syntax.all.*
 import cats.syntax.all.*
 import org.scalatest.exceptions.TestFailedException
 
+import java.time.Instant
 import scala.concurrent.duration.*
 
 object testSyntax {

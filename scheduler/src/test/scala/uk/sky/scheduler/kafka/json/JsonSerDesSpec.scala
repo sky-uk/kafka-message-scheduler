@@ -1,7 +1,5 @@
 package uk.sky.scheduler.kafka.json
 
-import java.nio.charset.StandardCharsets
-
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.all.*
@@ -16,6 +14,8 @@ import uk.sky.scheduler.circe.given
 import uk.sky.scheduler.converters.base64.*
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.util.ScheduleMatchers
+
+import java.nio.charset.StandardCharsets
 
 final class JsonSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues, ScheduleMatchers {
 

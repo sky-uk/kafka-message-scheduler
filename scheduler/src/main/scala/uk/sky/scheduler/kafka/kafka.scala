@@ -1,6 +1,5 @@
 package uk.sky.scheduler.kafka
 
-import cats.syntax.all.*
 import fs2.kafka.ProducerSettings
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.record.CompressionType

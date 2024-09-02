@@ -11,7 +11,8 @@ final case class Message[V](key: String, source: String, value: V, metadata: Met
 object Message {
   extension [T](message: Message[T]) {
     def isExpired: Boolean = message.metadata.isExpired
-    def expire: Message[T] = message.focus(_.metadata).modify(_ + (Metadata.expiredKey -> Metadata.expiredValue))
+    def expire: Message[T] =
+      message.focus(_.metadata).modify(_.transform(_ + (Metadata.expiredKey -> Metadata.expiredValue)))
   }
 
   given [V : Eq]: Eq[Message[V]] = Eq.by { case Message(key, source, value, metadata) =>

@@ -10,12 +10,10 @@ object Metadata {
   def apply(value: Iterable[(CIString, String)]): Metadata = value.toMap
 
   extension (metadata: Metadata) {
-    inline def value: Map[CIString, String]                    = metadata
-    inline def toMap: Map[String, String]                      = metadata.map(_.toString -> _)
-    inline def combine(other: Metadata): Metadata              = metadata.concat(other)
-    inline infix def ++(other: Metadata): Metadata             = combine(other)
-    inline def updated(key: CIString, value: String): Metadata = metadata.updated(key, value)
-    inline infix def +(kv: (CIString, String)): Metadata       = updated(kv._1, kv._2)
+    inline def value: Map[CIString, String]                                           = metadata
+    inline def toMap: Map[String, String]                                             = metadata.map(_.toString -> _)
+    inline def transform(f: Map[CIString, String] => Map[CIString, String]): Metadata = f(metadata)
+    inline def combine(other: Metadata): Metadata                                     = metadata.concat(other)
 
     inline def isExpired: Boolean = metadata.get(expiredKey).exists(_.equalsIgnoreCase(expiredValue))
   }

@@ -12,9 +12,7 @@ object CommonSettings {
   val default: Seq[Def.Setting[?]] = Seq(
     tpolecatScalacOptions ++= Set(
       ScalacOptions.other("-no-indent"),
-      ScalacOptions.other("-old-syntax"),
-      ScalacOptions.other("-Wunused:all"),
-      ScalacOptions.other("-Wnonunit-statement")
+      ScalacOptions.other("-old-syntax")
     ),
     Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement
   )

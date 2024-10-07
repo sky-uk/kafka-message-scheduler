@@ -20,7 +20,7 @@ object Dependencies {
   }
 
   object Circe {
-    private lazy val version = "0.14.9"
+    private lazy val version = "0.14.10"
 
     lazy val generic = "io.circe" %% "circe-generic" % version
     lazy val parser  = "io.circe" %% "circe-parser"  % version
@@ -40,7 +40,7 @@ object Dependencies {
   }
 
   object Logback {
-    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.7" % Runtime
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.8" % Runtime
   }
 
   object Logstash {
@@ -52,8 +52,8 @@ object Dependencies {
   }
 
   object OpenTelemetry {
-    private lazy val version      = "1.41.0"
-    private lazy val agentVersion = "2.7.0"
+    private lazy val version      = "1.42.1"
+    private lazy val agentVersion = "2.8.0"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version           % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % s"$version-alpha" % Runtime
@@ -63,7 +63,7 @@ object Dependencies {
   }
 
   object Otel4s {
-    private lazy val version = "0.9.0"
+    private lazy val version = "0.10.0"
 
     lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
     lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test
@@ -81,7 +81,7 @@ object Dependencies {
   }
 
   object TopicLoader {
-    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.0.5"
+    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.1.0"
   }
 
   object Typelevel {

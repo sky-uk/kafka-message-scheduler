@@ -3,20 +3,20 @@ import sbt.*
 object Dependencies {
 
   object Cats {
-    private lazy val catsEffectVersion = "3.5.4"
+    private lazy val catsEffectVersion = "3.5.7"
     private lazy val log4sVersion      = "2.7.0"
 
     lazy val core             = "org.typelevel" %% "cats-core"                     % "2.12.0"
     lazy val effect           = "org.typelevel" %% "cats-effect"                   % catsEffectVersion
     lazy val log4cats         = "org.typelevel" %% "log4cats-core"                 % log4sVersion
     lazy val log4catsSlf4j    = "org.typelevel" %% "log4cats-slf4j"                % log4sVersion
-    lazy val effectTesting    = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.5.0"           % Test
+    lazy val effectTesting    = "org.typelevel" %% "cats-effect-testing-scalatest" % "1.6.0"           % Test
     lazy val testKit          = "org.typelevel" %% "cats-effect-testkit"           % catsEffectVersion % Test
     lazy val testkitScalatest = "org.typelevel" %% "cats-testkit-scalatest"        % "2.1.5"           % Test
   }
 
   object Chimney {
-    lazy val chimney = "io.scalaland" %% "chimney" % "1.4.0"
+    lazy val chimney = "io.scalaland" %% "chimney" % "1.5.0"
   }
 
   object Circe {
@@ -28,7 +28,7 @@ object Dependencies {
 
   object Fs2 {
     private lazy val version      = "3.11.0"
-    private lazy val kafkaVersion = "3.5.1"
+    private lazy val kafkaVersion = "3.6.0"
 
     lazy val core  = "co.fs2"          %% "fs2-core"  % version
     lazy val io    = "co.fs2"          %% "fs2-io"    % version
@@ -40,7 +40,7 @@ object Dependencies {
   }
 
   object Logback {
-    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.8" % Runtime
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.12" % Runtime
   }
 
   object Logstash {
@@ -52,8 +52,8 @@ object Dependencies {
   }
 
   object OpenTelemetry {
-    private lazy val version      = "1.42.1"
-    private lazy val agentVersion = "2.8.0"
+    private lazy val version      = "1.44.1"
+    private lazy val agentVersion = "2.10.0"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version           % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % s"$version-alpha" % Runtime
@@ -63,14 +63,14 @@ object Dependencies {
   }
 
   object Otel4s {
-    private lazy val version = "0.10.0"
+    private lazy val version = "0.11.2"
 
     lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
     lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test
   }
 
   object PureConfig {
-    private lazy val version = "0.17.7"
+    private lazy val version = "0.17.8"
 
     lazy val core       = "com.github.pureconfig" %% "pureconfig-core"        % version
     lazy val catsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % version
@@ -85,13 +85,13 @@ object Dependencies {
   }
 
   object Typelevel {
-    val caseInsensitive        = "org.typelevel" %% "case-insensitive"         % "1.4.0"
-    val caseInsensitiveTesting = "org.typelevel" %% "case-insensitive-testing" % "1.4.0" % Test
+    val caseInsensitive        = "org.typelevel" %% "case-insensitive"         % "1.4.2"
+    val caseInsensitiveTesting = "org.typelevel" %% "case-insensitive-testing" % "1.4.2" % Test
     val mouse                  = "org.typelevel" %% "mouse"                    % "1.3.2"
   }
 
   object Vulcan {
-    private lazy val version = "1.11.0"
+    private lazy val version = "1.11.1"
 
     val core    = "com.github.fd4s" %% "vulcan"         % version
     val generic = "com.github.fd4s" %% "vulcan-generic" % version % Test

@@ -4,7 +4,6 @@ import buildinfo.BuildInfo
 import cats.effect.{Resource, Sync}
 import fs2.kafka.*
 import pureconfig.ConfigReader.Result
-import pureconfig.generic.derivation.default.*
 import pureconfig.{ConfigCursor, ConfigReader}
 import uk.sky.scheduler.config.TopicConfig.topicConfigReader
 

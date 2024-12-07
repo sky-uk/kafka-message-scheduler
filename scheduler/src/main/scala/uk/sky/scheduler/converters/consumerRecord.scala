@@ -37,8 +37,8 @@ private trait ConsumerRecordConverter {
 
       val metadata: MessageMetadata =
         cr.headers.toChain.toList.view
-          .flatMap(header => header.as[Option[String]].map(header.key -> _))
-          .map(CIString(_) -> _)
+          .map(header => header.key -> header.as[Option[String]])
+          .collect { case (key, Some(value)) => CIString(key) -> value }
           .pipe(MessageMetadata.apply)
 
       Message[Either[ScheduleError, Option[ScheduleEvent]]](

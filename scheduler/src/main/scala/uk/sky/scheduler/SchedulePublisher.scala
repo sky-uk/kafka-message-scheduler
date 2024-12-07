@@ -16,24 +16,18 @@ trait SchedulePublisher[F[_], O] {
 object SchedulePublisher {
   def kafka[F[_] : Async](config: KafkaConfig): SchedulePublisher[F, Unit] =
     new SchedulePublisher[F, Unit] {
+      private val producerSettings = config.producerSettings[F, Array[Byte], Option[Array[Byte]]].atLeastOnce.performant
+
       override def publish: Pipe[F, ScheduleEvent, Unit] = scheduleEventStream =>
-        KafkaProducer
-          .stream(
-            settings = config
-              .producerSettings[F, Array[Byte], Option[Array[Byte]]]
-              .atLeastOnce
-              .performant
-          )
-          .flatMap { producer =>
-            scheduleEventStream.evalMapChunk { scheduleEvent =>
-              producer.produce {
-                ProducerRecords(List(scheduleEvent.toProducerRecord, scheduleEvent.toTombstone))
-              }
-            }
-              .groupWithin(config.producer.batchSize, config.producer.timeout)
-              .evalMap(_.sequence)
-          }
-          .void
+        for {
+          producer <- KafkaProducer.stream(producerSettings)
+          _        <- scheduleEventStream.chunks.evalMap { scheduleEventChunk =>
+                        val producerRecordChunk = scheduleEventChunk.flatMap(scheduleEvent =>
+                          Chunk(scheduleEvent.toProducerRecord, scheduleEvent.toTombstone)
+                        )
+                        producer.produce(producerRecordChunk).flatten
+                      }
+        } yield ()
     }
 
 }

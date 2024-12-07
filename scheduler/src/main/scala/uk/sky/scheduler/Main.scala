@@ -29,8 +29,8 @@ object Main extends IOApp.Simple {
       otel4s                  <- OtelJava.global[IO]
       given Meter[IO]         <- otel4s.meterProvider.get(Config.metadata.appName)
       config                  <- ConfigSource.default.at(Config.metadata.appName).loadF[IO, Config]()
-      _                       <- logger.info(s"Running ${Config.metadata.appName} with version ${Config.metadata.version}")
-      _                       <- logger.info(s"Loaded Config: ${config.show}")
+      _                       <- logger.info(show"Running ${Config.metadata.appName} with version ${Config.metadata.version}")
+      _                       <- logger.info(show"Loaded Config: $config")
       _                       <- stream[IO](config).onFinalizeCase {
                                    case ExitCase.Succeeded  => logger.info("Stream Succeeded")
                                    case ExitCase.Errored(e) => logger.error(e)(s"Stream error - ${e.getMessage}")

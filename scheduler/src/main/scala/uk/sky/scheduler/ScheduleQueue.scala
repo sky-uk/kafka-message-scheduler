@@ -81,26 +81,26 @@ object ScheduleQueue {
       Stream.fromQueueUnterminated(queue)
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] =
-    new ScheduleQueue[F] {
-      val logger = LoggerFactory[F].getLogger
-
+  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): F[ScheduleQueue[F]] =
+    for {
+      logger <- LoggerFactory[F].create
+    } yield new ScheduleQueue[F] {
       override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
         for {
           result <- delegate.schedule(key, scheduleEvent)
-          _      <- logger.info(s"Scheduled [$key]")
+          _      <- logger.info(show"Scheduled [$key]")
         } yield result
 
       override def cancel(key: String): F[Unit] =
         for {
           _ <- delegate.cancel(key)
-          _ <- logger.info(s"Canceled Schedule [$key]")
+          _ <- logger.info(show"Canceled Schedule [$key]")
         } yield ()
 
       override def schedules: Stream[F, ScheduleEvent] =
         delegate.schedules.evalTapChunk { scheduleEvent =>
           logger.info(
-            s"Scheduled [${scheduleEvent.metadata.id}] to ${scheduleEvent.schedule.topic} due at ${scheduleEvent.schedule.time}"
+            show"Scheduled [${scheduleEvent.metadata.id}] to ${scheduleEvent.schedule.topic} due at ${scheduleEvent.schedule.time}"
           )
         }
     }
@@ -109,10 +109,11 @@ object ScheduleQueue {
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, ScheduleQueue[F]] =
     for {
-      repo       <- Repository.ofConcurrentHashMap[F, String, CancelableSchedule[F]]("schedules").toResource
-      eventQueue <- Queue.unbounded[F, ScheduleEvent].toResource
-      supervisor <- Supervisor[F]
-      impl       <- Resource.pure(ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor))
-    } yield ScheduleQueue.observed(impl)
+      repo          <- Repository.ofConcurrentHashMap[F, String, CancelableSchedule[F]]("schedules").toResource
+      eventQueue    <- Queue.unbounded[F, ScheduleEvent].toResource
+      supervisor    <- Supervisor[F]
+      scheduleQueue <- Resource.pure(ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor))
+      observed      <- ScheduleQueue.observed(scheduleQueue).toResource
+    } yield observed
 
 }

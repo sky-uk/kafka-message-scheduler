@@ -120,16 +120,16 @@ object EventSubscriber {
 
           value match {
             case Right(Some(_)) =>
-              logger.info(logCtx)(s"Decoded UPDATE for [$key] from $source") &>
+              logger.info(logCtx)(show"Decoded UPDATE for [$key] from $source") &>
                 counter.inc(updateAttributes(source))
 
             case Right(None) =>
               val deleteType = metadata.isExpired.fold("expired", "canceled")
-              logger.info(logCtx)(s"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
+              logger.info(logCtx)(show"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
                 counter.inc(deleteAttributes(source, deleteType))
 
             case Left(error) =>
-              logger.error(logCtx, error)(s"Error decoding [$key] from $source - ${error.getMessage}") &>
+              logger.error(logCtx, error)(show"Error decoding [$key] from $source - ${error.getMessage}") &>
                 counter.inc(errorAttributes(source, error))
           }
         }

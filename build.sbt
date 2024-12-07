@@ -21,10 +21,11 @@ lazy val scheduler = project
   .settings(CommonSettings.buildInfo)
   .settings {
     Seq(
-      dockerRepository     := sys.env.get("DOCKER_REPOSITORY"),
-      dockerBaseImage      := "eclipse-temurin:21-jre-jammy",
-      Docker / packageName := "kafka-message-scheduler",
-      dockerUpdateLatest   := true
+      dockerRepository      := sys.env.get("DOCKER_REPOSITORY"),
+      dockerBaseImage       := "eclipse-temurin:21-jre-jammy",
+      Docker / packageName  := "kafka-message-scheduler",
+      dockerUpdateLatest    := true,
+      dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64")
     )
   }
 

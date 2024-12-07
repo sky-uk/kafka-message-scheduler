@@ -109,7 +109,7 @@ object ScheduleQueue {
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, ScheduleQueue[F]] =
     for {
-      repo       <- Repository.live[F, String, CancelableSchedule[F]]("schedules").toResource
+      repo       <- Repository.ofConcurrentHashMap[F, String, CancelableSchedule[F]]("schedules").toResource
       eventQueue <- Queue.unbounded[F, ScheduleEvent].toResource
       supervisor <- Supervisor[F]
       impl       <- Resource.pure(ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor))

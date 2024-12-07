@@ -1,7 +1,7 @@
 package uk.sky.scheduler
 
-import cats.effect.Sync
 import cats.effect.std.MapRef
+import cats.effect.{Async, Sync}
 import cats.syntax.all.*
 import cats.{Functor, Monad, Parallel}
 import mouse.all.*
@@ -56,6 +56,12 @@ object Repository {
       }
     }
 
-  def live[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
+  def ofScalaConcurrentTrieMap[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
     MapRef.ofScalaConcurrentTrieMap[F, K, V].flatMap(observed(name))
+
+  def ofConcurrentHashMap[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
+    MapRef.ofConcurrentHashMap[F, K, V]().flatMap(observed(name))
+
+  def ofShardedImmutableMap[F[_] : Async : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
+    MapRef.ofShardedImmutableMap[F, K, V](Runtime.getRuntime.availableProcessors()).flatMap(observed(name))
 }

@@ -1,7 +1,7 @@
 package uk.sky.scheduler
 
 import cats.effect.Resource.ExitCase
-import cats.effect.{Async, Deferred, Ref}
+import cats.effect.{Async, Deferred, Ref, Resource}
 import cats.syntax.all.*
 import cats.{Monad, Parallel, Show}
 import fs2.*
@@ -33,8 +33,8 @@ object EventSubscriber {
   ): F[EventSubscriber[F]] = {
 
     val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]] = {
-      given Deserializer[F, Either[ScheduleError, Option[AvroSchedule]]] =
-        avroBinaryDeserializer[F, AvroSchedule].option.map(_.sequence)
+      given Resource[F, Deserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
+        avroBinaryDeserializer[F, AvroSchedule].map(_.option.map(_.sequence))
 
       config.consumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]]
     }
@@ -86,7 +86,7 @@ object EventSubscriber {
   }
 
   def observed[F[_] : Monad : Parallel : LoggerFactory : Meter](delegate: EventSubscriber[F]): F[EventSubscriber[F]] = {
-    given scheduleErrorType: Show[ScheduleError] = Show.show {
+    given Show[ScheduleError] = {
       case _: ScheduleError.InvalidAvroError => "invalid-avro"
       case _: ScheduleError.NotJsonError     => "not-json"
       case _: ScheduleError.InvalidJsonError => "invalid-json"
@@ -110,30 +110,29 @@ object EventSubscriber {
       Attribute("message.error.type", error.show)
     )
 
-    Meter[F].counter[Long]("event-subscriber").create.map { counter =>
-      val logger = LoggerFactory[F].getLogger
+    for {
+      counter <- Meter[F].counter[Long]("event-subscriber").create
+      logger  <- LoggerFactory[F].create
+    } yield new EventSubscriber[F] {
+      override def messages: Stream[F, Message[Output]] =
+        delegate.messages.evalTapChunk { case Message(key, source, value, metadata) =>
+          val logCtx = Map("key" -> key, "source" -> source)
 
-      new EventSubscriber[F] {
-        override def messages: Stream[F, Message[Output]] =
-          delegate.messages.evalTapChunk { case Message(key, source, value, metadata) =>
-            val logCtx = Map("key" -> key, "source" -> source)
+          value match {
+            case Right(Some(_)) =>
+              logger.info(logCtx)(s"Decoded UPDATE for [$key] from $source") &>
+                counter.inc(updateAttributes(source))
 
-            value match {
-              case Right(Some(_)) =>
-                logger.info(logCtx)(s"Decoded UPDATE for [$key] from $source") &>
-                  counter.inc(updateAttributes(source))
+            case Right(None) =>
+              val deleteType = metadata.isExpired.fold("expired", "canceled")
+              logger.info(logCtx)(s"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
+                counter.inc(deleteAttributes(source, deleteType))
 
-              case Right(None) =>
-                val deleteType = metadata.isExpired.fold("expired", "canceled")
-                logger.info(logCtx)(s"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
-                  counter.inc(deleteAttributes(source, deleteType))
-
-              case Left(error) =>
-                logger.error(logCtx, error)(s"Error decoding [$key] from $source - ${error.getMessage}") &>
-                  counter.inc(errorAttributes(source, error))
-            }
+            case Left(error) =>
+              logger.error(logCtx, error)(s"Error decoding [$key] from $source - ${error.getMessage}") &>
+                counter.inc(errorAttributes(source, error))
           }
-      }
+        }
     }
   }
 

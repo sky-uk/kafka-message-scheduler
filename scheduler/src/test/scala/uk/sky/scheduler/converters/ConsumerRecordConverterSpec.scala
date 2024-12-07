@@ -18,8 +18,6 @@ import uk.sky.scheduler.message.{Message, Metadata}
 import uk.sky.scheduler.util.Generator.given
 import uk.sky.scheduler.util.MessageMatchers
 
-import java.util.Base64
-
 class ConsumerRecordConverterSpec
     extends AnyWordSpec,
       Matchers,
@@ -27,9 +25,6 @@ class ConsumerRecordConverterSpec
       MessageMatchers,
       LoneElement,
       ConsumerRecordConverter {
-
-  private given b64EncodeTransformer: Transformer[Array[Byte], String] =
-    (src: Array[Byte]) => Base64.getEncoder.encodeToString(src)
 
   given Arbitrary[ScheduleError] = Arbitrary(Gen.const(ScheduleError.DecodeError("foo", Throwable())))
 

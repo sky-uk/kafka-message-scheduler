@@ -39,7 +39,7 @@ private trait ConsumerRecordConverter {
         cr.headers.toChain.toList.view
           .flatMap(header => header.as[Option[String]].map(header.key -> _))
           .map(CIString(_) -> _)
-          .pipe(MessageMetadata(_))
+          .pipe(MessageMetadata.apply)
 
       Message[Either[ScheduleError, Option[ScheduleEvent]]](
         key = key,

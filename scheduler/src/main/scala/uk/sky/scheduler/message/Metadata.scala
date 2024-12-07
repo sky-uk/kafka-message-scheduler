@@ -7,7 +7,10 @@ import org.typelevel.ci.CIString
 opaque type Metadata = Map[CIString, String]
 
 object Metadata {
-  def apply(value: Iterable[(CIString, String)]): Metadata = value.toMap
+  def apply(value: Iterable[(CIString, String)]): Metadata = value match {
+    case map: Map[CIString, String] => map
+    case other                      => other.toMap
+  }
 
   extension (metadata: Metadata) {
     inline def value: Map[CIString, String]                                           = metadata

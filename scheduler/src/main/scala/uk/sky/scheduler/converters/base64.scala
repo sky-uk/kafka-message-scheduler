@@ -9,8 +9,7 @@ private trait Base64Converter {
 
   extension (s: String) {
     def base64Decode: Array[Byte] = b64Decoder.decode(s.getBytes(StandardCharsets.UTF_8))
-
-    def base64Encode: String = s.getBytes(StandardCharsets.UTF_8).base64Encode
+    def base64Encode: String      = s.getBytes(StandardCharsets.UTF_8).base64Encode
   }
 
   extension (bytes: Array[Byte]) {

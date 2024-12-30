@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import fs2.kafka.ConsumerRecord
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
+import io.scalaland.chimney.partial.Result
 import org.typelevel.ci.CIString
 import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
 import uk.sky.scheduler.error.ScheduleError
@@ -27,12 +28,22 @@ private trait ConsumerRecordConverter {
         case Right(Some(input)) =>
           val metadata = Metadata(key, topic)
 
-          val schedule = input match {
-            case avroSchedule: AvroSchedule => avroSchedule.transformInto[Schedule]
-            case jsonSchedule: JsonSchedule => jsonSchedule.transformInto[Schedule]
+          input match {
+            case avroSchedule: AvroSchedule =>
+              val schedule = avroSchedule.transformInto[Schedule]
+              ScheduleEvent(metadata, schedule).some.asRight[ScheduleError]
+
+            case jsonSchedule: JsonSchedule =>
+              jsonSchedule.transformIntoPartial[Schedule] match {
+                case Result.Value(schedule) =>
+                  ScheduleEvent(metadata, schedule).some.asRight[ScheduleError]
+                case Result.Errors(errors)  =>
+                  ScheduleError
+                    .TransformationError(key, errors.toList.map(_.message.asString))
+                    .asLeft[Option[ScheduleEvent]]
+              }
           }
 
-          ScheduleEvent(metadata, schedule).some.asRight[ScheduleError]
       }
 
       val metadata: MessageMetadata =

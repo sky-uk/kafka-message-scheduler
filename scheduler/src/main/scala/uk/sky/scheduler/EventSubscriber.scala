@@ -87,10 +87,11 @@ object EventSubscriber {
 
   def observed[F[_] : Monad : Parallel : LoggerFactory : Meter](delegate: EventSubscriber[F]): F[EventSubscriber[F]] = {
     given Show[ScheduleError] = {
-      case _: ScheduleError.InvalidAvroError => "invalid-avro"
-      case _: ScheduleError.NotJsonError     => "not-json"
-      case _: ScheduleError.InvalidJsonError => "invalid-json"
-      case _: ScheduleError.DecodeError      => "decode"
+      case _: ScheduleError.InvalidAvroError    => "invalid-avro"
+      case _: ScheduleError.NotJsonError        => "not-json"
+      case _: ScheduleError.InvalidJsonError    => "invalid-json"
+      case _: ScheduleError.DecodeError         => "decode"
+      case _: ScheduleError.TransformationError => "transformation"
     }
 
     def updateAttributes(source: String) = Attributes(

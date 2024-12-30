@@ -3,6 +3,7 @@ version: '3.9'
 services:
   kafka-message-scheduler:
     image: kafka-message-scheduler:latest
+    pull_policy: never
     restart: "on-failure"
     ports:
       - "9401:9401"
@@ -48,7 +49,6 @@ services:
       - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
-
 
   # http://localhost:8080/ - Expose AKHQ for viewing Kafka topic contents.
   akhq:

@@ -5,9 +5,9 @@ import fs2.kafka.{ConsumerRecord, Header, Headers}
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import org.scalacheck.{Arbitrary, Gen}
-import org.scalatest.LoneElement
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.{EitherValues, LoneElement}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import org.typelevel.ci.CIString
 import uk.sky.scheduler.domain.ScheduleEvent
@@ -23,6 +23,7 @@ class ConsumerRecordConverterSpec
       Matchers,
       ScalaCheckPropertyChecks,
       MessageMatchers,
+      EitherValues,
       LoneElement,
       ConsumerRecordConverter {
 
@@ -42,17 +43,32 @@ class ConsumerRecordConverterSpec
           offset = 0L,
           key = scheduleEvent.metadata.id,
           value = schedule.some.asRight[ScheduleError]
-        ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map((k, v) => Header(k, v))))
+        ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map(Header.apply)))
 
         val message = Message[Either[ScheduleError, Option[ScheduleEvent]]](
           key = consumerRecord.key,
           source = consumerRecord.topic,
           value = scheduleEvent.some.asRight[ScheduleError],
-          metadata = Metadata(scheduleEvent.schedule.headers.map((k, v) => CIString(k) -> String(v)))
+          metadata = Metadata(scheduleEvent.schedule.headers.map(CIString(_) -> String(_)))
         )
 
         consumerRecord.toMessage should equalMessage(message)
       }
+    }
+
+    "transform invalid Base64 into an error Message" in forAll { (scheduleEvent: ScheduleEvent) =>
+      val jsonSchedule: JsonSchedule =
+        scheduleEvent.schedule.transformInto[JsonSchedule].copy(key = "invalid-base64")
+
+      val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]](
+        topic = scheduleEvent.metadata.scheduleTopic,
+        partition = 0,
+        offset = 0L,
+        key = scheduleEvent.metadata.id,
+        value = jsonSchedule.some.asRight[ScheduleError]
+      )
+
+      consumerRecord.toMessage.value.left.value shouldBe a[ScheduleError.TransformationError]
     }
 
     "transform a delete into a Message" in forAll { (scheduleEvent: ScheduleEvent) =>
@@ -62,13 +78,13 @@ class ConsumerRecordConverterSpec
         offset = 0L,
         key = scheduleEvent.metadata.id,
         value = none[JsonSchedule | AvroSchedule].asRight[ScheduleError]
-      ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map((k, v) => Header(k, v))))
+      ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map(Header.apply)))
 
       val message = Message[Either[ScheduleError, Option[ScheduleEvent]]](
         key = consumerRecord.key,
         source = consumerRecord.topic,
         value = none[ScheduleEvent].asRight[ScheduleError],
-        metadata = Metadata(scheduleEvent.schedule.headers.map((k, v) => CIString(k) -> String(v)))
+        metadata = Metadata(scheduleEvent.schedule.headers.map(CIString(_) -> String(_)))
       )
 
       consumerRecord.toMessage should equalMessage(message)
@@ -81,14 +97,14 @@ class ConsumerRecordConverterSpec
         offset = 0L,
         key = scheduleEvent.metadata.id,
         value = scheduleError.asLeft[Option[JsonSchedule | AvroSchedule]]
-      ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map((k, v) => Header(k, v))))
+      ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map(Header.apply)))
 
       val decodeError = ScheduleError.DecodeError(scheduleEvent.metadata.id, scheduleError)
       val message     = Message[Either[ScheduleError, Option[ScheduleEvent]]](
         key = consumerRecord.key,
         source = consumerRecord.topic,
         value = decodeError.asLeft[Option[ScheduleEvent]],
-        metadata = Metadata(scheduleEvent.schedule.headers.map((k, v) => CIString(k) -> String(v)))
+        metadata = Metadata(scheduleEvent.schedule.headers.map(CIString(_) -> String(_)))
       )
 
       consumerRecord.toMessage should equalMessage(message)

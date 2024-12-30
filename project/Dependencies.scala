@@ -16,7 +16,9 @@ object Dependencies {
   }
 
   object Chimney {
-    lazy val chimney = "io.scalaland" %% "chimney" % "1.5.0"
+    private lazy val version = "1.5.0"
+
+    lazy val chimney = "io.scalaland" %% "chimney" % version
   }
 
   object Circe {

@@ -42,7 +42,7 @@ object Dependencies {
   }
 
   object Logback {
-    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.12" % Runtime
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.15" % Runtime
   }
 
   object Logstash {
@@ -54,8 +54,8 @@ object Dependencies {
   }
 
   object OpenTelemetry {
-    private lazy val version      = "1.44.1"
-    private lazy val agentVersion = "2.10.0"
+    private lazy val version      = "1.45.0"
+    private lazy val agentVersion = "2.11.0"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version           % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % s"$version-alpha" % Runtime

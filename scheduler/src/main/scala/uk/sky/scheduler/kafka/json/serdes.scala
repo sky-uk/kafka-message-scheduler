@@ -11,8 +11,8 @@ def jsonDeserializer[F[_] : Sync, T : Decoder]: ValueDeserializer[F, Either[Sche
   for {
     payload <- Deserializer.string[F]
   } yield for {
-    json    <- parser.parse(payload).leftMap(e => ScheduleError.NotJsonError(payload, e))
-    decoded <- json.as[T].leftMap(e => ScheduleError.InvalidJsonError(json.noSpaces, e))
+    json    <- parser.parse(payload).leftMap(ScheduleError.NotJsonError(payload, _))
+    decoded <- json.as[T].leftMap(ScheduleError.InvalidJsonError(json.noSpaces, _))
   } yield decoded
 
 def jsonSerializer[F[_] : Sync, V : Encoder]: ValueSerializer[F, V] =

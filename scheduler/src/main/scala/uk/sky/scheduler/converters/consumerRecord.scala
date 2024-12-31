@@ -34,12 +34,12 @@ private trait ConsumerRecordConverter {
               ScheduleEvent(metadata, schedule).some.asRight[ScheduleError]
 
             case jsonSchedule: JsonSchedule =>
-              jsonSchedule.transformIntoPartial[Schedule] match {
-                case Result.Value(schedule) =>
+              jsonSchedule.transformIntoPartial[Schedule].asEitherErrorPathMessageStrings match {
+                case Right(schedule)      =>
                   ScheduleEvent(metadata, schedule).some.asRight[ScheduleError]
-                case Result.Errors(errors)  =>
+                case Left(errorsAndPaths) =>
                   ScheduleError
-                    .TransformationError(key, errors.toList.map(_.message.asString))
+                    .TransformationError(key, errorsAndPaths.toList)
                     .asLeft[Option[ScheduleEvent]]
               }
           }

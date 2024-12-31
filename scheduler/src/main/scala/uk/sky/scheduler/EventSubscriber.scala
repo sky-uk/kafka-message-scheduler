@@ -125,12 +125,12 @@ object EventSubscriber {
                 counter.inc(updateAttributes(source))
 
             case Right(None) =>
-              val deleteType = metadata.isExpired.fold("expired", "canceled")
+              lazy val deleteType = metadata.isExpired.fold("expired", "canceled")
               logger.info(logCtx)(show"Decoded DELETE type=[$deleteType] for [$key] from $source") &>
                 counter.inc(deleteAttributes(source, deleteType))
 
             case Left(error) =>
-              logger.error(logCtx, error)(show"Error decoding [$key] from $source - ${error.getMessage}") &>
+              logger.error(logCtx, error)(show"Error decoding [$key] from $source") &>
                 counter.inc(errorAttributes(source, error))
           }
         }

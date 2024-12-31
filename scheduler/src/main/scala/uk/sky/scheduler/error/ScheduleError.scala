@@ -15,8 +15,12 @@ enum ScheduleError(val message: String, val cause: Throwable) extends Throwable(
 
   case DecodeError(key: String, error: Throwable) extends ScheduleError(s"Failed to decode [$key]", error)
 
-  case TransformationError(key: String, errors: List[String])
-      extends ScheduleError(s"Failed to decode [$key]: ${errors.mkString_(", ")}", null)
+  case TransformationError(key: String, errorsAndPaths: List[(String, String)])
+      extends ScheduleError(
+        s"Failed to decode [$key]: " +
+          s"${errorsAndPaths.map((path, error) => show"error transforming $path: $error").mkString(", ")}",
+        null
+      )
 }
 
 object ScheduleError {

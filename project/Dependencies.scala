@@ -28,6 +28,13 @@ object Dependencies {
     lazy val parser  = "io.circe" %% "circe-parser"  % version
   }
 
+  object Decline {
+    private lazy val version = "2.4.1"
+
+    lazy val core   = "com.monovore" %% "decline"        % version
+    lazy val effect = "com.monovore" %% "decline-effect" % version
+  }
+
   object Fs2 {
     private lazy val version      = "3.11.0"
     private lazy val kafkaVersion = "3.6.0"

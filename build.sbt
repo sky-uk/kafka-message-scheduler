@@ -60,7 +60,8 @@ lazy val scheduler3 = (project in file("scheduler-3"))
   .settings(
     libraryDependencies ++= Dependencies.scheduler3,
     buildInfoSettings,
-    scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf")
+    scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
+    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")

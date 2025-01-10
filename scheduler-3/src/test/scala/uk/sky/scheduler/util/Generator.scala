@@ -16,8 +16,8 @@ import uk.sky.scheduler.syntax.all.*
 import java.time.Instant
 
 object Generator {
-  given Arbitrary[Metadata]     = Arbitrary(Gen.resultOf(Metadata.apply))
-  given Arbitrary[Schedule]     = Arbitrary(Gen.resultOf(Schedule.apply))
+  given Arbitrary[Metadata] = Arbitrary(Gen.resultOf(Metadata.apply))
+  given Arbitrary[Schedule] = Arbitrary(Gen.resultOf(Schedule.apply))
 
   given Arbitrary[MessageMetadata] = Arbitrary {
     for {
@@ -54,12 +54,12 @@ object Generator {
     generateSchedule[F].map(_.focus(_.schedule.time).replace(time))
 
   private def message(
-                       key: String,
-                       source: String,
-                       scheduleEvent: Option[ScheduleEvent],
-                       metadata: MessageMetadata,
-                       expire: Boolean
-                     ): Message[Either[ScheduleError, Option[ScheduleEvent]]] = {
+      key: String,
+      source: String,
+      scheduleEvent: Option[ScheduleEvent],
+      metadata: MessageMetadata,
+      expire: Boolean
+  ): Message[Either[ScheduleError, Option[ScheduleEvent]]] = {
     val m = Message(
       key = key,
       source = source,
@@ -72,8 +72,8 @@ object Generator {
 
   extension (scheduleEvent: ScheduleEvent) {
     def update(
-                metadata: MessageMetadata = MessageMetadata.empty
-              ): Message[Either[ScheduleError, Option[ScheduleEvent]]] =
+        metadata: MessageMetadata = MessageMetadata.empty
+    ): Message[Either[ScheduleError, Option[ScheduleEvent]]] =
       message(
         key = scheduleEvent.metadata.id,
         source = scheduleEvent.metadata.scheduleTopic,
@@ -83,9 +83,9 @@ object Generator {
       )
 
     def delete(
-                metadata: MessageMetadata = MessageMetadata.empty,
-                expire: Boolean = false
-              ): Message[Either[ScheduleError, Option[ScheduleEvent]]] =
+        metadata: MessageMetadata = MessageMetadata.empty,
+        expire: Boolean = false
+    ): Message[Either[ScheduleError, Option[ScheduleEvent]]] =
       message(
         key = scheduleEvent.metadata.id,
         source = scheduleEvent.metadata.scheduleTopic,

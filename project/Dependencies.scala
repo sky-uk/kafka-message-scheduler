@@ -15,12 +15,28 @@ object Dependencies {
   }
 
   object Cats {
-    private val version = "2.7.0"
-    val core            = "org.typelevel"    %% "cats-core"      % version
-    val testKit         = "org.typelevel"    %% "cats-testkit"   % version % Test
-    val scalatest       = "com.ironcorelabs" %% "cats-scalatest" % "3.1.1" % Test
-    val base            = Seq(core)
-    val test            = Seq(testKit, scalatest)
+    private val version           = "2.7.0"
+    private val catsEffectVersion = "3.5.7"
+
+    lazy val effectTestKit          = "org.typelevel"    %% "cats-effect-testkit"           % catsEffectVersion % Test
+    lazy val effectTesting          = "org.typelevel"    %% "cats-effect-testing-scalatest" % "1.6.0"           % Test
+    lazy val effectTestkitScalatest = "org.typelevel"    %% "cats-testkit-scalatest"        % "2.1.5"           % Test
+    lazy val caseInsensitive        = "org.typelevel"    %% "case-insensitive"              % "1.4.2"
+    lazy val caseInsensitiveTesting = "org.typelevel"    %% "case-insensitive-testing"      % "1.4.2"
+    lazy val core                   = "org.typelevel"    %% "cats-core"                     % version
+    lazy val effect                 = "org.typelevel"    %% "cats-effect"                   % catsEffectVersion
+    lazy val scalatest              = "com.ironcorelabs" %% "cats-scalatest"                % "3.1.1"           % Test
+    lazy val testKit                = "org.typelevel"    %% "cats-testkit"                  % version           % Test
+    lazy val base                   = Seq(core)
+    lazy val test                   = Seq(testKit, scalatest)
+  }
+
+  object Fs2 {
+    private lazy val version      = "3.11.0"
+    private lazy val kafkaVersion = "3.6.0"
+
+    lazy val core  = "co.fs2"          %% "fs2-core"  % version
+    lazy val kafka = "com.github.fd4s" %% "fs2-kafka" % kafkaVersion
   }
 
   object Kafka {
@@ -39,6 +55,10 @@ object Dependencies {
     val all             = Seq(core, akka, prometheus)
   }
 
+  object Monocle {
+    lazy val core = "dev.optics" %% "monocle-core" % "3.3.0"
+  }
+
   object PureConfig {
     private val version = "0.17.1"
     val pureconfig      = "com.github.pureconfig" %% "pureconfig"      % version
@@ -53,6 +73,13 @@ object Dependencies {
     val scalaCheck      = "eu.timepit" %% "refined-scalacheck" % version % Test
     val base            = Seq(refined, pureconfig)
     val test            = Seq(scalaCheck)
+  }
+
+  object Vulcan {
+    private lazy val version = "1.11.1"
+
+    val core    = "com.github.fd4s" %% "vulcan"         % version
+    val generic = "com.github.fd4s" %% "vulcan-generic" % version % Test
   }
 
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
@@ -72,18 +99,20 @@ object Dependencies {
   val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.18"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
-  val core: Seq[ModuleID]    = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(
+  val core: Seq[ModuleID] = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(
     avro4s,
     kafkaTopicLoader,
     monix,
     scalaLogging
   )
+
   val runtime: Seq[ModuleID] = Seq(
     janino,
     logbackClassic,
     logbackEncoder
   )
-  val test: Seq[ModuleID]    = Akka.test ++ Cats.test ++ Kafka.test ++ Refined.test ++ Seq(
+
+  val test: Seq[ModuleID]      = Akka.test ++ Cats.test ++ Kafka.test ++ Refined.test ++ Seq(
     embeddedKafka,
     mockito,
     randomDataGenerator,
@@ -92,5 +121,19 @@ object Dependencies {
     scalaTest,
     scalaTestPlusMockito
   )
-  val all: Seq[sbt.ModuleID] = core ++ runtime ++ test
+  val scheduler: Seq[ModuleID] = core ++ runtime ++ test
+
+  val scheduler3: Seq[ModuleID] = Seq(
+    Cats.caseInsensitive,
+    Cats.caseInsensitiveTesting,
+    Cats.effect,
+    Cats.effectTestKit,
+    Cats.effectTesting,
+    Cats.effectTestkitScalatest,
+    Fs2.core,
+    Fs2.kafka,
+    Monocle.core,
+    Vulcan.core,
+    Vulcan.generic
+  )
 }

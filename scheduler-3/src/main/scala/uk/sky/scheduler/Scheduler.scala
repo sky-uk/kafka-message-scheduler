@@ -1,6 +1,6 @@
 package uk.sky.scheduler
 
-import cats.effect.Concurrent
+import cats.effect.*
 import fs2.Stream
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.message.Message
@@ -22,4 +22,14 @@ class Scheduler[F[_] : Concurrent, O](
   def stream: Stream[F, O] =
     scheduleEvents.drain
       .merge(scheduleQueue.schedules.through(schedulePublisher.publish))
+}
+
+object Scheduler {
+  def live[F[_] : Concurrent]: Resource[F, Scheduler[F, Unit]] =
+    for {
+      eventSubscriber   <- Resource.pure(??? : EventSubscriber[F])
+      scheduleQueue     <- Resource.pure(??? : ScheduleQueue[F])
+      schedulePublisher <- Resource.pure(??? : SchedulePublisher[F, Unit])
+    } yield Scheduler(eventSubscriber, scheduleQueue, schedulePublisher)
+
 }

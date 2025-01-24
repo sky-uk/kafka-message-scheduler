@@ -5,9 +5,9 @@ import fs2.Stream
 
 object Main extends IOApp.Simple {
 
-  def stream[F[_] : Concurrent]: Stream[F, Unit] =
+  def stream[IO[_] : Concurrent]: Stream[IO, Unit] =
     for {
-      scheduler <- Stream.resource(Scheduler.live[F])
+      scheduler <- Stream.resource(Scheduler.live[IO])
       message   <- scheduler.stream
     } yield message
 

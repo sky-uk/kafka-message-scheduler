@@ -6,7 +6,7 @@ package uk.sky.scheduler.domain
   * @param schedule
   *   The Schedule's destination and payload.
   */
-case class ScheduleEvent(
+final case class ScheduleEvent(
     metadata: Metadata,
     schedule: Schedule
 )
@@ -17,7 +17,7 @@ case class ScheduleEvent(
   * @param scheduleTopic
   *   The topic the Schedule arrived on.
   */
-case class Metadata(
+final case class Metadata(
     id: String,
     scheduleTopic: String
 )
@@ -35,7 +35,7 @@ case class Metadata(
   * @param headers
   *   Extra metadata to send with the payload.
   */
-case class Schedule(
+final case class Schedule(
     time: Long,
     topic: String,
     key: Array[Byte],

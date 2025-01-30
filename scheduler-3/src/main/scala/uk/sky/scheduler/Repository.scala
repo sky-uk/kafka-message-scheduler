@@ -4,7 +4,7 @@ import cats.effect.std.MapRef
 import cats.effect.{Async, Sync}
 import cats.syntax.all.*
 import cats.{Functor, Monad, Parallel}
-//import mouse.all.*
+import mouse.all.*
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Meter
 

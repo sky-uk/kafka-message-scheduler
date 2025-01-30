@@ -75,6 +75,28 @@ object Dependencies {
     val test            = Seq(scalaCheck)
   }
 
+  object Typelevel {
+    val mouse                  = "org.typelevel" %% "mouse"                    % "1.3.2"
+  }
+
+  object OpenTelemetry {
+    private lazy val version      = "1.45.0"
+    private lazy val agentVersion = "2.11.0"
+
+    lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version           % Runtime
+    lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % s"$version-alpha" % Runtime
+    lazy val sdkAutoconfigure   = "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % version           % Runtime
+
+    lazy val javaAgent = "io.opentelemetry.javaagent" % "opentelemetry-javaagent" % agentVersion % Runtime
+  }
+
+  object Otel4s {
+    private lazy val version = "0.11.2"
+
+    lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
+    lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test
+  }
+
   object Vulcan {
     private lazy val version = "1.11.1"
 
@@ -134,6 +156,13 @@ object Dependencies {
     Fs2.kafka,
     Monocle.core,
     Vulcan.core,
-    Vulcan.generic
+    Vulcan.generic,
+    Typelevel.mouse,
+    OpenTelemetry.exporterOtlp,
+    OpenTelemetry.exporterPrometheus,
+    OpenTelemetry.javaAgent,
+    OpenTelemetry.sdkAutoconfigure,
+    Otel4s.java,
+    Otel4s.testkit
   )
 }

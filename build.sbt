@@ -11,7 +11,7 @@ ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 val scala2Settings = Seq(
-  scalaVersion             := "2.13.10",
+  scalaVersion             := "2.13.14",
   tpolecatScalacOptions ++= Set(
     ScalacOptions.other("-Ymacro-annotations"),
     ScalacOptions.source3

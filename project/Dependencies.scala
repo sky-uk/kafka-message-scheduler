@@ -60,8 +60,9 @@ object Dependencies {
   }
 
   object PureConfig {
-    private val version = "0.17.1"
+    private val version = "0.17.8"
     val pureconfig      = "com.github.pureconfig" %% "pureconfig"      % version
+    val core            = "com.github.pureconfig" %% "pureconfig-core" % version
     val cats            = "com.github.pureconfig" %% "pureconfig-cats" % version
     val all             = Seq(pureconfig, cats)
   }
@@ -134,6 +135,7 @@ object Dependencies {
     Fs2.kafka,
     Monocle.core,
     Vulcan.core,
-    Vulcan.generic
+    Vulcan.generic,
+    PureConfig.core
   )
 }

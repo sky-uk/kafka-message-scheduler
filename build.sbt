@@ -37,9 +37,9 @@ val scala3Settings = Seq(
   Test / parallelExecution := false
 )
 
-val buildInfoSettings = Seq(
-  buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-  buildInfoPackage := "com.sky"
+val buildInfoSettings = (pkg: String) => Seq(
+  buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+  buildInfoPackage := pkg
 )
 
 lazy val scheduler = (project in file("scheduler"))
@@ -49,7 +49,7 @@ lazy val scheduler = (project in file("scheduler"))
     libraryDependencies ++= Dependencies.scheduler,
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
     javaAgents += "io.kamon" % "kanela-agent" % "1.0.18",
-    buildInfoSettings,
+    buildInfoSettings("com.sky"),
     dockerSettings,
     releaseSettings
   )
@@ -59,7 +59,7 @@ lazy val scheduler3 = (project in file("scheduler-3"))
   .settings(scala3Settings)
   .settings(
     libraryDependencies ++= Dependencies.scheduler3,
-    buildInfoSettings,
+    buildInfoSettings("uk.sky"),
     scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
     scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )

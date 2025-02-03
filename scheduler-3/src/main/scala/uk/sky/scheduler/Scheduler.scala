@@ -2,6 +2,7 @@ package uk.sky.scheduler
 
 import cats.effect.*
 import fs2.Stream
+import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.message.Message
 import uk.sky.scheduler.message.Metadata.*
@@ -25,7 +26,7 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Concurrent]: Resource[F, Scheduler[F, Unit]] =
+  def live[F[_] : Concurrent](config: Config): Resource[F, Scheduler[F, Unit]] =
     for {
       eventSubscriber   <- Resource.pure(??? : EventSubscriber[F])
       scheduleQueue     <- Resource.pure(??? : ScheduleQueue[F])

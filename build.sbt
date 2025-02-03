@@ -37,10 +37,11 @@ val scala3Settings = Seq(
   Test / parallelExecution := false
 )
 
-val buildInfoSettings = (pkg: String) => Seq(
-  buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-  buildInfoPackage := pkg
-)
+val buildInfoSettings = (pkg: String) =>
+  Seq(
+    buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := pkg
+  )
 
 lazy val scheduler = (project in file("scheduler"))
   .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)

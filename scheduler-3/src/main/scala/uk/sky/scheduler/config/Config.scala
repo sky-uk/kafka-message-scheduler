@@ -1,9 +1,9 @@
 package uk.sky.scheduler.config
 
 import cats.effect.{Resource, Sync}
-import fs2.kafka.{AutoOffsetReset, ConsumerSettings, KeyDeserializer, ProducerSettings, ValueDeserializer}
-import uk.sky.BuildInfo
+import fs2.kafka.*
 import pureconfig.ConfigReader
+import uk.sky.BuildInfo
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -26,7 +26,7 @@ final case class KafkaConfig(
 object KafkaConfig {
   extension (config: KafkaConfig) {
     def consumerSettings[F[_] : Sync, K, V](using
-      Resource[F, KeyDeserializer[F, K]],
+        Resource[F, KeyDeserializer[F, K]],
         Resource[F, ValueDeserializer[F, V]]
     ): ConsumerSettings[F, K, V] =
       ConsumerSettings[F, K, V]
@@ -35,8 +35,8 @@ object KafkaConfig {
         .withAutoOffsetReset(AutoOffsetReset.Earliest)
 
     def producerSettings[F[_] : Sync, K, V](using
-      Resource[F, KeyDeserializer[F, K]], 
-      Resource[F, ValueDeserializer[F, V]]
+        Resource[F, KeySerializer[F, K]],
+        Resource[F, ValueSerializer[F, V]]
     ): ProducerSettings[F, K, V] =
       ProducerSettings[F, K, V]
         .withBootstrapServers(config.producer.bootstrapServers)

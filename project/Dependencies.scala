@@ -64,11 +64,13 @@ object Dependencies {
 
   object PureConfig {
     private val version = "0.17.8"
+    // TODO: Remove if not needed in Scala3
     val pureconfig      = "com.github.pureconfig" %% "pureconfig"             % version
     val core            = "com.github.pureconfig" %% "pureconfig-core"        % version
+    // TODO: Remove if not needed in Scala3
     val cats            = "com.github.pureconfig" %% "pureconfig-cats"        % version
     val catsEffect      = "com.github.pureconfig" %% "pureconfig-cats-effect" % version
-    val all             = Seq(pureconfig, cats)
+    val allScala2       = Seq(pureconfig, cats)
   }
 
   object Refined {
@@ -104,7 +106,7 @@ object Dependencies {
   val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.18"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
-  val core: Seq[ModuleID] = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(
+  val core: Seq[ModuleID] = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.allScala2 ++ Refined.base ++ Seq(
     avro4s,
     kafkaTopicLoader,
     monix,

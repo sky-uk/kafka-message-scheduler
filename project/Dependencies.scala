@@ -75,10 +75,6 @@ object Dependencies {
     val test            = Seq(scalaCheck)
   }
 
-  object Typelevel {
-    val mouse                  = "org.typelevel" %% "mouse"                    % "1.3.2"
-  }
-
   object OpenTelemetry {
     private lazy val version      = "1.45.0"
     private lazy val agentVersion = "2.11.0"
@@ -107,6 +103,7 @@ object Dependencies {
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
+  val mouse            = "org.typelevel"              %% "mouse"              % "1.3.2"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
 
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.12" % Runtime
@@ -157,12 +154,12 @@ object Dependencies {
     Monocle.core,
     Vulcan.core,
     Vulcan.generic,
-    Typelevel.mouse,
     OpenTelemetry.exporterOtlp,
     OpenTelemetry.exporterPrometheus,
     OpenTelemetry.javaAgent,
     OpenTelemetry.sdkAutoconfigure,
     Otel4s.java,
-    Otel4s.testkit
+    Otel4s.testkit,
+    mouse
   )
 }

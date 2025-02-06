@@ -17,6 +17,7 @@ object Dependencies {
   object Cats {
     private val version           = "2.7.0"
     private val catsEffectVersion = "3.5.7"
+    private val log4catsVersion   = "2.7.0"
 
     lazy val effectTestKit          = "org.typelevel"    %% "cats-effect-testkit"           % catsEffectVersion % Test
     lazy val effectTesting          = "org.typelevel"    %% "cats-effect-testing-scalatest" % "1.6.0"           % Test
@@ -25,6 +26,8 @@ object Dependencies {
     lazy val caseInsensitiveTesting = "org.typelevel"    %% "case-insensitive-testing"      % "1.4.2"
     lazy val core                   = "org.typelevel"    %% "cats-core"                     % version
     lazy val effect                 = "org.typelevel"    %% "cats-effect"                   % catsEffectVersion
+    lazy val log4cats               = "org.typelevel"    %% "log4cats-core"                 % log4catsVersion
+    lazy val log4catsSlf4j          = "org.typelevel"    %% "log4cats-slf4j"                % log4catsVersion
     lazy val scalatest              = "com.ironcorelabs" %% "cats-scalatest"                % "3.1.1"           % Test
     lazy val testKit                = "org.typelevel"    %% "cats-testkit"                  % version           % Test
     lazy val base                   = Seq(core)
@@ -60,10 +63,14 @@ object Dependencies {
   }
 
   object PureConfig {
-    private val version = "0.17.1"
-    val pureconfig      = "com.github.pureconfig" %% "pureconfig"      % version
-    val cats            = "com.github.pureconfig" %% "pureconfig-cats" % version
-    val all             = Seq(pureconfig, cats)
+    private val version = "0.17.8"
+    // TODO: Remove if not needed in Scala3
+    val pureconfig      = "com.github.pureconfig" %% "pureconfig"             % version
+    val core            = "com.github.pureconfig" %% "pureconfig-core"        % version
+    // TODO: Remove if not needed in Scala3
+    val cats            = "com.github.pureconfig" %% "pureconfig-cats"        % version
+    val catsEffect      = "com.github.pureconfig" %% "pureconfig-cats-effect" % version
+    val allScala2       = Seq(pureconfig, cats)
   }
 
   object Refined {
@@ -118,7 +125,7 @@ object Dependencies {
   val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.18"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
-  val core: Seq[ModuleID] = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.all ++ Refined.base ++ Seq(
+  val core: Seq[ModuleID] = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.allScala2 ++ Refined.base ++ Seq(
     avro4s,
     kafkaTopicLoader,
     monix,
@@ -149,11 +156,15 @@ object Dependencies {
     Cats.effectTestKit,
     Cats.effectTesting,
     Cats.effectTestkitScalatest,
+    Cats.log4cats,
+    Cats.log4catsSlf4j,
     Fs2.core,
     Fs2.kafka,
     Monocle.core,
     Vulcan.core,
     Vulcan.generic,
+    PureConfig.core,
+    PureConfig.catsEffect,
     OpenTelemetry.exporterOtlp,
     OpenTelemetry.exporterPrometheus,
     OpenTelemetry.javaAgent,

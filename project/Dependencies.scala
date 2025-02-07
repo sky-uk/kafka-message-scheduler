@@ -82,6 +82,24 @@ object Dependencies {
     val test            = Seq(scalaCheck)
   }
 
+  object OpenTelemetry {
+    private lazy val version      = "1.45.0"
+    private lazy val agentVersion = "2.11.0"
+
+    lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version           % Runtime
+    lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % s"$version-alpha" % Runtime
+    lazy val sdkAutoconfigure   = "io.opentelemetry" % "opentelemetry-sdk-extension-autoconfigure" % version           % Runtime
+
+    lazy val javaAgent = "io.opentelemetry.javaagent" % "opentelemetry-javaagent" % agentVersion % Runtime
+  }
+
+  object Otel4s {
+    private lazy val version = "0.11.2"
+
+    lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
+    lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test
+  }
+
   object Vulcan {
     private lazy val version = "1.11.1"
 
@@ -92,6 +110,7 @@ object Dependencies {
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
+  val mouse            = "org.typelevel"              %% "mouse"              % "1.3.2"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
 
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.12" % Runtime
@@ -145,6 +164,13 @@ object Dependencies {
     Vulcan.core,
     Vulcan.generic,
     PureConfig.core,
-    PureConfig.catsEffect
+    PureConfig.catsEffect,
+    OpenTelemetry.exporterOtlp,
+    OpenTelemetry.exporterPrometheus,
+    OpenTelemetry.javaAgent,
+    OpenTelemetry.sdkAutoconfigure,
+    Otel4s.java,
+    Otel4s.testkit,
+    mouse
   )
 }

@@ -84,7 +84,7 @@ object Dependencies {
 
   object OpenTelemetry {
     private lazy val version      = "1.45.0"
-    private lazy val agentVersion = "2.11.0"
+    private lazy val agentVersion = "2.12.0"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version           % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % s"$version-alpha" % Runtime
@@ -125,12 +125,13 @@ object Dependencies {
   val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.18"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
-  val core: Seq[ModuleID] = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.allScala2 ++ Refined.base ++ Seq(
-    avro4s,
-    kafkaTopicLoader,
-    monix,
-    scalaLogging
-  )
+  val core: Seq[ModuleID] =
+    Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.allScala2 ++ Refined.base ++ Seq(
+      avro4s,
+      kafkaTopicLoader,
+      monix,
+      scalaLogging
+    )
 
   val runtime: Seq[ModuleID] = Seq(
     janino,

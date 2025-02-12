@@ -107,6 +107,19 @@ object Dependencies {
     val generic = "com.github.fd4s" %% "vulcan-generic" % version % Test
   }
 
+  object Chimney {
+    private lazy val version = "1.5.0"
+
+    lazy val chimney = "io.scalaland" %% "chimney" % version
+  }
+
+  object Circe {
+    private lazy val version = "0.14.10"
+
+    lazy val generic = "io.circe" %% "circe-generic" % version
+    lazy val parser  = "io.circe" %% "circe-parser"  % version
+  }
+
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
@@ -171,6 +184,9 @@ object Dependencies {
     OpenTelemetry.sdkAutoconfigure,
     Otel4s.java,
     Otel4s.testkit,
-    mouse
+    mouse,
+    Chimney.chimney,
+    Circe.generic,
+    Circe.parser
   )
 }

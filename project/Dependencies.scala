@@ -99,6 +99,9 @@ object Dependencies {
     lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
     lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test
   }
+  object TopicLoader {
+    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.1.0"
+  }
 
   object Vulcan {
     private lazy val version = "1.11.1"
@@ -171,6 +174,7 @@ object Dependencies {
     OpenTelemetry.sdkAutoconfigure,
     Otel4s.java,
     Otel4s.testkit,
-    mouse
+    mouse,
+    TopicLoader.topicLoader
   )
 }

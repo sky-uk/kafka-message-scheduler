@@ -62,3 +62,13 @@ final case class ReaderConfig(
     scheduleTopics: List[String],
     kafkaBrokers: String
 ) derives ConfigReader
+
+object ReaderConfig {
+  given readerConfigReader: ConfigReader[ReaderConfig] =
+    ConfigReader
+      .forProduct2[ReaderConfig, List[String], String]("scheduleTopics", "kafkaBrokers")(ReaderConfig.apply)
+      .ensure(
+        readerConfig => readerConfig.scheduleTopics.nonEmpty,
+        message = _ => "Schedule topics are empty"
+      )
+}

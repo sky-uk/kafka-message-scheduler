@@ -32,7 +32,7 @@ object SchedulePublisher {
                       }
         } yield ()
     }
-
+  
   def live[F[_] : Async : Parallel : LoggerFactory : Meter]: Reader[KafkaConfig, SchedulePublisher[F, Unit]] = Reader {
     config =>
       kafka[F](config)

@@ -37,5 +37,5 @@ object SchedulePublisher {
       config: KafkaConfig
   ): SchedulePublisher[F, Unit] =
     kafka[F](config)
-
+  
 }

@@ -25,7 +25,8 @@ object Metadata {
   }
 
   given Monoid[Metadata] = new Monoid[Metadata] {
-    override def empty: Metadata                             = Metadata.empty
+    override def empty: Metadata = Metadata.empty
+
     override def combine(x: Metadata, y: Metadata): Metadata = x.combine(y)
   }
 

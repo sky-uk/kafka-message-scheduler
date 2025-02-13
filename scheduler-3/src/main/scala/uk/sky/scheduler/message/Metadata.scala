@@ -35,6 +35,6 @@ object Metadata {
 
   given Eq[Metadata] = Eq.catsKernelEqForMap[CIString, String]
 
-   val expiredKey   = CIString("schedule:expired")
-   val expiredValue = "true"
+  val expiredKey   = CIString("schedule:expired")
+  val expiredValue = "true"
 }

@@ -8,6 +8,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.util.Generator.given
+import io.circe.generic.auto.*
 
 final class CirceSerdesSpec extends AnyWordSpec, ScalaCheckPropertyChecks, Matchers, EitherValues {
 

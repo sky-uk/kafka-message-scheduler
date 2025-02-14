@@ -13,11 +13,11 @@ import uk.sky.scheduler.util.ProducerRecordMatchers
 import java.nio.charset.StandardCharsets
 
 class ScheduleEventConverterSpec
-  extends AnyWordSpec,
-    Matchers,
-    ScalaCheckPropertyChecks,
-    ProducerRecordMatchers,
-    ScheduleEventConverter {
+    extends AnyWordSpec,
+      Matchers,
+      ScalaCheckPropertyChecks,
+      ProducerRecordMatchers,
+      ScheduleEventConverter {
 
   "toProducerRecord" should {
     "Convert a ScheduleEvent into a ProducerRecord" in forAll {

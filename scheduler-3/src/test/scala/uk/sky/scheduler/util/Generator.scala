@@ -10,14 +10,18 @@ import org.typelevel.ci.CIString
 import org.typelevel.ci.testing.arbitraries.*
 import uk.sky.scheduler.domain.*
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.kafka.avro.AvroSchedule
+import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.{Message, Metadata as MessageMetadata}
 import uk.sky.scheduler.syntax.all.*
 
 import java.time.Instant
 
 object Generator {
-  given Arbitrary[Metadata] = Arbitrary(Gen.resultOf(Metadata.apply))
-  given Arbitrary[Schedule] = Arbitrary(Gen.resultOf(Schedule.apply))
+  given Arbitrary[Metadata]     = Arbitrary(Gen.resultOf(Metadata.apply))
+  given Arbitrary[Schedule]     = Arbitrary(Gen.resultOf(Schedule.apply))
+  given Arbitrary[JsonSchedule] = Arbitrary(Gen.resultOf(JsonSchedule.apply))
+  given Arbitrary[AvroSchedule] = Arbitrary(Gen.resultOf(AvroSchedule.apply))
 
   given Arbitrary[MessageMetadata] = Arbitrary {
     for {

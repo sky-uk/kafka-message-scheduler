@@ -38,3 +38,4 @@ object SchedulePublisher {
       kafka[F](config)
   }
 }
+

@@ -23,11 +23,11 @@ given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
 
 def avroBinaryDeserializer[F[_] : Sync, V : Codec]: Resource[F, ValueDeserializer[F, Either[ScheduleError, V]]] =
   Codec[V].schema match {
-    case Left(error) => Resource.raiseError(error.throwable)
+    case Left(error)   => Resource.raiseError(error.throwable)
     case Right(schema) => Resource.pure(avroBinaryDeserializer(schema))
   }
 
-def avroBinaryDeserializer[F[_] : Sync, V: Codec](schema: Schema): ValueDeserializer[F, Either[ScheduleError, V]] =
+def avroBinaryDeserializer[F[_] : Sync, V : Codec](schema: Schema): ValueDeserializer[F, Either[ScheduleError, V]] =
   Deserializer.lift[F, Either[ScheduleError, V]](bytes =>
     Sync[F].delay(
       Codec

@@ -7,6 +7,12 @@ import org.apache.avro.Schema
 enum ScheduleError(val message: String, val cause: Throwable) extends Throwable(message, cause) {
   case InvalidAvroError(schema: Schema, error: Throwable)
       extends ScheduleError(show"Avro message did not conform to Schema: ${schema.getFullName}: $schema", error)
+
+  case NotJsonError(payload: String, error: Throwable) extends ScheduleError(s"'$payload' was not valid JSON", error)
+
+  case InvalidJsonError(payload: String, error: Throwable)
+      extends ScheduleError(s"JSON '$payload' did not conform to Schema", error)
+
 }
 
 object ScheduleError {

@@ -59,16 +59,32 @@ final case class SchedulerConfig(
 ) derives ConfigReader
 
 final case class ReaderConfig(
+    @deprecated("Remove in favour of 'topics'")
     scheduleTopics: List[String],
+    topics: TopicConfig,
     kafkaBrokers: String
 ) derives ConfigReader
 
-object ReaderConfig {
-  given readerConfigReader: ConfigReader[ReaderConfig] =
+//object ReaderConfig {
+//  given readerConfigReader: ConfigReader[ReaderConfig] =
+//    ConfigReader
+//      .forProduct3[ReaderConfig, List[String], TopicConfig, String]("scheduleTopics", "topics", "kafkaBrokers")(
+//        ReaderConfig.apply
+//      )
+//      .ensure(
+//        readerConfig => readerConfig.scheduleTopics.nonEmpty,
+//        message = _ => "Schedule topics are empty"
+//      )
+//}
+
+final case class TopicConfig(avro: List[String], json: List[String])
+
+object TopicConfig {
+  given topicConfigReader: ConfigReader[TopicConfig] =
     ConfigReader
-      .forProduct2[ReaderConfig, List[String], String]("scheduleTopics", "kafkaBrokers")(ReaderConfig.apply)
+      .forProduct2[TopicConfig, List[String], List[String]]("avro", "json")(TopicConfig.apply)
       .ensure(
-        readerConfig => readerConfig.scheduleTopics.nonEmpty,
-        message = _ => "Schedule topics are empty"
+        config => config.avro.nonEmpty || config.json.nonEmpty,
+        _ => "Both Avro and JSON topics were empty"
       )
 }

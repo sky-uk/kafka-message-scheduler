@@ -34,6 +34,13 @@ object Dependencies {
     lazy val test                   = Seq(testKit, scalatest)
   }
 
+  object Circe {
+    private lazy val version = "0.14.10"
+
+    lazy val generic = "io.circe" %% "circe-generic" % version
+    lazy val parser = "io.circe" %% "circe-parser" % version
+  }
+
   object Fs2 {
     private lazy val version      = "3.11.0"
     private lazy val kafkaVersion = "3.6.0"
@@ -99,6 +106,7 @@ object Dependencies {
     lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
     lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test
   }
+
   object TopicLoader {
     lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.1.0"
   }
@@ -150,6 +158,7 @@ object Dependencies {
     scalaTest,
     scalaTestPlusMockito
   )
+
   val scheduler: Seq[ModuleID] = core ++ runtime ++ test
 
   val scheduler3: Seq[ModuleID] = Seq(
@@ -161,6 +170,8 @@ object Dependencies {
     Cats.effectTestkitScalatest,
     Cats.log4cats,
     Cats.log4catsSlf4j,
+    Circe.generic,
+    Circe.parser,
     Fs2.core,
     Fs2.kafka,
     Monocle.core,

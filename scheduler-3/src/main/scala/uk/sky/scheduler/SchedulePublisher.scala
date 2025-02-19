@@ -31,9 +31,8 @@ object SchedulePublisher {
     }
 
   def live[F[_] : Async, Parallel, LoggerFactory, Meter](
-                                                             config: KafkaConfig
-                                                           ): SchedulePublisher[F, Unit] =
+      config: KafkaConfig
+  ): SchedulePublisher[F, Unit] =
     kafka[F](config)
 
 }
-

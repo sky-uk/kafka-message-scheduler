@@ -107,7 +107,15 @@ object Dependencies {
     val generic = "com.github.fd4s" %% "vulcan-generic" % version % Test
   }
 
+  object Circe {
+    private lazy val version = "0.14.10"
+
+    lazy val generic = "io.circe" %% "circe-generic" % version
+    lazy val parser  = "io.circe" %% "circe-parser"  % version
+  }
+
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
+  val chimney          = "io.scalaland"               %% "chimney"            % "1.5.0"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val mouse            = "org.typelevel"              %% "mouse"              % "1.3.2"
@@ -125,12 +133,13 @@ object Dependencies {
   val scalaTest            = "org.scalatest"           %% "scalatest"                   % "3.2.18"   % Test
   val scalaTestPlusMockito = "org.scalatestplus"       %% "mockito-3-12"                % "3.2.10.0" % Test
 
-  val core: Seq[ModuleID] = Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.allScala2 ++ Refined.base ++ Seq(
-    avro4s,
-    kafkaTopicLoader,
-    monix,
-    scalaLogging
-  )
+  val core: Seq[ModuleID] =
+    Akka.base ++ Cats.base ++ Kafka.base ++ Kamon.all ++ PureConfig.allScala2 ++ Refined.base ++ Seq(
+      avro4s,
+      kafkaTopicLoader,
+      monix,
+      scalaLogging
+    )
 
   val runtime: Seq[ModuleID] = Seq(
     janino,
@@ -171,6 +180,9 @@ object Dependencies {
     OpenTelemetry.sdkAutoconfigure,
     Otel4s.java,
     Otel4s.testkit,
-    mouse
+    mouse,
+    chimney,
+    Circe.generic,
+    Circe.parser
   )
 }

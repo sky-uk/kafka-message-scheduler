@@ -115,7 +115,7 @@ object Dependencies {
   }
 
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
-  val chimney          = "io.scalaland"               %% "chimney"            % "1.5.0"
+  val chimney          = "io.scalaland"               %% "chimney"            % "1.7.3"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val mouse            = "org.typelevel"              %% "mouse"              % "1.3.2"

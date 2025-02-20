@@ -30,10 +30,12 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : {Async, Parallel, LoggerFactory, Meter}](config: Config): Resource[F, Scheduler[F, Unit]] =
-    for {
-      eventSubscriber   <- Resource.pure(??? : EventSubscriber[F])
-      scheduleQueue     <- Resource.pure(??? : ScheduleQueue[F])
-      schedulePublisher = SchedulePublisher.kafka[F](config.kafka)
-    } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
+  def live[F[_] : Async : Parallel : LoggerFactory : Meter]: Reader[Config, Resource[F, Scheduler[F, Unit]]] = Reader {
+    config =>
+      for {
+        eventSubscriber  <- Resource.pure(??? : EventSubscriber[F])
+        scheduleQueue    <- Resource.pure(??? : ScheduleQueue[F])
+        schedulePublisher = SchedulePublisher.live[F](config.kafka)
+      } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
   }
+}

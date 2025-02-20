@@ -18,7 +18,7 @@ class Scheduler[F[_] : Concurrent, O](
     scheduleQueue: ScheduleQueue[F],
     schedulePublisher: SchedulePublisher[F, O]
 ) {
-  private val scheduleEvents = eventSubscriber.messages.evalTapChunk { case Message(key, source, value, metadata) =>
+  private val scheduleEvents = eventSubscriber.messages.evalTapChunk { case Message(key, _, value, metadata) =>
     value match {
       case Left(_)               => scheduleQueue.cancel(key)
       case Right(None)           => Concurrent[F].unlessA(metadata.isExpired)(scheduleQueue.cancel(key))

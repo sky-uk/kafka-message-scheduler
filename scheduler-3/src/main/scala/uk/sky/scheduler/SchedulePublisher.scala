@@ -10,6 +10,7 @@ import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.config.KafkaConfig
 import uk.sky.scheduler.converters.scheduleEvent.*
 import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.kafka.*
 
 trait SchedulePublisher[F[_], O] {
   def publish: Pipe[F, ScheduleEvent, O]
@@ -36,4 +37,5 @@ object SchedulePublisher {
       config: KafkaConfig
   ): SchedulePublisher[F, Unit] =
     kafka[F](config)
+
 }

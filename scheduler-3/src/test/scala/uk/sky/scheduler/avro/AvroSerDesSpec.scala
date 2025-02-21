@@ -37,7 +37,7 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
       given Codec[TestData] = Codec.derive[TestData]
 
       for {
-        serialized <- avroBinarySerializer[IO, TestData].serialize("test", Headers.empty, testData)
+        serialized   <- avroBinarySerializer[IO, TestData].serialize("test", Headers.empty, testData)
         deserialized <- avroBinaryDeserializer[IO, TestData].use(_.deserialize("test", Headers.empty, serialized))
       } yield deserialized.value shouldBe testData
     }
@@ -46,14 +46,14 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
   "avroBinaryDeserializer" should {
     "deserialize a Schedule with headers" in {
       for {
-        avroBinary <- Codec.toBinary[AvroSchedule](scheduleWithHeaders).liftAvro[IO]
+        avroBinary   <- Codec.toBinary[AvroSchedule](scheduleWithHeaders).liftAvro[IO]
         deserialized <- avroBinaryDeserializer[IO, AvroSchedule].use(_.deserialize("test", Headers.empty, avroBinary))
       } yield deserialized.value should equalSchedule(scheduleWithHeaders)
     }
 
     "deserialize a Schedule without headers" in {
       for {
-        avroBinary <- Codec.toBinary[AvroSchedule](scheduleWithoutHeaders).liftAvro[IO]
+        avroBinary   <- Codec.toBinary[AvroSchedule](scheduleWithoutHeaders).liftAvro[IO]
         deserialized <- avroBinaryDeserializer[IO, AvroSchedule].use(_.deserialize("test", Headers.empty, avroBinary))
       } yield deserialized.value should equalSchedule(scheduleWithoutHeaders)
     }

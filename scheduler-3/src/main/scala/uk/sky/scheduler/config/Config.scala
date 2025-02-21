@@ -18,6 +18,7 @@ object Config {
 }
 
 final case class KafkaConfig(
+    topics: TopicConfig,
     consumer: ConsumerProducerConfig,
     producer: ConsumerProducerConfig,
     commit: CommitConfig
@@ -62,3 +63,15 @@ final case class ReaderConfig(
     scheduleTopics: List[String],
     kafkaBrokers: String
 ) derives ConfigReader
+
+final case class TopicConfig(avro: List[String], json: List[String])
+
+object TopicConfig {
+  given topicConfigReader: ConfigReader[TopicConfig] =
+    ConfigReader
+      .forProduct2[TopicConfig, List[String], List[String]]("avro", "json")(TopicConfig.apply)
+      .ensure(
+        config => config.avro.nonEmpty || config.json.nonEmpty,
+        message = _ => "both Avro and JSON topics were empty"
+      )
+}

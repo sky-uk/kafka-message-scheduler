@@ -58,5 +58,4 @@ class ScheduleEventConverterSpec
         scheduleEvent.toTombstone should equalProducerRecord(tombstone)
     }
   }
-
 }

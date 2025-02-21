@@ -39,6 +39,7 @@ object Dependencies {
     private lazy val kafkaVersion = "3.6.0"
 
     lazy val core  = "co.fs2"          %% "fs2-core"  % version
+    lazy val io    = "co.fs2"          %% "fs2-io"    % version
     lazy val kafka = "com.github.fd4s" %% "fs2-kafka" % kafkaVersion
   }
 
@@ -117,6 +118,7 @@ object Dependencies {
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
   val chimney          = "io.scalaland"               %% "chimney"            % "1.5.0"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
+  val fs2TopicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.1.0"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val mouse            = "org.typelevel"              %% "mouse"              % "1.3.2"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
@@ -169,6 +171,7 @@ object Dependencies {
     Cats.log4catsSlf4j,
     Fs2.core,
     Fs2.kafka,
+    Fs2.io,
     Monocle.core,
     Vulcan.core,
     Vulcan.generic,
@@ -183,6 +186,7 @@ object Dependencies {
     mouse,
     chimney,
     Circe.generic,
-    Circe.parser
+    Circe.parser,
+    fs2TopicLoader
   )
 }

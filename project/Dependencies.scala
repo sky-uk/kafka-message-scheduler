@@ -115,13 +115,10 @@ object Dependencies {
     lazy val parser  = "io.circe" %% "circe-parser"  % version
   }
 
-  object TopicLoader {
-    lazy val topicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.1.0"
-  }
-
   val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
   val chimney          = "io.scalaland"               %% "chimney"            % "1.5.0"
   val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
+  val fs2TopicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.1.0"
   val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
   val mouse            = "org.typelevel"              %% "mouse"              % "1.3.2"
   val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
@@ -190,6 +187,6 @@ object Dependencies {
     chimney,
     Circe.generic,
     Circe.parser,
-    TopicLoader.topicLoader
+    fs2TopicLoader
   )
 }

@@ -1,8 +1,11 @@
 package uk.sky.scheduler
 
+import cats.Parallel
 import cats.data.Reader
 import cats.effect.*
 import fs2.Stream
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.message.Message
@@ -27,12 +30,12 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Concurrent]: Reader[Config, Resource[F, Scheduler[F, Unit]]] = Reader { config =>
-    for {
-      eventSubscriber   <- Resource.pure(??? : EventSubscriber[F])
-      scheduleQueue     <- Resource.pure(??? : ScheduleQueue[F])
-      schedulePublisher <- Resource.pure(??? : SchedulePublisher[F, Unit])
-    } yield Scheduler(eventSubscriber, scheduleQueue, schedulePublisher)
+  def live[F[_] : Async : Parallel : LoggerFactory : Meter]: Reader[Config, Resource[F, Scheduler[F, Unit]]] = Reader {
+    config =>
+      for {
+        eventSubscriber  <- Resource.pure(??? : EventSubscriber[F])
+        scheduleQueue    <- Resource.pure(??? : ScheduleQueue[F])
+        schedulePublisher = SchedulePublisher.live[F](config.kafka)
+      } yield Scheduler[F, Unit](eventSubscriber, scheduleQueue, schedulePublisher)
   }
-
 }

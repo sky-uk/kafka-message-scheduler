@@ -1,10 +1,8 @@
 package uk.sky.scheduler
 
-import cats.Parallel
 import cats.effect.*
 import cats.effect.kernel.Resource.ExitCase
 import cats.syntax.all.*
-import fs2.Stream
 import org.typelevel
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
@@ -15,12 +13,6 @@ import pureconfig.module.catseffect.syntax.*
 import uk.sky.scheduler.config.Config
 
 object Main extends IOApp.Simple {
-
-  def stream[F[_] : Async : Parallel : LoggerFactory : Meter](config: Config): Stream[F, Unit] =
-    for {
-      scheduler <- Stream.resource(Scheduler.live[F](config))
-      message   <- scheduler.stream
-    } yield message
 
   override def run: IO[Unit] = for {
     given LoggerFactory[IO] <- IO(Slf4jFactory.create[IO])

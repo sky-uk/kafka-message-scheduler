@@ -65,6 +65,19 @@ lazy val scheduler3 = (project in file("scheduler-3"))
     scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )
 
+lazy val it = (project in file("it"))
+  .enablePlugins(DockerComposePlugin)
+  .settings(scala3Settings)
+  .settings {
+    Seq(
+      libraryDependencies ++= Dependencies.it,
+      Test / fork := true,
+      dockerImageCreationTask := (scheduler3 / Docker / publishLocal).value,
+      composeFile             := "it/docker/docker-compose.yml"
+    )
+  }
+  .dependsOn(scheduler3 % "compile->compile;test->test")
+
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 
 lazy val avro = (project in file("avro"))

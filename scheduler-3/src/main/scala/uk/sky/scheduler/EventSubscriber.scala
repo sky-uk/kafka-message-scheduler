@@ -138,8 +138,8 @@ object EventSubscriber {
   }
 
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
-      config: KafkaConfig,
-      loaded: Deferred[F, Unit]
-  ): F[EventSubscriber[F]] =
-    kafka[F](config, loaded).flatMap(observed)
+      loaded: Deferred[F, Unit],
+      config: KafkaConfig
+  ): F[EventSubscriber[F]] = kafka[F](config, loaded).flatMap(observed)
+
 }

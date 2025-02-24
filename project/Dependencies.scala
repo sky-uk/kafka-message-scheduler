@@ -15,7 +15,7 @@ object Dependencies {
   }
 
   object Cats {
-    private val version           = "2.7.0"
+    private val version           = "2.13.0"
     private val catsEffectVersion = "3.5.7"
     private val log4catsVersion   = "2.7.0"
 

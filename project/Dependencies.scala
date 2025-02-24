@@ -85,7 +85,7 @@ object Dependencies {
 
   object OpenTelemetry {
     private lazy val version      = "1.45.0"
-    private lazy val agentVersion = "2.11.0"
+    private lazy val agentVersion = "2.13.1"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version           % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % s"$version-alpha" % Runtime

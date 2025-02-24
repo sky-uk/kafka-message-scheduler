@@ -26,7 +26,7 @@ val scala2Settings = Seq(
 )
 
 val scala3Settings = Seq(
-  scalaVersion             := "3.6.2",
+  scalaVersion             := "3.6.3",
   tpolecatScalacOptions ++= Set(
     ScalacOptions.other("-no-indent"),
     ScalacOptions.other("-old-syntax")

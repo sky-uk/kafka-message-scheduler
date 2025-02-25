@@ -73,7 +73,9 @@ lazy val it = (project in file("it"))
       libraryDependencies ++= Dependencies.it,
       Test / fork := true,
       dockerImageCreationTask := (scheduler3 / Docker / publishLocal).value,
-      composeFile             := "it/docker/docker-compose.yml"
+      composeFile             := "it/docker/docker-compose.yml",
+      scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
+      scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
     )
   }
   .dependsOn(scheduler3 % "compile->compile;test->test")

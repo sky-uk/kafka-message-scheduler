@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  kafka-message-scheduler:
+    image: kafka-message-scheduler:latest<localBuild>
+    restart: "on-failure"
+    ports:
+      - "9401:9401"
+    environment:
+      OTEL_METRICS_EXPORTER: prometheus
+      OTEL_EXPORTER_PROMETHEUS_PORT: 9401
+      OTEL_SERVICE_NAME: kafka-message-scheduler
+      OTEL_INSTRUMENTATION_GRPC_ENABLED: 'false'
+      OTEL_TRACES_EXPORTER: 'none'
+      OTEL_LOGS_EXPORTER: 'none'
+      OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: 'grpc'
+      BOOTSTRAP_SERVERS: 'kafka:9092'
+      SCHEDULE_TOPICS: 'avro-schedules'
+      JSON_SCHEDULE_TOPICS: 'json-schedules'
+      KMS_LOGGING_LOGSTASH: 'true'
+      KMS_LOGGING_LEVEL: INFO
+      KMS_ROOT_LOGGING_LEVEL: INFO
+    depends_on:
+      kafka:
+        condition: service_started
+
+  kafka:
+    hostname: kafka
+    image: bitnami/kafka
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,OUTSIDE://:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://:9092,OUTSIDE://localhost:9094
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+  # http://localhost:9090/ - Uncomment to expose Prometheus for local metrics testing.
+  #  prometheus:
+  #    image: prom/prometheus
+  #    command: --config.file=/etc/prometheus/prometheus.yml
+  #    volumes:
+  #      - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml
+  #    ports:
+  #      - "9090:9090"
+
+
+  # http://localhost:8080/ - Uncomment to expose AKHQ for viewing Kafka topic contents.
+#  akhq:
+#    image: tchiotludo/akhq
+#    depends_on:
+#      - kafka
+#    ports:
+#      - "8080:8080"
+#    volumes:
+#      - ${PWD}/docker/akhq.yml:/app/application.yml

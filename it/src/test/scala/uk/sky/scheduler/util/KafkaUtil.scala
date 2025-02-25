@@ -3,8 +3,7 @@ package uk.sky.scheduler.util
 import cats.effect.Async
 import cats.effect.syntax.all.*
 import cats.syntax.all.*
-import fs2.{kafka, *}
-import fs2.kafka.KafkaProducer
+import fs2.*
 import fs2.kafka.*
 import org.apache.kafka.common.TopicPartition
 import org.scalatest.exceptions.TestFailedException

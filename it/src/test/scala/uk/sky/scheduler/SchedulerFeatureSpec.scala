@@ -8,7 +8,6 @@ import org.scalatest.{LoneElement, OptionValues}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
-import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
 import scala.concurrent.ExecutionContext
@@ -30,7 +29,7 @@ final class SchedulerFeatureSpec
   override given patienceConfig: PatienceConfig     = PatienceConfig(timeout)
   override val ResourceTimeout: Duration            = timeout
 
-  override def resource: Resource[IO, KafkaUtil[IO]] = Resource.pure(KafkaUtil[IO](kafkaPort, timeout))
+  override val resource = Resource.pure(KafkaUtil[IO](kafkaPort, timeout))
 
   "scheduler" should {
     "schedule a Json event for the specified time" in { kafkaUtil =>

@@ -39,10 +39,10 @@ object KafkaUtil {
   def apply[F[_] : Async](kafkaPort: Int, timeout: FiniteDuration): KafkaUtil[F] = new KafkaUtil[F] {
 
     override def produce[V](topic: String, keyValues: (String, Option[V])*)(using ValueSerializer[F, V]): F[Unit] = {
-      val producerSettings = ProducerSettings[F, String, V]
+      val producerSettings = ProducerSettings[F, String, Option[V]]
         .withBootstrapServers(s"localhost:$kafkaPort")
 
-      val records: Chunk[ProducerRecord[String, Option[V]]] = Chunk.from(keyValues).map(ProducerRecord(topic, _, _))
+      val records = Chunk.from(keyValues).map(ProducerRecord(topic, _, _))
 
       KafkaProducer
         .stream(producerSettings)

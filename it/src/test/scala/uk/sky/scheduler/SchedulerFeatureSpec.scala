@@ -3,13 +3,14 @@ package uk.sky.scheduler
 import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
-import org.scalatest.wordspec.FixtureAsyncWordSpec
-import org.scalatest.{LoneElement, OptionValues}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
+import org.scalatest.wordspec.FixtureAsyncWordSpec
+import org.scalatest.{LoneElement, OptionValues}
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
+import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
 

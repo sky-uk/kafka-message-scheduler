@@ -62,9 +62,18 @@ lazy val scheduler3 = (project in file("scheduler-3"))
     libraryDependencies ++= Dependencies.scheduler3,
     buildInfoSettings("uk.sky"),
     scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
-    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf",
-    dockerSettings("kafka-message-scheduler-3"),
+    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )
+  .settings{
+    Seq(
+      dockerRepository      := sys.env.get("DOCKER_REPOSITORY"),
+      dockerBaseImage       := "eclipse-temurin:21-jre-jammy",
+      Docker / packageName  := "kafka-message-scheduler",
+      dockerUpdateLatest    := true,
+      dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64")
+    )
+  }
+
 
 lazy val it = (project in file("it"))
   .enablePlugins(DockerComposePlugin)

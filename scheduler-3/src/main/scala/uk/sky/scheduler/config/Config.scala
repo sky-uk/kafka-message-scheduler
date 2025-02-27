@@ -9,7 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 
 final case class Config(
     kafka: KafkaConfig,
-    scheduler: SchedulerConfig
+    reader: ReaderConfig
 ) derives ConfigReader
 
 object Config {
@@ -53,10 +53,6 @@ final case class ConsumerProducerConfig(
 final case class CommitConfig(
     maxBatch: Int,
     maxInterval: FiniteDuration
-) derives ConfigReader
-
-final case class SchedulerConfig(
-    reader: ReaderConfig
 ) derives ConfigReader
 
 final case class ReaderConfig(

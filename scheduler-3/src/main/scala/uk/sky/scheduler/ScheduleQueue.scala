@@ -62,7 +62,7 @@ object ScheduleQueue {
         _          <- previous.fold(Async[F].unit)(_.cancel) // Cancel the previous Schedule if it exists
         now        <- Async[F].epochMilli
         delay      <- Either
-                        .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now).milliseconds) // todo: refactor
+                        .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now).milliseconds)
                         .getOrElse(Long.MaxValue.nanos)
                         .pure
         storeLock  <- Deferred[F, Unit]

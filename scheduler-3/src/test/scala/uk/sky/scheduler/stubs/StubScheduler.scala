@@ -12,12 +12,12 @@ import uk.sky.scheduler.message.Message
 import uk.sky.scheduler.util.testSyntax.*
 
 final class StubScheduler[F[_] : Async : Parallel](
-                                                    events: Queue[F, TestEvent],
-                                                    input: Queue[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]],
-                                                    eventSubscriber: EventSubscriber[F],
-                                                    scheduleQueue: ScheduleQueue[F],
-                                                    schedulePublisher: SchedulePublisher[F, ScheduleEvent]
-                                                  ) extends Scheduler[F, ScheduleEvent](eventSubscriber, scheduleQueue, schedulePublisher) {
+    events: Queue[F, TestEvent],
+    input: Queue[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]],
+    eventSubscriber: EventSubscriber[F],
+    scheduleQueue: ScheduleQueue[F],
+    schedulePublisher: SchedulePublisher[F, ScheduleEvent]
+) extends Scheduler[F, ScheduleEvent](eventSubscriber, scheduleQueue, schedulePublisher) {
   def runStreamInBackground: Resource[F, Fiber[F, Throwable, Unit]] =
     Resource.make {
       stream
@@ -28,8 +28,8 @@ final class StubScheduler[F[_] : Async : Parallel](
     }(_.cancel)
 
   def produce(
-               messages: Message[Either[ScheduleError, Option[ScheduleEvent]]]*
-             ): F[Unit] =
+      messages: Message[Either[ScheduleError, Option[ScheduleEvent]]]*
+  ): F[Unit] =
     messages
       .traverse(input.offer)
       .void

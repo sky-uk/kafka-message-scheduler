@@ -10,8 +10,8 @@ import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.message.Message
 
 final case class StubEventSubscriber[F[_] : Async](
-                                                    input: Queue[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]]
-                                                  ) extends EventSubscriber[F] {
+    input: Queue[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]]
+) extends EventSubscriber[F] {
   override def messages: Stream[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]] =
     Stream.fromQueueUnterminated(input)
 }

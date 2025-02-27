@@ -51,7 +51,7 @@ lazy val scheduler = (project in file("scheduler"))
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
     javaAgents += "io.kamon" % "kanela-agent" % "1.0.18",
     buildInfoSettings("com.sky"),
-    dockerSettings,
+    dockerSettings("kafka-message-scheduler"),
     releaseSettings
   )
 
@@ -62,7 +62,8 @@ lazy val scheduler3 = (project in file("scheduler-3"))
     libraryDependencies ++= Dependencies.scheduler3,
     buildInfoSettings("uk.sky"),
     scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
-    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
+    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf",
+    dockerSettings("kafka-message-scheduler-3"),
   )
 
 lazy val it = (project in file("it"))

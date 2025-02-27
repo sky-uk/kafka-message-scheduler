@@ -8,13 +8,13 @@ import scala.sys.process.Process
 
 object DockerPublish {
 
-  lazy val dockerSettings = imageSettings ++ dockerBuildxSettings
+  def dockerSettings(imageName: String) = imageSettings(imageName) ++ dockerBuildxSettings
 
   lazy val ensureDockerBuildx    = taskKey[Unit]("Ensure that docker buildx configuration exists")
   lazy val dockerBuildWithBuildx = taskKey[Unit]("Build docker images using buildx")
 
-  private lazy val imageSettings = Seq(
-    Docker / packageName := "kafka-message-scheduler",
+  private def imageSettings(imageName: String) = Seq(
+    Docker / packageName := imageName,
     dockerBaseImage      := "alpine:3.17.2",
     dockerRepository     := Some("skyuk"),
     dockerLabels         := Map("maintainer" -> "Sky"),

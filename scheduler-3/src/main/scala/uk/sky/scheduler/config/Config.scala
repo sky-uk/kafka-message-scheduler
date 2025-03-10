@@ -1,5 +1,6 @@
 package uk.sky.scheduler.config
 
+import cats.Show
 import cats.effect.{Resource, Sync}
 import fs2.kafka.*
 import pureconfig.ConfigReader
@@ -8,13 +9,18 @@ import uk.sky.BuildInfo
 import scala.concurrent.duration.FiniteDuration
 
 final case class Config(
-    kafka: KafkaConfig,
-    reader: ReaderConfig
+    kafka: KafkaConfig
 ) derives ConfigReader
 
 object Config {
   private[config] final case class Metadata(appName: String, version: String)
   val metadata: Metadata = Metadata(appName = BuildInfo.name, version = BuildInfo.version)
+
+  given configShow: Show[Config] = Show.show { c =>
+    s"Kafka Config: Avro Topics [${c.kafka.topics.avro
+        .mkString(",")}]; Json Topics [${c.kafka.topics.json.mkString(",")}]; Broker ${c.kafka.consumer.bootstrapServers}"
+  }
+
 }
 
 final case class KafkaConfig(
@@ -53,11 +59,6 @@ final case class ConsumerProducerConfig(
 final case class CommitConfig(
     maxBatch: Int,
     maxInterval: FiniteDuration
-) derives ConfigReader
-
-final case class ReaderConfig(
-    scheduleTopics: List[String],
-    kafkaBrokers: String
 ) derives ConfigReader
 
 final case class TopicConfig(avro: List[String], json: List[String])

@@ -69,21 +69,21 @@ services:
 
 
   # http://localhost:8080/ - Uncomment to expose AKHQ for viewing Kafka topic contents.
-  akhq:
-    image: tchiotludo/akhq:0.20.0
-    depends_on:
-      - kafka
-    ports:
-      - "8080:8080"
-    volumes:
-      - ${PWD}/docker/akhq.yml:/app/application.yml
-    environment:
-      AKHQ_CONFIGURATION: |
-        akhq:
-          connections:
-              map:
-                properties:
-                  bootstrap.servers: "kafka:9092"
-                schema-registry:
-                  url: "http://schema-registry:${SCHEMA_REGISTRY_PORT}"
-                  type: "confluent"
+#  akhq:
+#    image: tchiotludo/akhq:0.20.0
+#    depends_on:
+#      - kafka
+#    ports:
+#      - "8080:8080"
+#    volumes:
+#      - ${PWD}/docker/akhq.yml:/app/application.yml
+#    environment:
+#      AKHQ_CONFIGURATION: |
+#        akhq:
+#          connections:
+#              map:
+#                properties:
+#                  bootstrap.servers: "kafka:9092"
+#                schema-registry:
+#                  url: "http://schema-registry:${SCHEMA_REGISTRY_PORT}"
+#                  type: "confluent"

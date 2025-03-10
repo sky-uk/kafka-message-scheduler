@@ -7,6 +7,7 @@ import uk.sky.scheduler.circe.scheduleEncoder
 import uk.sky.scheduler.converters.base64.*
 import uk.sky.scheduler.kafka.avro.{avroBinarySerializer, avroScheduleCodec, AvroSchedule}
 import uk.sky.scheduler.kafka.json.{jsonSerializer, JsonSchedule}
+
 import java.nio.charset.StandardCharsets
 
 trait ScheduleHelpers {

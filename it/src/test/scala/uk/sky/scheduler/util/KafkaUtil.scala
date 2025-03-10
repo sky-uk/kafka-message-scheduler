@@ -87,7 +87,6 @@ object KafkaUtil {
       KafkaConsumer
         .stream(consumerSettings)
         .evalTap { consumer =>
-          // Assign to offsets n - 1
           for {
             tps        <- consumer.partitionsFor(topic).map(_.map(pi => TopicPartition(pi.topic, pi.partition)).toSet)
             endOffsets <- consumer.endOffsets(tps)

@@ -59,6 +59,14 @@ object Dependencies {
     val all             = Seq(core, akka, prometheus)
   }
 
+  object Logback {
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.15" % Runtime
+  }
+
+  object Logstash {
+    lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.0" % Runtime
+  }
+
   object Monocle {
     lazy val core = "dev.optics" %% "monocle-core" % "3.3.0"
   }
@@ -163,37 +171,40 @@ object Dependencies {
   val scheduler3: Seq[ModuleID] = Seq(
     Cats.caseInsensitive,
     Cats.caseInsensitiveTesting,
+    Cats.core,
     Cats.effect,
     Cats.effectTestKit,
     Cats.effectTesting,
     Cats.effectTestkitScalatest,
     Cats.log4cats,
     Cats.log4catsSlf4j,
-    Fs2.core,
-    Fs2.kafka,
-    Fs2.io,
-    Monocle.core,
-    Vulcan.core,
-    Vulcan.generic,
-    PureConfig.core,
-    PureConfig.catsEffect,
-    OpenTelemetry.exporterOtlp,
-    OpenTelemetry.exporterPrometheus,
-    OpenTelemetry.javaAgent,
-    OpenTelemetry.sdkAutoconfigure,
-    Otel4s.java,
-    Otel4s.testkit,
-    mouse,
+    Cats.testKit,
     chimney,
     Circe.generic,
     Circe.parser,
-    fs2TopicLoader
+    Fs2.core,
+    Fs2.kafka,
+    Fs2.io,
+    fs2TopicLoader,
+    Logback.classic,
+    Logstash.logbackEncoder,
+    Monocle.core,
+    mouse,
+    Vulcan.core,
+    Vulcan.generic,
+    PureConfig.catsEffect,
+    PureConfig.core,
+    OpenTelemetry.exporterOtlp,
+    OpenTelemetry.exporterPrometheus,
+    OpenTelemetry.sdkAutoconfigure,
+    Otel4s.java,
+    Otel4s.testkit
   )
 
   val it: Seq[ModuleID] = Seq(
-    Cats.core,
     Cats.effect,
     Cats.effectTesting,
+    Cats.core,
     Circe.generic,
     Circe.parser,
     Fs2.core,

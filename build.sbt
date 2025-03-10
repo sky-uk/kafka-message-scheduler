@@ -58,6 +58,8 @@ lazy val scheduler = (project in file("scheduler"))
 lazy val scheduler3 = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
   .settings(scala3Settings)
+  .settings(javaOptions += "-Dotel.java.global-autoconfigure.enabled=true")
+  .settings(javaAgents += Dependencies.OpenTelemetry.javaAgent)
   .settings(
     libraryDependencies ++= Dependencies.scheduler3,
     buildInfoSettings("uk.sky"),

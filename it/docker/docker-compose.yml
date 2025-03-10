@@ -34,41 +34,23 @@ services:
     ports:
       - "9092:9092"
       - "9094:9094"
-    depends_on:
-      - zookeeper
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
 
-#  kafka:
-#    hostname: kafka
-#    image: bitnami/kafka
+#  http://localhost:9090/ - Uncomment to expose Prometheus for local metrics testing.
+#  prometheus:
+#    image: prom/prometheus
+#    command: --config.file=/etc/prometheus/prometheus.yml
+#    volumes:
+#      - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml
 #    ports:
-#      - "9092:9092"
-#      - "9094:9094"
-#    environment:
-#      KAFKA_CFG_NODE_ID: 0
-#      KAFKA_CFG_PROCESS_ROLES: controller,broker
-#      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
-#      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,OUTSIDE://:9094
-#      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://:9092,OUTSIDE://localhost:9094
-#      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
-#      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-#      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
-  # http://localhost:9090/ - Uncomment to expose Prometheus for local metrics testing.
-  #  prometheus:
-  #    image: prom/prometheus
-  #    command: --config.file=/etc/prometheus/prometheus.yml
-  #    volumes:
-  #      - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml
-  #    ports:
-  #      - "9090:9090"
+#      - "9090:9090"
 
 
-  # http://localhost:8080/ - Uncomment to expose AKHQ for viewing Kafka topic contents.
+# http://localhost:8080/ - Uncomment to expose AKHQ for viewing Kafka topic contents.
 #  akhq:
 #    image: tchiotludo/akhq:0.20.0
 #    depends_on:

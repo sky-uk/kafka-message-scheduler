@@ -64,9 +64,9 @@ lazy val scheduler3 = (project in file("scheduler-3"))
     libraryDependencies ++= Dependencies.scheduler3,
     buildInfoSettings("uk.sky"),
     scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
-    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf",
+    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )
-  .settings{
+  .settings {
     Seq(
       dockerRepository      := sys.env.get("DOCKER_REPOSITORY"),
       dockerBaseImage       := "eclipse-temurin:21-jre-jammy",
@@ -82,11 +82,11 @@ lazy val it = (project in file("it"))
   .settings {
     Seq(
       libraryDependencies ++= Dependencies.it,
-      Test / fork := true,
+      Test / fork             := true,
       dockerImageCreationTask := (scheduler3 / Docker / publishLocal).value,
       composeFile             := "it/docker/docker-compose.yml",
-      scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
-      scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
+      scalafixConfig          := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
+      scalafmtConfig          := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
     )
   }
   .dependsOn(scheduler3 % "compile->compile;test->test")

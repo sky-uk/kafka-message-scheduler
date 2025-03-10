@@ -6,8 +6,6 @@ import cats.effect.Async
 import cats.syntax.all.*
 import fs2.*
 import fs2.kafka.*
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.config.KafkaConfig
 import uk.sky.scheduler.converters.scheduleEvent.*
 import uk.sky.scheduler.domain.ScheduleEvent
@@ -33,8 +31,7 @@ object SchedulePublisher {
         } yield ()
     }
 
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter]: Reader[KafkaConfig, SchedulePublisher[F, Unit]] = Reader {
-    config =>
-      kafka[F](config)
+  def live[F[_] : Async : Parallel]: Reader[KafkaConfig, SchedulePublisher[F, Unit]] = Reader { config =>
+    kafka[F](config)
   }
 }

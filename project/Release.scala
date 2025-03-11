@@ -24,12 +24,12 @@ object Release {
       inquireVersions,
       setReleaseVersion,
       runTest,
-      commitReleaseVersion,
-      tagRelease,
-      ReleaseStep(releaseStepTask(docker / publish)),
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
+//      commitReleaseVersion,
+//      tagRelease,
+      ReleaseStep(releaseStepTask(docker / publish))
+//      setNextVersion,
+//      commitNextVersion,
+//      pushChanges
     ),
     showReleaseVersion            := { val rV = releaseVersion.value.apply(version.value); println(rV); rV },
     showNextVersion               := { val nV = releaseNextVersion.value.apply(version.value); println(nV); nV }

@@ -15,15 +15,20 @@ object DockerPublish {
 
   private lazy val imageSettings = Seq(
     Docker / packageName := "kafka-message-scheduler",
-    dockerBaseImage      := "alpine:3.17.2",
-    dockerRepository     := Some("skyuk"),
+    dockerBaseImage      := "gcr.io/distroless/java17-debian11:nonroot",
+    dockerRepository     := registry,
     dockerLabels         := Map("maintainer" -> "Sky"),
     dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
       Cmd("RUN", "apk add --no-cache bash openjdk17")
-    )
+    ),
+    dockerAliases ++= additionalRegistries.map(host => dockerAlias.value.withRegistryHost(Some(host)))
   )
+
+  val allRegistries        = "skyuk" +: sys.env.get("CONTAINER_REPOSITORIES").fold(List.empty[String])(_.split(" ").toList)
+  val registry             = allRegistries.headOption // Provide a docker registry host
+  val additionalRegistries = allRegistries.drop(1) // Remove the first host, because it is already provide.
 
   private lazy val dockerBuildxSettings = Seq(
     ensureDockerBuildx    := {
@@ -49,5 +54,4 @@ object DockerPublish {
       )
       .value
   )
-
 }

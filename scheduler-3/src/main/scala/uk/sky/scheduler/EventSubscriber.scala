@@ -113,7 +113,7 @@ object EventSubscriber {
 
     for {
       counter <- Meter[F].counter[Long]("event-subscriber").create
-      logger  <- LoggerFactory[F].create
+      logger   = LoggerFactory[F].getLogger
     } yield new EventSubscriber[F] {
       override def messages: Stream[F, Message[Output]] =
         delegate.messages.evalTapChunk { case Message(key, source, value, metadata) =>
@@ -138,8 +138,9 @@ object EventSubscriber {
   }
 
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
-      loaded: Deferred[F, Unit],
-      config: KafkaConfig
-  ): F[EventSubscriber[F]] = kafka[F](config, loaded).flatMap(observed)
+      config: KafkaConfig,
+      loaded: Deferred[F, Unit]
+  ): F[EventSubscriber[F]] =
+    kafka[F](config, loaded).flatMap(observed)
 
 }

@@ -1,0 +1,8 @@
+akhq:
+  connections:
+      map:
+        properties:
+          bootstrap.servers: "kafka:9092"
+        schema-registry:
+          url: "http://schema-registry:"
+          type: "confluent"

@@ -59,7 +59,7 @@ object ScheduleQueue {
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
       for {
         previous   <- repository.get(key)
-        _          <- previous.fold(Async[F].unit)(_.cancel) // Cancel the previous Schedule if it exists
+        _          <- previous.fold(Async[F].unit)(_.cancel)
         now        <- Async[F].epochMilli
         delay      <- Either
                         .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now).milliseconds)
@@ -81,10 +81,10 @@ object ScheduleQueue {
       Stream.fromQueueUnterminated(queue)
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): F[ScheduleQueue[F]] =
-    for {
-      logger <- LoggerFactory[F].create
-    } yield new ScheduleQueue[F] {
+  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] = {
+    val logger = LoggerFactory[F].getLogger
+
+    new ScheduleQueue[F] {
       override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
         for {
           result <- delegate.schedule(key, scheduleEvent)
@@ -104,6 +104,7 @@ object ScheduleQueue {
           )
         }
     }
+  }
 
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
       allowEnqueue: Deferred[F, Unit],
@@ -113,7 +114,7 @@ object ScheduleQueue {
       repo         <- Repository.ofConcurrentHashMap[F, String, CancelableSchedule[F]]("schedules")
       eventQueue   <- Queue.unbounded[F, ScheduleEvent]
       scheduleQueue = ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor)
-      observed     <- ScheduleQueue.observed(scheduleQueue)
+      observed      = ScheduleQueue.observed(scheduleQueue)
     } yield observed
 
 }

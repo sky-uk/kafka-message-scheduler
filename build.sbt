@@ -55,6 +55,7 @@ lazy val schedulerScala2 = (project in file("scheduler"))
     dockerSettings,
     releaseSettings
   )
+  .settings(Aliases.core)
 
 lazy val scheduler = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)

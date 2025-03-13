@@ -257,7 +257,7 @@ default_jvm_opts() {
       # As of Dec 2020, JVM for Apple Silicon (M1) doesn't support JVMCI
       echo "$default_jvm_opts_common"
     else
-      echo "$default_jvm_opts_common -XX:+UnlockExperimentalVMOptions -XX:+UseJVMCICompiler"
+      echo "$default_jvm_opts_common -XX:+UnlockExperimentalVMOptions"
     fi
   elif [[ $v -ge 8 ]]; then
     echo "$default_jvm_opts_common"

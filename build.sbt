@@ -56,6 +56,7 @@ lazy val scheduler = (project in file("scheduler"))
     dockerSettings("kafka-message-scheduler"),
     releaseSettings
   )
+  .settings(Aliases.core)
 
 lazy val scheduler3 = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)

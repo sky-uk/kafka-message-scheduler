@@ -8,7 +8,7 @@ object Aliases {
 
   def alias(name: String, value: String): Settings = addCommandAlias(s"$ModuleName-$name", value)
 
-  def cdBuild(module: String) = s"project $module; test; release;"
+  def cdBuild(module: String) = s"project $module; test; release with-defaults;"
 
   def scalaPrBuild(module: String) =
     s"project $module; test;"

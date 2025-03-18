@@ -32,14 +32,16 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter]: ReaderT[F, KafkaConfig, Scheduler[F, Unit]] =
+  def live[F[_] : Async : Parallel : LoggerFactory : Meter](
+      supervisor: Supervisor[F]
+  ): ReaderT[F, KafkaConfig, Scheduler[F, Unit]] =
     for {
       schedulePublisher <- SchedulePublisher.live[F].lift
       scheduler         <- ReaderT[F, KafkaConfig, Scheduler[F, Unit]] { conf =>
                              for {
                                allowEnqueue  <- Deferred[F, Unit]
-                               scheduleQueue <- Supervisor[F].use(supervisor => ScheduleQueue.live(allowEnqueue, supervisor))
-                               subscriber    <- EventSubscriber.live[F](allowEnqueue, conf)
+                               scheduleQueue <- ScheduleQueue.live(allowEnqueue, supervisor)
+                               subscriber    <- EventSubscriber.live[F](conf, allowEnqueue)
                              } yield new Scheduler(subscriber, scheduleQueue, schedulePublisher)
                            }
 

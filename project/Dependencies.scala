@@ -59,6 +59,10 @@ object Dependencies {
     val all             = Seq(core, akka, prometheus)
   }
 
+  object Logstash {
+    lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.0" % Runtime
+  }
+
   object Monocle {
     lazy val core = "dev.optics" %% "monocle-core" % "3.3.0"
   }
@@ -115,16 +119,16 @@ object Dependencies {
     lazy val parser  = "io.circe" %% "circe-parser"  % version
   }
 
-  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
-  val chimney          = "io.scalaland"               %% "chimney"            % "1.5.0"
-  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
-  val fs2TopicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.1.0"
-  val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
-  val mouse            = "org.typelevel"              %% "mouse"              % "1.3.2"
-  val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
+  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"            % "4.1.2"
+  val chimney          = "io.scalaland"               %% "chimney"                % "1.5.0"
+  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader"     % "1.5.6"
+  val fs2TopicLoader   = "uk.sky"                     %% "fs2-kafka-topic-loader" % "0.1.0"
+  val monix            = "io.monix"                   %% "monix-execution"        % "3.4.1"
+  val mouse            = "org.typelevel"              %% "mouse"                  % "1.3.2"
+  val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"          % "3.9.5"
 
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.12" % Runtime
-  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.5.6"  % Runtime
+  val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.5.15" % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.4"    % Runtime
 
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.4.1"    % Test
@@ -163,30 +167,45 @@ object Dependencies {
   val scheduler3: Seq[ModuleID] = Seq(
     Cats.caseInsensitive,
     Cats.caseInsensitiveTesting,
+    Cats.core,
     Cats.effect,
     Cats.effectTestKit,
     Cats.effectTesting,
     Cats.effectTestkitScalatest,
     Cats.log4cats,
     Cats.log4catsSlf4j,
-    Fs2.core,
-    Fs2.kafka,
-    Fs2.io,
-    Monocle.core,
-    Vulcan.core,
-    Vulcan.generic,
-    PureConfig.core,
-    PureConfig.catsEffect,
-    OpenTelemetry.exporterOtlp,
-    OpenTelemetry.exporterPrometheus,
-    OpenTelemetry.javaAgent,
-    OpenTelemetry.sdkAutoconfigure,
-    Otel4s.java,
-    Otel4s.testkit,
-    mouse,
+    Cats.testKit,
     chimney,
     Circe.generic,
     Circe.parser,
-    fs2TopicLoader
+    Fs2.core,
+    Fs2.kafka,
+    Fs2.io,
+    fs2TopicLoader,
+    logbackClassic,
+    Logstash.logbackEncoder,
+    Monocle.core,
+    mouse,
+    Vulcan.core,
+    Vulcan.generic,
+    PureConfig.catsEffect,
+    PureConfig.core,
+    OpenTelemetry.exporterOtlp,
+    OpenTelemetry.exporterPrometheus,
+    OpenTelemetry.sdkAutoconfigure,
+    Otel4s.java,
+    Otel4s.testkit
+  )
+
+  val it: Seq[ModuleID] = Seq(
+    Cats.effect,
+    Cats.effectTesting,
+    Cats.core,
+    Circe.generic,
+    Circe.parser,
+    Fs2.core,
+    Fs2.kafka,
+    logbackClassic,
+    scalaTest
   )
 }

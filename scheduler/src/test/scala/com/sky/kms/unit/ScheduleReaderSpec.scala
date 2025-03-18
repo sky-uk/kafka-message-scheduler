@@ -20,7 +20,7 @@ import scala.concurrent.{Future, Promise}
 
 class ScheduleReaderSpec extends AkkaSpecBase with SpecBase {
 
-  override implicit val patienceConfig = PatienceConfig(500.millis, 20.millis)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 20.millis)
 
   "stream" should {
     "send a scheduling message to the scheduling the actor" in new TestContext {

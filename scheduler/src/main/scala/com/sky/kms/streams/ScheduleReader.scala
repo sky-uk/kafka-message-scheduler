@@ -39,7 +39,7 @@ case class ScheduleReader[Mat](
       .map(ScheduleReader.toSchedulingMessage)
       .alsoTo(extractError.to(errorHandler))
       .collect { case Right(msg) => msg }
-      .to(Sink.actorRefWithBackpressure(schedulingActor, StreamStarted, Ack, PoisonPill, UpstreamFailure))
+      .to(Sink.actorRefWithBackpressure(schedulingActor, StreamStarted, Ack, PoisonPill, UpstreamFailure.apply))
 }
 
 object ScheduleReader extends LazyLogging {

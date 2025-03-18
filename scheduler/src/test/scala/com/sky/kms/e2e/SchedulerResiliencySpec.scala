@@ -26,7 +26,7 @@ import scala.concurrent.{Await, Future}
 
 class SchedulerResiliencySpec extends SpecBase {
 
-  override implicit val patienceConfig = PatienceConfig(10.seconds, 500.millis)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 500.millis)
 
   "KMS" should {
     "terminate when the reader stream fails" in new TestContext with FailingSource with AkkaComponents {
@@ -55,7 +55,7 @@ class SchedulerResiliencySpec extends SpecBase {
       val sameTimeSchedules           = random[ScheduleEvent](n = 20).map(_.secondsFromNow(2))
       val probe                       = TestProbe()
       val sinkThatWillNotSignalDemand = Sink
-        .actorRefWithBackpressure(probe.ref, "", "", "", UpstreamFailure)
+        .actorRefWithBackpressure(probe.ref, "", "", "", UpstreamFailure.apply)
         .mapMaterializedValue(_ => Future.never)
 
       val app =

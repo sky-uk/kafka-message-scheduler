@@ -9,11 +9,12 @@ import com.sky.kms.actors.PublisherActor.{DownstreamFailure, Init, ScheduleQueue
 import com.sky.kms.domain.PublishableMessage.ScheduledMessage
 import com.sky.kms.domain.{ScheduleEvent, ScheduleId, ScheduleQueueOfferResult}
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
 class PublisherActor extends Actor with ActorLogging {
 
-  implicit val ec = context.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
 
   override def receive: Receive = waitForQueue
 

@@ -115,20 +115,20 @@ object Dependencies {
     lazy val parser  = "io.circe" %% "circe-parser"  % version
   }
 
-  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"        % "4.1.2"
-  val chimney          = "io.scalaland"               %% "chimney"            % "1.5.0"
-  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader" % "1.5.6"
-  val fs2TopicLoader = "uk.sky" %% "fs2-kafka-topic-loader" % "0.1.0"
-  val monix            = "io.monix"                   %% "monix-execution"    % "3.4.1"
-  val mouse            = "org.typelevel"              %% "mouse"              % "1.3.2"
-  val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"      % "3.9.5"
+  val avro4s           = "com.sksamuel.avro4s"        %% "avro4s-core"            % "4.1.2"
+  val chimney          = "io.scalaland"               %% "chimney"                % "1.5.0"
+  val kafkaTopicLoader = "uk.sky"                     %% "kafka-topic-loader"     % "1.5.6"
+  val fs2TopicLoader   = "uk.sky"                     %% "fs2-kafka-topic-loader" % "0.1.0"
+  val monix            = "io.monix"                   %% "monix-execution"        % "3.4.1"
+  val mouse            = "org.typelevel"              %% "mouse"                  % "1.3.2"
+  val scalaLogging     = "com.typesafe.scala-logging" %% "scala-logging"          % "3.9.5"
 
   val janino         = "org.codehaus.janino"  % "janino"                   % "3.1.12" % Runtime
   val logbackClassic = "ch.qos.logback"       % "logback-classic"          % "1.5.6"  % Runtime
   val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.4"    % Runtime
 
   val embeddedKafka        = "io.github.embeddedkafka" %% "embedded-kafka"              % "3.4.1"    % Test
-  val mockito              = "org.mockito"              % "mockito-core"                % "5.10.0"   % Test
+  val mockito              = "org.mockito"              % "mockito-core"                % "5.13.0"   % Test
   val randomDataGenerator  = "com.danielasfregola"     %% "random-data-generator"       % "2.9"      % Test
   val scalaCheck           = "org.scalacheck"          %% "scalacheck"                  % "1.17.0"   % Test
   val scalaCheckDatetime   = "com.47deg"               %% "scalacheck-toolbox-datetime" % "0.7.0"    % Test

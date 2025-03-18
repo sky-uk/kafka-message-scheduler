@@ -7,7 +7,7 @@ import org.apache.avro.Schema
 
 package object avro {
 
-  implicit val dateTimeSchemaFor = SchemaFor[OffsetDateTime](Schema.create(Schema.Type.LONG))
+  implicit val dateTimeSchemaFor: SchemaFor[OffsetDateTime] = SchemaFor[OffsetDateTime](Schema.create(Schema.Type.LONG))
 
   implicit object DateTimeEncoder extends Encoder[OffsetDateTime] {
     override def encode(value: OffsetDateTime): java.lang.Long = value.toInstant.toEpochMilli

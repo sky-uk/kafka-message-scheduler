@@ -1,37 +1,29 @@
 package uk.sky.scheduler
 
-import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
-import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.FixtureAsyncWordSpec
-import org.scalatest.{LoneElement, OptionValues}
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
-import uk.sky.scheduler.util.{KafkaUtil, ScheduleHelpers}
+import uk.sky.scheduler.util.KafkaUtil
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
 
-final class SchedulerFeatureSpec
-    extends FixtureAsyncWordSpec,
-      AsyncIOSpec,
-      CatsResourceIO[KafkaUtil[IO]],
-      ScheduleHelpers,
-      OptionValues,
-      Matchers,
-      Eventually,
-      LoneElement {
-  val timeout: FiniteDuration = 30.seconds
-  val kafkaPort               = 9094
+import util.SchedulerFeatureBase
+
+final class SchedulerFeatureSpec extends SchedulerFeatureBase {
+
+  val timeout: FiniteDuration = config.timeout.seconds
+  val kafkaBootstrapServer    = config.bootstrapServer
+  val consumerGroup           = config.groupId
+  val tolerance: Long         = 100L
 
   override given executionContext: ExecutionContext = ExecutionContext.global
   override given patienceConfig: PatienceConfig     = PatienceConfig(timeout)
   override val ResourceTimeout: Duration            = timeout
 
-  override val resource = Resource.pure(KafkaUtil[IO](kafkaPort, timeout))
+  override val resource = Resource.pure(KafkaUtil[IO](kafkaBootstrapServer, timeout, consumerGroup))
 
   "scheduler" should {
     "schedule a Json event for the specified time" in { kafkaUtil =>
@@ -47,7 +39,7 @@ final class SchedulerFeatureSpec
       } yield {
         val message = messages.loneElement
         message.keyValue shouldBe outputJsonKey -> outputJsonValue
-        message.producedAt.toEpochMilli shouldBe scheduledTime +- 100L
+        message.producedAt.toEpochMilli shouldBe scheduledTime +- tolerance
       }
     }
 
@@ -64,14 +56,15 @@ final class SchedulerFeatureSpec
       } yield {
         val message = messages.loneElement
         message.keyValue shouldBe outputAvroKey -> outputAvroValue
-        message.producedAt.toEpochMilli shouldBe scheduledTime +- 100L
+        message.producedAt.toEpochMilli shouldBe scheduledTime +- tolerance
       }
     }
 
-    "schedule an event immediately if it has shedule time in the past" in { kafkaUtil =>
+    "schedule an event immediately if it has schedule time in the past" in { kafkaUtil =>
       val outputTopic     = "output-topic"
       val outputJsonKey   = "jsonKey"
       val outputJsonValue = "jsonValue"
+      val oneSecond: Long = 1.second.toMillis
 
       for {
         now              <- IO.realTimeInstant
@@ -82,7 +75,7 @@ final class SchedulerFeatureSpec
       } yield {
         val message = messages.loneElement
         message.keyValue shouldBe outputJsonKey -> outputJsonValue
-        message.producedAt.toEpochMilli shouldBe now.toEpochMilli +- 1000L
+        message.producedAt.toEpochMilli shouldBe now.toEpochMilli +- oneSecond
       }
     }
 

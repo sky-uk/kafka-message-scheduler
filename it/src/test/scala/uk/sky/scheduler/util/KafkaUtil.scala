@@ -36,76 +36,71 @@ object KafkaUtil {
     val keyValue: (String, V) = key -> value
   }
 
-  def apply[F[_] : Async](kafkaPort: Int, timeout: FiniteDuration): KafkaUtil[F] = new KafkaUtil[F] {
+  def apply[F[_] : Async](bootstrapServer: String, timeout: FiniteDuration, consumerGroup: String): KafkaUtil[F] =
+    new KafkaUtil[F] {
 
-    override def produce[V](topic: String, keyValues: (String, Option[V])*)(using ValueSerializer[F, V]): F[Unit] = {
-      val producerSettings = ProducerSettings[F, String, Option[V]]
-        .withBootstrapServers(s"localhost:$kafkaPort")
+      override def produce[V](topic: String, keyValues: (String, Option[V])*)(using ValueSerializer[F, V]): F[Unit] = {
+        val producerSettings = ProducerSettings[F, String, Option[V]]
+          .withBootstrapServers(bootstrapServer)
 
-      val records = Chunk.from(keyValues).map(ProducerRecord(topic, _, _))
+        val records = Chunk.from(keyValues).map(ProducerRecord(topic, _, _))
 
-      KafkaProducer
-        .stream(producerSettings)
-        .evalMapChunk(_.produce(records))
-        .parEvalMapUnbounded(identity)
-        .compile
-        .drain
-    }
+        KafkaProducer
+          .stream(producerSettings)
+          .evalMapChunk(_.produce(records))
+          .parEvalMapUnbounded(identity)
+          .compile
+          .drain
+      }
 
-    override def consume[V](topic: String, noMessages: Int, autoCommit: Boolean)(using
-        ValueDeserializer[F, V]
-    ): F[List[ConsumerResult[V]]] = {
-      val consumerSettings = ConsumerSettings[F, String, V]
-        .withBootstrapServers(s"localhost:$kafkaPort")
-        .withGroupId("integration-test-consumer-group")
+      def consumerSettings[V](autoCommit: Boolean)(using
+          ValueDeserializer[F, V]
+      ) = ConsumerSettings[F, String, V]
+        .withBootstrapServers(bootstrapServer)
+        .withGroupId(consumerGroup)
         .withAutoOffsetReset(AutoOffsetReset.Earliest)
         .withEnableAutoCommit(autoCommit)
 
-      KafkaConsumer
-        .stream(consumerSettings)
-        .subscribeTo(topic)
-        .records
-        .evalMap(toResult)
-        .take(noMessages)
-        .compile
-        .toList
-        .timeoutTo(
-          timeout,
-          Async[F].raiseError(TestFailedException(s"Could not consume $noMessages messages within $timeout", 0))
-        )
-    }
+      override def consume[V](topic: String, noMessages: Int, autoCommit: Boolean)(using
+          ValueDeserializer[F, V]
+      ): F[List[ConsumerResult[V]]] =
+        KafkaConsumer
+          .stream(consumerSettings[V](autoCommit))
+          .subscribeTo(topic)
+          .records
+          .evalMap(toResult)
+          .take(noMessages)
+          .compile
+          .toList
+          .timeoutTo(
+            timeout,
+            Async[F].raiseError(TestFailedException(s"Could not consume $noMessages messages within $timeout", 0))
+          )
 
-    override def consumeLast[V](topic: String, noMessages: Int, autoCommit: Boolean)(using
-        ValueDeserializer[F, V]
-    ): F[List[ConsumerResult[V]]] = {
-      val consumerSettings = ConsumerSettings[F, String, V]
-        .withBootstrapServers(s"localhost:$kafkaPort")
-        .withGroupId("integration-test-consumer-group")
-        .withAutoOffsetReset(AutoOffsetReset.Earliest)
-        .withEnableAutoCommit(autoCommit)
-
-      KafkaConsumer
-        .stream(consumerSettings)
-        .evalTap { consumer =>
-          for {
-            tps        <- consumer.partitionsFor(topic).map(_.map(pi => TopicPartition(pi.topic, pi.partition)).toSet)
-            endOffsets <- consumer.endOffsets(tps)
-            newOffsets  = endOffsets.view.mapValues(o => Math.max(0, o - noMessages)).toList
-            _          <- consumer.assign(topic)
-            _          <- newOffsets.traverse(consumer.seek)
-          } yield ()
-        }
-        .records
-        .evalMap(toResult)
-        .take(noMessages)
-        .compile
-        .toList
-        .timeoutTo(
-          timeout,
-          Async[F].raiseError(TestFailedException(s"Could not consume $noMessages messages within $timeout", 0))
-        )
+      override def consumeLast[V](topic: String, noMessages: Int, autoCommit: Boolean)(using
+          ValueDeserializer[F, V]
+      ): F[List[ConsumerResult[V]]] =
+        KafkaConsumer
+          .stream(consumerSettings[V](autoCommit))
+          .evalTap { consumer =>
+            for {
+              tps        <- consumer.partitionsFor(topic).map(_.map(pi => TopicPartition(pi.topic, pi.partition)).toSet)
+              endOffsets <- consumer.endOffsets(tps)
+              newOffsets  = endOffsets.view.mapValues(o => Math.max(0, o - noMessages)).toList
+              _          <- consumer.assign(topic)
+              _          <- newOffsets.traverse(consumer.seek)
+            } yield ()
+          }
+          .records
+          .evalMap(toResult)
+          .take(noMessages)
+          .compile
+          .toList
+          .timeoutTo(
+            timeout,
+            Async[F].raiseError(TestFailedException(s"Could not consume $noMessages messages within $timeout", 0))
+          )
     }
-  }
 
   private def toResult[F[_] : Async, V](cr: CommittableConsumerRecord[F, String, V]): F[ConsumerResult[V]] =
     for {

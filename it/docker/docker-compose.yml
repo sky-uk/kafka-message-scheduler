@@ -32,12 +32,11 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.5.1
     ports:
-      - "9092:9092"
-      - "9094:9094"
+      - "${KAFKA_PORT}:${KAFKA_PORT}"
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,OUTSIDE://localhost:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,OUTSIDE://localhost:${KAFKA_PORT}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
 
 #  http://localhost:9090/ - Uncomment to expose Prometheus for local metrics testing.
@@ -52,7 +51,7 @@ services:
 
 # http://localhost:8080/ - Uncomment to expose AKHQ for viewing Kafka topic contents.
 #  akhq:
-#    image: tchiotludo/akhq:0.20.0
+#    image: tchiotludo/akhq:0.25.1
 #    depends_on:
 #      - kafka
 #    ports:

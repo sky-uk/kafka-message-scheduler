@@ -1,6 +1,8 @@
 import Release.*
 import DockerPublish.*
 import org.typelevel.scalacoptions.ScalacOptions
+import DockerComposeSettings.*
+import com.tapad.docker.DockerComposePlugin.autoImport.variablesForSubstitution
 
 ThisBuild / organization := "com.sky"
 
@@ -89,6 +91,8 @@ lazy val it = (project in file("it"))
       scalafmtConfig          := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
     )
   }
+  .settings(Seq(variablesForSubstitution ++= kafkaPort))
+  .settings(Seq(envVars := kafkaPort))
   .dependsOn(scheduler3 % "compile->compile;test->test")
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")

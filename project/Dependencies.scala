@@ -59,10 +59,6 @@ object Dependencies {
     val all             = Seq(core, akka, prometheus)
   }
 
-  object Logback {
-    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.15" % Runtime
-  }
-
   object Logstash {
     lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.0" % Runtime
   }
@@ -186,7 +182,7 @@ object Dependencies {
     Fs2.kafka,
     Fs2.io,
     fs2TopicLoader,
-    Logback.classic,
+    logbackClassic,
     Logstash.logbackEncoder,
     Monocle.core,
     mouse,

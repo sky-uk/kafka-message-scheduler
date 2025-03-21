@@ -56,6 +56,7 @@ lazy val scheduler = (project in file("scheduler"))
     dockerSettings("kafka-message-scheduler"),
     releaseSettings
   )
+  .settings(Aliases.core)
 
 lazy val scheduler3 = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
@@ -65,6 +66,8 @@ lazy val scheduler3 = (project in file("scheduler-3"))
   .settings(
     libraryDependencies ++= Dependencies.scheduler3,
     buildInfoSettings("uk.sky"),
+    dockerSettings("kafka-message-scheduler"),
+    releaseSettings,
     scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
     scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )

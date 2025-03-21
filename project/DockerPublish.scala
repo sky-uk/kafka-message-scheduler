@@ -8,7 +8,7 @@ import scala.sys.process.Process
 
 object DockerPublish {
 
-  def dockerSettings(imageName: String) = imageSettings(imageName) ++ dockerBuildxSettings
+  def dockerSettings(imageName: String) = imageSettings(imageName)// ++ dockerBuildxSettings
 
   lazy val ensureDockerBuildx    = taskKey[Unit]("Ensure that docker buildx configuration exists")
   lazy val dockerBuildWithBuildx = taskKey[Unit]("Build docker images using buildx")
@@ -16,14 +16,19 @@ object DockerPublish {
   private def imageSettings(imageName: String) = Seq(
     Docker / packageName := imageName,
     dockerBaseImage      := "alpine:3.17.2",
-    dockerRepository     := Some("skyuk"),
+    dockerRepository     := registry,
     dockerLabels         := Map("maintainer" -> "Sky"),
     dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
       Cmd("RUN", "apk add --no-cache bash openjdk17")
-    )
+    ),
+    dockerAliases ++= additionalRegistries.map(host => dockerAlias.value.withRegistryHost(Some(host)))
   )
+
+  val allRegistries        = sys.env.get("CONTAINER_REPOSITORIES").fold(List.empty[String])(_.split(" ").toList)
+  val registry             = allRegistries.headOption // Provide a docker registry host
+  val additionalRegistries = allRegistries.drop(1) // Remove the first host, because it is already provide.
 
   private lazy val dockerBuildxSettings = Seq(
     ensureDockerBuildx    := {
@@ -49,5 +54,4 @@ object DockerPublish {
       )
       .value
   )
-
 }

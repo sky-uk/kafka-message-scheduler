@@ -53,10 +53,10 @@ lazy val scheduler = (project in file("scheduler"))
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
     javaAgents += "io.kamon" % "kanela-agent" % "1.0.18",
     buildInfoSettings("com.sky"),
-    dockerSettings("kafka-message-scheduler"),
+    dockerSettings,
     releaseSettings
   )
-  .settings(Aliases.core)
+// .settings(Aliases.core)
 
 lazy val scheduler3 = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
@@ -66,20 +66,12 @@ lazy val scheduler3 = (project in file("scheduler-3"))
   .settings(
     libraryDependencies ++= Dependencies.scheduler3,
     buildInfoSettings("uk.sky"),
-    dockerSettings("kafka-message-scheduler"),
+    dockerSettings,
     releaseSettings,
     scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
     scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )
-  .settings {
-    Seq(
-      dockerRepository      := sys.env.get("DOCKER_REPOSITORY"),
-      dockerBaseImage       := "eclipse-temurin:21-jre-jammy",
-      Docker / packageName  := "kafka-message-scheduler-3",
-      dockerUpdateLatest    := true,
-      dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64")
-    )
-  }
+  .settings(Aliases.core)
 
 lazy val it = (project in file("it"))
   .enablePlugins(DockerComposePlugin)
@@ -110,6 +102,6 @@ lazy val avro = (project in file("avro"))
 lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
   .settings(dockerImageCreationTask := (scheduler / Docker / publishLocal).value)
-  .aggregate(scheduler, scheduler3, avro, it)
+  .aggregate(scheduler3, avro, it)
   .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)

@@ -20,6 +20,7 @@ object DockerPublish {
     dockerLabels         := Map("maintainer" -> "Sky"),
     dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
+      Cmd("FROM", "alpine:latest"),
       Cmd("USER", "root"),
       Cmd("RUN", "apk add --no-cache bash openjdk17")
     ),

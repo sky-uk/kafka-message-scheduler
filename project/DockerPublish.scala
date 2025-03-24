@@ -1,6 +1,6 @@
 import com.typesafe.sbt.packager.Keys.*
 import com.typesafe.sbt.packager.docker.Cmd
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.Docker
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerBuildxPlatforms, Docker}
 import sbt.Keys.*
 import sbt.*
 

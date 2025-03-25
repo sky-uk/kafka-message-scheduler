@@ -21,7 +21,7 @@ object DockerPublish {
     dockerUpdateLatest   := true,
     dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64"),
     dockerCommands ++= Seq(
-      Cmd("USER", "nonroot"),
+      Cmd("USER", "root"),
       Cmd("RUN", "apk add --no-cache bash openjdk17")
     ),
     dockerAliases ++= additionalRegistries.map(host => dockerAlias.value.withRegistryHost(Some(host)))

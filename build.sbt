@@ -56,7 +56,7 @@ lazy val scheduler = (project in file("scheduler"))
     dockerSettings,
     releaseSettings
   )
-  .settings(Aliases.core)
+ // .settings(Aliases.core)
 
 lazy val scheduler3 = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
@@ -71,6 +71,7 @@ lazy val scheduler3 = (project in file("scheduler-3"))
     scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
     scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )
+  .settings(Aliases.core)
 
 lazy val it = (project in file("it"))
   .enablePlugins(DockerComposePlugin)

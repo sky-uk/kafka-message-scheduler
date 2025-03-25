@@ -1,6 +1,6 @@
 import com.typesafe.sbt.packager.Keys.*
 import com.typesafe.sbt.packager.docker.Cmd
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.Docker
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerBuildxPlatforms}
 import sbt.Keys.*
 import sbt.*
 
@@ -8,20 +8,20 @@ import scala.sys.process.Process
 
 object DockerPublish {
 
-  def dockerSettings(imageName: String) = imageSettings(imageName)// ++ dockerBuildxSettings
+  lazy val dockerSettings = imageSettings // ++ dockerBuildxSettings
 
   lazy val ensureDockerBuildx    = taskKey[Unit]("Ensure that docker buildx configuration exists")
   lazy val dockerBuildWithBuildx = taskKey[Unit]("Build docker images using buildx")
 
-  private def imageSettings(imageName: String) = Seq(
-    Docker / packageName := imageName,
+  private lazy val imageSettings = Seq(
+    Docker / packageName := "kafka-message-scheduler-3",
     dockerBaseImage      := "alpine:3.17.2",
     dockerRepository     := registry,
     dockerLabels         := Map("maintainer" -> "Sky"),
     dockerUpdateLatest   := true,
+    dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64"),
     dockerCommands ++= Seq(
-      Cmd("FROM", "alpine:latest"),
-      Cmd("USER", "root"),
+      Cmd("USER", "nonroot"),
       Cmd("RUN", "apk add --no-cache bash openjdk17")
     ),
     dockerAliases ++= additionalRegistries.map(host => dockerAlias.value.withRegistryHost(Some(host)))

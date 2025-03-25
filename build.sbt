@@ -53,7 +53,7 @@ lazy val scheduler = (project in file("scheduler"))
     addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
     javaAgents += "io.kamon" % "kanela-agent" % "1.0.18",
     buildInfoSettings("com.sky"),
- //   dockerSettings("kafka-message-scheduler"),
+    dockerSettings,
     releaseSettings
   )
   .settings(Aliases.core)

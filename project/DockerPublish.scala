@@ -14,7 +14,7 @@ object DockerPublish {
   lazy val dockerBuildWithBuildx = taskKey[Unit]("Build docker images using buildx")
 
   private lazy val imageSettings = Seq(
-    Docker / packageName := "kafka-message-scheduler-3",
+    Docker / packageName := "kafka-message-scheduler",
     dockerBaseImage      := "alpine:3.17.2",
     dockerRepository     := registry,
     dockerLabels         := Map("maintainer" -> "Sky"),

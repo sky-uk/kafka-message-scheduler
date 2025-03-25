@@ -11,7 +11,7 @@ object Aliases {
   def cdBuild(module: String) = s"project $module; test; release with-defaults;"
 
   def scalaPrBuild(module: String) =
-    s"project $module; test;"
+    s"project $module; test; project it; dockerComposeUp; test"
 
   lazy val core: Settings =
     alias("cdBuild", cdBuild("scheduler3")) ++

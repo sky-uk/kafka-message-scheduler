@@ -15,7 +15,7 @@ object DockerPublish {
 
   private lazy val imageSettings = Seq(
     Docker / packageName := "kafka-message-scheduler",
-    dockerBaseImage      := "alpine:3.17.2",
+    dockerBaseImage      := "alpine:latest",
     dockerRepository     := registry,
     dockerLabels         := Map("maintainer" -> "Sky"),
     dockerUpdateLatest   := true,

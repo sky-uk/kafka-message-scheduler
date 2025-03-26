@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   kafka-message-scheduler:
-    image: ${DOCKER_REPOSITORY}/kafka-message-scheduler:latest<localBuild>
+    image: ${CONTAINER_REPOSITORY}/kafka-message-scheduler:latest<localBuild>
     restart: "on-failure"
     ports:
       - "9401:9401"

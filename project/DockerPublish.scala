@@ -27,7 +27,7 @@ object DockerPublish {
     dockerAliases ++= additionalRegistries.map(host => dockerAlias.value.withRegistryHost(Some(host)))
   )
 
-  val allRegistries        = sys.env.get("CONTAINER_REPOSITORIES").fold(List.empty[String])(_.split(" ").toList)
+  val allRegistries        = sys.env.get("CONTAINER_REPOSITORIES").fold(List("test"))(_.split(" ").toList)
   val registry             = allRegistries.headOption // Provide a docker registry host
   val additionalRegistries = allRegistries.drop(1)    // Remove the first host, because it is already provide.
 

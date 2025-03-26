@@ -86,7 +86,7 @@ lazy val it = (project in file("it"))
       scalafmtConfig          := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
     )
   }
-  .settings(Seq(variablesForSubstitution ++= kafkaPort))
+  .settings(settings)
   .settings(Seq(envVars := kafkaPort))
   .dependsOn(scheduler3 % "compile->compile;test->test")
 

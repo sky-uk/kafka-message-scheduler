@@ -2,7 +2,6 @@ import Release.*
 import DockerPublish.*
 import org.typelevel.scalacoptions.ScalacOptions
 import DockerComposeSettings.*
-import com.tapad.docker.DockerComposePlugin.autoImport.variablesForSubstitution
 
 ThisBuild / organization := "com.sky"
 

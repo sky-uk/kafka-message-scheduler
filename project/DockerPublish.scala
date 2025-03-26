@@ -8,18 +8,17 @@ import scala.sys.process.Process
 
 object DockerPublish {
 
-  lazy val dockerSettings = imageSettings ++ dockerBuildxSettings
+  lazy val dockerSettings = imageSettings // ++ dockerBuildxSettings
 
   lazy val ensureDockerBuildx    = taskKey[Unit]("Ensure that docker buildx configuration exists")
   lazy val dockerBuildWithBuildx = taskKey[Unit]("Build docker images using buildx")
 
   private lazy val imageSettings = Seq(
-    Docker / packageName  := "kafka-message-scheduler",
-    dockerBaseImage       := "alpine:latest",
-    dockerRepository      := registry,
-    dockerLabels          := Map("maintainer" -> "Sky"),
-    dockerUpdateLatest    := true,
-    dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64"),
+    Docker / packageName := "kafka-message-scheduler",
+    dockerBaseImage      := "alpine:latest",
+    dockerRepository     := registry,
+    dockerLabels         := Map("maintainer" -> "Sky"),
+    dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
       Cmd("RUN", "apk add --no-cache bash openjdk17")
@@ -27,7 +26,7 @@ object DockerPublish {
     dockerAliases ++= additionalRegistries.map(host => dockerAlias.value.withRegistryHost(Some(host)))
   )
 
-  val allRegistries        = sys.env.get("CONTAINER_REPOSITORIES").fold(List.empty[String])(_.split(" ").toList)
+  val allRegistries        = sys.env.get("CONTAINER_REPOSITORIES").fold(List("test"))(_.split(" ").toList)
   val registry             = allRegistries.headOption // Provide a docker registry host
   val additionalRegistries = allRegistries.drop(1)    // Remove the first host, because it is already provide.
 

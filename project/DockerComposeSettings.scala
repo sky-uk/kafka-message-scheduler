@@ -1,3 +1,6 @@
+import com.tapad.docker.DockerComposePlugin.autoImport.variablesForSubstitution
+import DockerPublish.allRegistries
+
 import java.net.ServerSocket
 
 object DockerComposeSettings {
@@ -11,5 +14,9 @@ object DockerComposeSettings {
   }
 
   val kafkaPort = Map("KAFKA_PORT" -> freePort.toString)
+
+  lazy val settings = Seq(
+    variablesForSubstitution ++= Map("CONTAINER_REPOSITORY" -> allRegistries.head) ++ kafkaPort
+  )
 
 }

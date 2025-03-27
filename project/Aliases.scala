@@ -9,8 +9,7 @@ object Aliases {
   def alias(name: String, value: String): Settings = addCommandAlias(s"$ModuleName-$name", value)
 
   def cdBuild(module: String) =
-    s"project it; dockerComposeUp; test;"
-//    s"checkFmt; project $module; checkFix; test; project it; checkFix; dockerComposeUp; test; release with-defaults;"
+    s"checkFmt; project $module; checkFix; test; project it; checkFix; dockerComposeUp; test; release with-defaults;"
 
   def scalaPrBuild(module: String) =
     s"checkFmt; project $module; checkFix; test; project it; checkFix; dockerComposeUp; test"

@@ -55,7 +55,6 @@ lazy val scheduler = (project in file("scheduler"))
     dockerSettings,
     releaseSettings
   )
-// .settings(Aliases.core)
 
 lazy val scheduler3 = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
@@ -100,7 +99,6 @@ lazy val avro = (project in file("avro"))
 
 lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
-  .settings(dockerImageCreationTask := (scheduler / Docker / publishLocal).value)
-  .aggregate(scheduler3, avro, it)
+  .aggregate(scheduler3, it)
   .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)

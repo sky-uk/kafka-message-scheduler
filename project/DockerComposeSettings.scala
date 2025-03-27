@@ -15,13 +15,8 @@ object DockerComposeSettings {
 
   val kafkaPort = Map("KAFKA_PORT" -> freePort.toString)
 
-  val repository = allRegistries.head
-
-  val containerRepository =
-    Map("CONTAINER_REPOSITORY" -> repository)
-
   lazy val settings = Seq(
-    variablesForSubstitution ++= kafkaPort ++ containerRepository
+    variablesForSubstitution ++= Map("CONTAINER_REPOSITORY" -> allRegistries.head) ++ kafkaPort
   )
 
 }

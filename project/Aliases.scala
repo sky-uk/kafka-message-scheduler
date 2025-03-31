@@ -9,10 +9,10 @@ object Aliases {
   def alias(name: String, value: String): Settings = addCommandAlias(s"$ModuleName-$name", value)
 
   def cdBuild(module: String) =
-    s"checkFmt; project $module; checkFix; test; project it; checkFix; dockerComposeUp; test; release with-defaults;"
+    s"checkFix; checkFmt; project $module; test; release with-defaults;"
 
   def scalaPrBuild(module: String) =
-    s"checkFmt; project $module; checkFix; test; project it; checkFix; dockerComposeUp; test"
+    s"checkFix; checkFmt; project $module; test; project it; dockerComposeUp; test"
 
   lazy val core: Settings =
     alias("cdBuild", cdBuild("scheduler3")) ++

@@ -6,7 +6,7 @@ triggering: master-and-prs
 modules:
 
   kafka-message-scheduler:
-    directory: /scheduler
+    directory: /scheduler3
     pipelineShape: buildOnly
     serviceName: MetadataAssemblyPipeline
     additionalSourceDirectories:

@@ -14,12 +14,11 @@ object DockerPublish {
   lazy val dockerBuildWithBuildx = taskKey[Unit]("Build docker images using buildx")
 
   private lazy val imageSettings = Seq(
-    Docker / packageName  := "kafka-message-scheduler",
-    dockerBaseImage       := "alpine:latest",
-    dockerRepository      := registry,
-    dockerLabels          := Map("maintainer" -> "Sky"),
-    dockerUpdateLatest    := true,
-    dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64"),
+    Docker / packageName := "kafka-message-scheduler",
+    dockerBaseImage      := "alpine:latest",
+    dockerRepository     := registry,
+    dockerLabels         := Map("maintainer" -> "Sky"),
+    dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
       Cmd("RUN", "apk add --no-cache bash openjdk17")

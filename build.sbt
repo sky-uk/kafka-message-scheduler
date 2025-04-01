@@ -56,7 +56,7 @@ val buildInfoSettings = (pkg: String) =>
 //    releaseSettings
 //  )
 
-lazy val scheduler3 = (project in file("scheduler-3"))
+lazy val scheduler = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
   .settings(scala3Settings)
   .settings(javaOptions += "-Dotel.java.global-autoconfigure.enabled=true")
@@ -78,7 +78,7 @@ lazy val it = (project in file("it"))
     Seq(
       libraryDependencies ++= Dependencies.it,
       Test / fork             := true,
-      dockerImageCreationTask := (scheduler3 / Docker / publishLocal).value,
+      dockerImageCreationTask := (scheduler / Docker / publishLocal).value,
       composeFile             := "it/docker/docker-compose.yml",
       scalafixConfig          := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
       scalafmtConfig          := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
@@ -86,7 +86,7 @@ lazy val it = (project in file("it"))
   }
   .settings(settings)
   .settings(Seq(envVars := kafkaPort))
-  .dependsOn(scheduler3 % "compile->compile;test->test")
+  .dependsOn(scheduler % "compile->compile;test->test")
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 
@@ -99,6 +99,6 @@ lazy val avro = (project in file("avro"))
 
 lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
-  .aggregate(scheduler3, it)
+  .aggregate(scheduler, it)
   .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)

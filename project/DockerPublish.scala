@@ -1,6 +1,6 @@
 import com.typesafe.sbt.packager.Keys.*
 import com.typesafe.sbt.packager.docker.Cmd
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerBuildxPlatforms, Docker}
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.Docker
 import sbt.Keys.*
 import sbt.*
 
@@ -8,7 +8,7 @@ import scala.sys.process.Process
 
 object DockerPublish {
 
-  lazy val dockerSettings = imageSettings // ++ dockerBuildxSettings
+  lazy val dockerSettings = imageSettings ++ dockerBuildxSettings
 
   lazy val ensureDockerBuildx    = taskKey[Unit]("Ensure that docker buildx configuration exists")
   lazy val dockerBuildWithBuildx = taskKey[Unit]("Build docker images using buildx")

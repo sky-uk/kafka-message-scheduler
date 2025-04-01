@@ -8,7 +8,7 @@ import cats.syntax.all.*
 import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
-import uk.sky.scheduler.config.KafkaConfig
+import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.message.Message
 import uk.sky.scheduler.message.Metadata.*
@@ -34,10 +34,10 @@ class Scheduler[F[_] : Concurrent, O](
 object Scheduler {
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
       supervisor: Supervisor[F]
-  ): ReaderT[F, KafkaConfig, Scheduler[F, Unit]] =
+  ): ReaderT[F, Config, Scheduler[F, Unit]] =
     for {
       schedulePublisher <- SchedulePublisher.live[F].lift
-      scheduler         <- ReaderT[F, KafkaConfig, Scheduler[F, Unit]] { conf =>
+      scheduler         <- ReaderT[F, Config, Scheduler[F, Unit]] { conf =>
                              for {
                                allowEnqueue  <- Deferred[F, Unit]
                                scheduleQueue <- ScheduleQueue.live(allowEnqueue, supervisor)

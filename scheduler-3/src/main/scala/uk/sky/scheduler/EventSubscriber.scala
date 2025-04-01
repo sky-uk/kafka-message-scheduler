@@ -12,7 +12,7 @@ import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.{Attribute, Attributes}
 import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
-import uk.sky.scheduler.config.KafkaConfig
+import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.converters.all.*
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
@@ -28,7 +28,7 @@ object EventSubscriber {
   private type Output = Either[ScheduleError, Option[ScheduleEvent]]
 
   def kafka[F[_] : Async : Parallel : LoggerFactory](
-      config: KafkaConfig,
+      config: Config,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {
 
@@ -36,14 +36,14 @@ object EventSubscriber {
       given Resource[F, Deserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
         avroBinaryDeserializer[F, AvroSchedule].map(_.option.map(_.sequence))
 
-      config.consumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]]
+      config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]]
     }
 
     val jsonConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[JsonSchedule]]] = {
       given Deserializer[F, Either[ScheduleError, Option[JsonSchedule]]] =
         jsonDeserializer[F, JsonSchedule].option.map(_.sequence)
 
-      config.consumerSettings[F, String, Either[ScheduleError, Option[JsonSchedule]]]
+      config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[JsonSchedule]]]
     }
 
     for {
@@ -138,7 +138,7 @@ object EventSubscriber {
   }
 
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
-      config: KafkaConfig,
+      config: Config,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] =
     kafka[F](config, loaded).flatMap(observed)

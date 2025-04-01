@@ -9,6 +9,7 @@ import uk.sky.BuildInfo
 import scala.concurrent.duration.FiniteDuration
 
 final case class Config(
+    topics: TopicConfig,
     kafka: KafkaConfig
 ) derives ConfigReader
 
@@ -17,14 +18,13 @@ object Config {
   val metadata: Metadata = Metadata(appName = BuildInfo.name, version = BuildInfo.version)
 
   given configShow: Show[Config] = Show.show { c =>
-    s"Kafka Config: Avro Topics [${c.kafka.topics.avro
-        .mkString(",")}]; Json Topics [${c.kafka.topics.json.mkString(",")}]; Broker ${c.kafka.consumer.bootstrapServers}"
+    s"Kafka Config: Avro Topics [${c.topics.avro
+        .mkString(",")}]; Json Topics [${c.topics.json.mkString(",")}]; Broker ${c.kafka.consumer.bootstrapServers}"
   }
 
 }
 
 final case class KafkaConfig(
-    topics: TopicConfig,
     consumer: ConsumerProducerConfig,
     producer: ConsumerProducerConfig,
     commit: CommitConfig

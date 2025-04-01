@@ -6,7 +6,7 @@ import cats.effect.Async
 import cats.syntax.all.*
 import fs2.*
 import fs2.kafka.*
-import uk.sky.scheduler.config.KafkaConfig
+import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.converters.scheduleEvent.*
 import uk.sky.scheduler.domain.ScheduleEvent
 
@@ -15,9 +15,9 @@ trait SchedulePublisher[F[_], O] {
 }
 
 object SchedulePublisher {
-  def kafka[F[_] : Async](config: KafkaConfig): SchedulePublisher[F, Unit] =
+  def kafka[F[_] : Async](config: Config): SchedulePublisher[F, Unit] =
     new SchedulePublisher[F, Unit] {
-      private val producerSettings = config.producerSettings[F, Array[Byte], Option[Array[Byte]]]
+      private val producerSettings = config.kafka.producerSettings[F, Array[Byte], Option[Array[Byte]]]
 
       override def publish: Pipe[F, ScheduleEvent, Unit] = scheduleEventStream =>
         for {
@@ -31,7 +31,7 @@ object SchedulePublisher {
         } yield ()
     }
 
-  def live[F[_] : Async : Parallel]: Reader[KafkaConfig, SchedulePublisher[F, Unit]] = Reader { config =>
+  def live[F[_] : Async : Parallel]: Reader[Config, SchedulePublisher[F, Unit]] = Reader { config =>
     kafka[F](config)
   }
 }

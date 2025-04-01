@@ -44,17 +44,17 @@ val buildInfoSettings = (pkg: String) =>
     buildInfoPackage := pkg
   )
 
-lazy val scheduler = (project in file("scheduler"))
-  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
-  .settings(scala2Settings)
-  .settings(
-    libraryDependencies ++= Dependencies.scheduler,
-    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
-    javaAgents += "io.kamon" % "kanela-agent" % "1.0.18",
-    buildInfoSettings("com.sky"),
-    dockerSettings,
-    releaseSettings
-  )
+//lazy val scheduler = (project in file("scheduler"))
+//  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
+//  .settings(scala2Settings)
+//  .settings(
+//    libraryDependencies ++= Dependencies.scheduler,
+//    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
+//    javaAgents += "io.kamon" % "kanela-agent" % "1.0.18",
+//    buildInfoSettings("com.sky"),
+//    dockerSettings,
+//    releaseSettings
+//  )
 
 lazy val scheduler3 = (project in file("scheduler-3"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
@@ -94,7 +94,7 @@ lazy val avro = (project in file("avro"))
   .settings(scala2Settings)
   .settings(libraryDependencies += Dependencies.avro4s)
   .settings(schema := (Compile / run).toTask("").value)
-  .dependsOn(scheduler % "compile->compile")
+//  .dependsOn(scheduler % "compile->compile")
   .disablePlugins(ReleasePlugin)
 
 lazy val root = (project in file("."))

@@ -15,6 +15,6 @@ object Aliases {
     s"checkFix; checkFmt; project $module; test; project it; dockerComposeUp; test"
 
   lazy val core: Settings =
-    alias("cdBuild", cdBuild("scheduler3")) ++
-      alias("prBuild", scalaPrBuild("scheduler3"))
+    alias("cdBuild", cdBuild("scheduler")) ++
+      alias("prBuild", scalaPrBuild("scheduler"))
 }

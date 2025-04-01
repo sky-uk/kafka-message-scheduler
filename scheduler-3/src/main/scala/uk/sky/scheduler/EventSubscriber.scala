@@ -65,7 +65,8 @@ object EventSubscriber {
         }
 
       private val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[AvroSchedule]]]] =
-        config.topics.avro.toNel
+        config.topics.avro
+          .flatMap(_.toNel)
           .fold(Stream.exec(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
             TopicLoader.loadAndRun(_, avroConsumerSettings) { exitCase =>
               avroLoadedRef.set(true) *> onLoadCompare(exitCase)
@@ -73,7 +74,8 @@ object EventSubscriber {
           )
 
       private val jsonStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule]]]] =
-        config.topics.json.toNel
+        config.topics.json
+          .flatMap(_.toNel)
           .fold(Stream.exec(jsonLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
             TopicLoader.loadAndRun(_, jsonConsumerSettings) { exitCase =>
               jsonLoadedRef.set(true) *> onLoadCompare(exitCase)

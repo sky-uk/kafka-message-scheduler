@@ -22,8 +22,4 @@ object DockerComposeSettings {
     )
   )
 
-  lazy val settings = Seq(
-    variablesForSubstitution ++= Map("CONTAINER_REPOSITORY" -> allRegistries.head) ++ kafkaPort
-  )
-
 }

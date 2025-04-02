@@ -32,7 +32,7 @@ object DockerPublish {
 
   private lazy val dockerBuildxSettings = Seq(
     ensureDockerBuildx    := {
-      if (Process("docker buildx inspect multi-arch-builder").! == 1) {
+      if (Process("docker buildx inspect multi-arch-builder").! != 0) {
         Process("docker buildx create --use --name multi-arch-builder", baseDirectory.value).!
       }
     },

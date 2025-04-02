@@ -69,7 +69,6 @@ lazy val scheduler = (project in file("scheduler-3"))
     scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
     scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )
-  .settings(Aliases.core)
 
 lazy val it = (project in file("it"))
   .enablePlugins(DockerComposePlugin)
@@ -85,7 +84,7 @@ lazy val it = (project in file("it"))
     )
   }
   .settings(settings)
-  .settings(Seq(envVars := kafkaPort))
+  .settings(Seq(envVars := Map(kafkaPort)))
   .dependsOn(scheduler % "compile->compile;test->test")
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
@@ -94,7 +93,7 @@ lazy val avro = (project in file("avro"))
   .settings(scala2Settings)
   .settings(libraryDependencies += Dependencies.avro4s)
   .settings(schema := (Compile / run).toTask("").value)
-//  .dependsOn(scheduler % "compile->compile")
+  .dependsOn(scheduler % "compile->compile")
   .disablePlugins(ReleasePlugin)
 
 lazy val root = (project in file("."))
@@ -102,3 +101,4 @@ lazy val root = (project in file("."))
   .aggregate(scheduler, it)
   .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)
+  .settings(Aliases.core)

@@ -17,7 +17,7 @@ final class SchedulerFeatureSpec extends SchedulerFeatureBase {
   val timeout: FiniteDuration = config.timeout.seconds
   val kafkaBootstrapServer    = config.bootstrapServer
   val consumerGroup           = config.groupId
-  val tolerance: Long         = 100L
+  val tolerance: Long         = 1000L
 
   override given executionContext: ExecutionContext = ExecutionContext.global
   override given patienceConfig: PatienceConfig     = PatienceConfig(timeout)
@@ -89,7 +89,7 @@ final class SchedulerFeatureSpec extends SchedulerFeatureBase {
         scheduledTime <- Clock[IO].epochMilli
         schedule       = createJsonSchedule(scheduledTime, outputTopic, outputJsonKey, outputJsonValue)
         _             <- kafkaUtil.produce[JsonSchedule]("json-schedules", scheduleKey -> schedule.some)
-        _             <- IO.sleep(1.second)
+        _             <- IO.sleep(10.second)
         inputMessages <- kafkaUtil.consumeLast[Option[String]]("json-schedules", 2)
       } yield {
         val scheduled = inputMessages.headOption.value

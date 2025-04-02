@@ -67,9 +67,8 @@ lazy val scheduler = (project in file("scheduler-3"))
     buildInfoSettings("uk.sky"),
     dockerSettings,
     releaseSettings,
-    scalafixConfig        := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
-    scalafmtConfig        := (ThisBuild / baseDirectory).value / ".scalafmt3.conf",
-    dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64")
+    scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
+    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
   )
 
 lazy val it = (project in file("it"))

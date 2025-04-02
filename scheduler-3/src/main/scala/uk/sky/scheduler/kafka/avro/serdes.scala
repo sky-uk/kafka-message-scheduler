@@ -8,7 +8,7 @@ import uk.sky.scheduler.error.ScheduleError
 import vulcan.Codec
 
 given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
-  name = "ScheduleWithHeaders",
+  name = "Schedule",
   namespace = "com.sky.kms.domain.Schedule"
 )(field =>
   (

@@ -1,4 +1,4 @@
-import sbt.{addCommandAlias, Def, Task}
+import sbt.{addCommandAlias, Def}
 
 object Aliases {
 
@@ -9,7 +9,7 @@ object Aliases {
   def alias(name: String, value: String): Settings = addCommandAlias(s"$ModuleName-$name", value)
 
   def cdBuild(module: String) =
-    s"checkFix; checkFmt; project $module; test; release with-defaults;"
+    s"checkFix; checkFmt; project $module; test;  release with-defaults; release with-defaults;"
 
   def scalaPrBuild(module: String) =
     s"checkFix; checkFmt; project $module; test; project it; dockerComposeUp; test"

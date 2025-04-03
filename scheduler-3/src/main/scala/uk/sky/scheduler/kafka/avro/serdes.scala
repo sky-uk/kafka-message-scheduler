@@ -9,7 +9,7 @@ import vulcan.Codec
 
 given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
   name = "Schedule",
-  namespace = "com.sky.kms.domain.Schedule"
+  namespace = "uk.sky.scheduler.domain"
 )(field =>
   (
     field("time", _.time, doc = "The time to execute the Schedule, in epoch milliseconds.".some),

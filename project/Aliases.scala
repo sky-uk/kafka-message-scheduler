@@ -1,4 +1,4 @@
-import sbt.{addCommandAlias, Def, Task}
+import sbt.{addCommandAlias, Def}
 
 object Aliases {
 

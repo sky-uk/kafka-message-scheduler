@@ -51,7 +51,7 @@ object DockerPublish {
             dockerAlias.value.withRegistryHost(registry) + " .",
           baseDirectory.value / "target" / "docker" / "stage"
         ).!
-//      }
+      }
     },
     Docker / publish      := Def
       .sequential(

@@ -8,8 +8,8 @@ import uk.sky.scheduler.error.ScheduleError
 import vulcan.Codec
 
 given avroScheduleCodec: Codec[AvroSchedule] = Codec.record[AvroSchedule](
-  name = "Schedule",
-  namespace = "uk.sky.scheduler.domain"
+  name = "ScheduleWithHeaders",
+  namespace = "com.sky.kms.domain.Schedule"
 )(field =>
   (
     field("time", _.time, doc = "The time to execute the Schedule, in epoch milliseconds.".some),

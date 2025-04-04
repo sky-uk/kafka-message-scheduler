@@ -2,7 +2,6 @@ package uk.sky.scheduler
 
 import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
-import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
 import uk.sky.scheduler.util.KafkaUtil
@@ -49,7 +48,7 @@ final class SchedulerFeatureSpec extends SchedulerFeatureBase {
       for {
         scheduledTime <- Clock[IO].epochMilli(_.plusSeconds(5))
         schedule       = createAvroSchedule(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
-        _             <- kafkaUtil.produce[AvroSchedule]("avro-schedules", "input-key-avro" -> schedule.some)
+        _             <- kafkaUtil.produce[Schedule]("avro-schedules", "input-key-avro" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement

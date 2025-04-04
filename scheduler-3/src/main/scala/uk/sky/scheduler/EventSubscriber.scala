@@ -14,10 +14,10 @@ import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.converters.all.*
-import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.domain.{Schedule, ScheduleEvent, ScheduleV0}
 import uk.sky.scheduler.error.ScheduleError
-import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, AvroSchedule}
-import uk.sky.scheduler.kafka.json.{jsonDeserializer, JsonSchedule}
+import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, avroScheduleV0Codec}
+import uk.sky.scheduler.kafka.json.{JsonSchedule, jsonDeserializer}
 import uk.sky.scheduler.message.Message
 
 trait EventSubscriber[F[_]] {
@@ -32,11 +32,16 @@ object EventSubscriber {
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {
 
-    val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]] = {
-      given Resource[F, Deserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
-        avroBinaryDeserializer[F, AvroSchedule].map(_.option.map(_.sequence))
+    val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[Schedule]]] = {
+      given Resource[F, Deserializer[F, Either[ScheduleError, Option[Schedule]]]] =
+        avroBinaryDeserializer[F, Schedule]
+          .orElse {
+            avroBinaryDeserializer[F, ScheduleV0]
+              .map(_.option.map(_.map(_.map(_.schedule))))
+          }
+          .map(_.option.map(_.sequence))
 
-      config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]]
+      config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[Schedule]]]
     }
 
     val jsonConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[JsonSchedule]]] = {
@@ -64,7 +69,7 @@ object EventSubscriber {
           case ExitCase.Errored(_) | ExitCase.Canceled => Async[F].unit
         }
 
-      private val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[AvroSchedule]]]] =
+      private val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[Schedule]]]] =
         config.topics.avro
           .flatMap(_.toNel)
           .fold(Stream.exec(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(

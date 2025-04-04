@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import fs2.kafka.ValueSerializer
 import uk.sky.scheduler.circe.scheduleEncoder
 import uk.sky.scheduler.converters.base64.*
-import uk.sky.scheduler.kafka.avro.{avroBinarySerializer, avroScheduleCodec, AvroSchedule}
+import uk.sky.scheduler.kafka.avro.{avroBinarySerializer, avroScheduleCodec}
 import uk.sky.scheduler.kafka.json.{jsonSerializer, JsonSchedule}
 
 import java.nio.charset.StandardCharsets
@@ -26,15 +26,15 @@ trait ScheduleHelpers {
       topic: String,
       key: String,
       value: String,
-      optionalHeaders: Option[Map[String, Array[Byte]]] = None
-  ): AvroSchedule = AvroSchedule(
+      headers: Map[String, Array[Byte]] = Map.empty[String, Array[Byte]]
+  ): Schedule = Schedule(
     time,
     topic,
     key.getBytes(StandardCharsets.UTF_8),
     value.getBytes(StandardCharsets.UTF_8).some,
-    optionalHeaders
+    headers
   )
 
   given ValueSerializer[IO, JsonSchedule] = jsonSerializer[IO, JsonSchedule]
-  given ValueSerializer[IO, AvroSchedule] = avroBinarySerializer[IO, AvroSchedule]
+  given ValueSerializer[IO, Schedule]     = avroBinarySerializer[IO, Schedule]
 }

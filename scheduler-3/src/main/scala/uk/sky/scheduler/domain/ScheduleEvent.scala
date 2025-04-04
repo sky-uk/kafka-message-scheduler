@@ -42,3 +42,18 @@ final case class Schedule(
     value: Option[Array[Byte]],
     headers: Map[String, Array[Byte]]
 )
+
+final case class ScheduleV0(
+    time: Long,
+    topic: String,
+    key: Array[Byte],
+    value: Option[Array[Byte]]
+) {
+  val schedule: Schedule = Schedule(
+    time = time,
+    topic = topic,
+    key = key,
+    value = value,
+    headers = Map.empty
+  )
+}

@@ -25,6 +25,16 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
     optionalHeaders = Map("headerKey" -> "headerValue".getBytes(StandardCharsets.UTF_8)).some
   )
 
+  case class TestSchedule(
+      time: Long,
+      topic: String,
+      key: Array[Byte],
+      value: Option[Array[Byte]],
+      headers: Map[String, Array[Byte]]
+  )
+
+  implicit val testScheduleCodec: Codec[TestSchedule] = Codec.derive[TestSchedule]
+
   private val scheduleWithoutHeaders: AvroSchedule =
     scheduleWithHeaders.copy(optionalHeaders = none[Map[String, Array[Byte]]])
 
@@ -63,6 +73,34 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
       for {
         deserialized <- avroBinaryDeserializer[IO, AvroSchedule].use(_.deserialize("test", Headers.empty, bytes))
       } yield deserialized.left.value shouldBe a[ScheduleError.InvalidAvroError]
+    }
+
+    "be able to deserialise empty headers" in {
+      val exampleWithHeaders = TestSchedule(
+        time = Long.MinValue,
+        topic = "topic",
+        key = "key".getBytes(StandardCharsets.UTF_8),
+        value = "value".getBytes(StandardCharsets.UTF_8).some,
+        headers = Map.empty[String, Array[Byte]]
+      )
+      for {
+        avroBinary   <- Codec.toBinary[TestSchedule](exampleWithHeaders).liftAvro[IO]
+        deserialised <- avroBinaryDeserializer[IO, AvroSchedule].use(_.deserialize("test", Headers.empty, avroBinary))
+      } yield deserialised.value should equalSchedule(scheduleWithoutHeaders)
+    }
+
+    "be able to deserialise headers" in {
+      val exampleWithHeaders = TestSchedule(
+        time = Long.MinValue,
+        topic = "topic",
+        key = "key".getBytes(StandardCharsets.UTF_8),
+        value = "value".getBytes(StandardCharsets.UTF_8).some,
+        headers = Map("headerKey" -> "headerValue".getBytes(StandardCharsets.UTF_8))
+      )
+      for {
+        avroBinary   <- Codec.toBinary[TestSchedule](exampleWithHeaders).liftAvro[IO]
+        deserialised <- avroBinaryDeserializer[IO, AvroSchedule].use(_.deserialize("test", Headers.empty, avroBinary))
+      } yield deserialised.value should equalSchedule(scheduleWithHeaders)
     }
   }
 

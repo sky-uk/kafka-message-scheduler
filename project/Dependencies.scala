@@ -109,7 +109,7 @@ object Dependencies {
     private lazy val version = "1.11.1"
 
     val core    = "com.github.fd4s" %% "vulcan"         % version
-    val generic = "com.github.fd4s" %% "vulcan-generic" % version % Test
+    val generic = "com.github.fd4s" %% "vulcan-generic" % version
   }
 
   object Circe {

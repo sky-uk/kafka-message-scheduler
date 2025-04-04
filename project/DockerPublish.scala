@@ -31,7 +31,7 @@ object DockerPublish {
   val additionalRegistries = allRegistries.drop(1)    // Remove the first host, because it is already provide.
   println(s"????????????????? ALL Registries: $allRegistries")
   println("Checking docker buildx version!!!!!!!!!!")
-  Process("docker buildx version")
+  Process("docker buildx version").!
 
   private lazy val dockerBuildxSettings = Seq(
       ensureDockerBuildx    := {

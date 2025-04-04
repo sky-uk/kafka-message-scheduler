@@ -27,12 +27,12 @@ object DockerPublish {
   )
 
   val allRegistries        = sys.env.get("CONTAINER_REPOSITORIES").fold(List("test"))(_.split(" ").toList)
-  streams.value.log(s"????????????????? ALL Registries: $allRegistries")
   val registry             = allRegistries.headOption // Provide a docker registry host
   val additionalRegistries = allRegistries.drop(1)    // Remove the first host, because it is already provide.
 
   private lazy val dockerBuildxSettings = Seq(
     ensureDockerBuildx    := {
+      streams.value.log(s"????????????????? ALL Registries: $allRegistries")
       streams.value.log("Checking docker buildx version!!!!!!!!!!")
       Process("docker buildx version")
 //      if (Process("docker buildx inspect multi-arch-builder").! != 0) {

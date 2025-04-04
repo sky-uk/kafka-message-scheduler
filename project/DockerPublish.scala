@@ -29,7 +29,7 @@ object DockerPublish {
   val allRegistries        = sys.env.get("CONTAINER_REPOSITORIES").fold(List("test"))(_.split(" ").toList)
   val registry             = allRegistries.headOption // Provide a docker registry host
   val additionalRegistries = allRegistries.drop(1)    // Remove the first host, because it is already provide.
- println(s"!!!!! Aliase ${dockerAlias.value.withRegistryHost(registry)}")
+
   private lazy val dockerBuildxSettings = Seq(
       ensureDockerBuildx    := {
       if (Process("docker buildx inspect multi-arch-builder").! != 0) {
@@ -45,6 +45,7 @@ object DockerPublish {
     },
     dockerBuildWithBuildx := {
       streams.value.log("Building and pushing image with Buildx")
+      println(s"!!!!! Aliase ${dockerAlias.value.withRegistryHost(registry)}")
       dockerAliases.value.foreach { alias =>
         Process(
           "docker buildx build --platform=linux/arm64,linux/amd64 --push -t " +

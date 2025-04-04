@@ -31,28 +31,22 @@ object DockerPublish {
   val additionalRegistries = allRegistries.drop(1)    // Remove the first host, because it is already provide.
 
   private lazy val dockerBuildxSettings = Seq(
-      ensureDockerBuildx    := {
-      if (Process("docker buildx inspect multi-arch-builder").! != 0) {
+    ensureDockerBuildx    := {
+      if (Process("docker buildx inspect multi-arch-builder").! == 1) {
         Process("docker context create multi-arch-context", baseDirectory.value).!
         Process(
           "docker buildx create --name multiple-arch-builder --use multi-arch-context",
           baseDirectory.value
         ).!
       }
-//      if (Process("docker buildx inspect multi-arch-builder").! == 1) {
-//        Process("docker buildx create --use --name multi-arch-builder", baseDirectory.value).!
-//      }
     },
     dockerBuildWithBuildx := {
       streams.value.log("Building and pushing image with Buildx")
-      println(s"!!!!! Aliase ${dockerAlias.value.withRegistryHost(registry)}")
-      dockerAliases.value.foreach { alias =>
-        Process(
-          "docker buildx build --platform=linux/arm64,linux/amd64 --push -t " +
-            dockerAlias.value.withRegistryHost(registry) + " .",
-          baseDirectory.value / "target" / "docker" / "stage"
-        ).!
-      }
+      Process(
+        "docker buildx build --platform=linux/arm64,linux/amd64 --push -t " +
+          dockerAlias.value.withRegistryHost(registry) + " .",
+        baseDirectory.value / "target" / "docker" / "stage"
+      ).!
     },
     Docker / publish      := Def
       .sequential(
@@ -62,4 +56,5 @@ object DockerPublish {
       )
       .value
   )
+
 }

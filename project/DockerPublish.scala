@@ -30,11 +30,11 @@ object DockerPublish {
   val registry             = allRegistries.headOption // Provide a docker registry host
   val additionalRegistries = allRegistries.drop(1)    // Remove the first host, because it is already provide.
   println(s"????????????????? ALL Registries: $allRegistries")
+  println("Checking docker buildx version!!!!!!!!!!")
+  Process("docker buildx version")
 
   private lazy val dockerBuildxSettings = Seq(
       ensureDockerBuildx    := {
-      println("Checking docker buildx version!!!!!!!!!!")
-      Process("docker buildx version")
 //      if (Process("docker buildx inspect multi-arch-builder").! != 0) {
 //        Process("docker context create multi-arch-context", baseDirectory.value).!
 //        Process(
@@ -48,13 +48,13 @@ object DockerPublish {
     },
     dockerBuildWithBuildx := {
       streams.value.log("Building and pushing image with Buildx")
-      dockerAliases.value.foreach { alias =>
+//      dockerAliases.value.foreach { alias =>
         Process(
           "docker buildx build --platform=linux/arm64,linux/amd64 --push -t " +
-            alias + " .",
+            dockerAlias.value.withRegistryHost(registry) + " .",
           baseDirectory.value / "target" / "docker" / "stage"
         ).!
-      }
+//      }
     },
     Docker / publish      := Def
       .sequential(

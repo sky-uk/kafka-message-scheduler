@@ -43,7 +43,7 @@ final case class Schedule(
     headers: Map[String, Array[Byte]]
 )
 
-final case class ScheduleV0(
+final case class ScheduleWithoutHeaders(
     time: Long,
     topic: String,
     key: Array[Byte],

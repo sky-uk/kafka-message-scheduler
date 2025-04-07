@@ -4,7 +4,7 @@ import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
-import uk.sky.scheduler.domain.{Schedule, ScheduleV0}
+import uk.sky.scheduler.domain.{Schedule, ScheduleWithoutHeaders}
 import uk.sky.scheduler.util.KafkaUtil
 
 import scala.concurrent.ExecutionContext
@@ -95,15 +95,15 @@ final class SchedulerFeatureSpec extends SchedulerFeatureBase {
       }
     }
 
-    "process a V0 avro schedule" in { kafkaUtil =>
+    "process an avro schedule without headers" in { kafkaUtil =>
       val outputTopic     = "output-avro-topic"
       val outputAvroKey   = "avroKey"
       val outputAvroValue = "avroValue"
 
       for {
         scheduledTime <- Clock[IO].epochMilli(_.plusSeconds(5))
-        schedule       = createAvroScheduleV0(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
-        _             <- kafkaUtil.produce[ScheduleV0]("avro-schedules", "input-key-avro" -> schedule.some)
+        schedule       = createAvroScheduleWithoutHeaders(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
+        _             <- kafkaUtil.produce[ScheduleWithoutHeaders]("avro-schedules", "input-key-avro" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement

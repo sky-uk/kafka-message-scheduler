@@ -4,13 +4,13 @@ import cats.effect.{Resource, Sync}
 import cats.syntax.all.*
 import fs2.kafka.{Deserializer, Serializer, ValueDeserializer, ValueSerializer}
 import org.apache.avro.Schema
-import uk.sky.scheduler.domain.{Schedule, ScheduleV0}
+import uk.sky.scheduler.domain.{Schedule, ScheduleWithoutHeaders}
 import uk.sky.scheduler.error.ScheduleError
 import vulcan.Codec
 import vulcan.generic.*
 
-given avroScheduleCodec: Codec[Schedule]     = Codec.derive[Schedule]
-given avroScheduleV0Codec: Codec[ScheduleV0] = Codec.derive[ScheduleV0]
+given avroScheduleCodec: Codec[Schedule]                             = Codec.derive[Schedule]
+given avroScheduleWithoutHeadersCodec: Codec[ScheduleWithoutHeaders] = Codec.derive[ScheduleWithoutHeaders]
 
 def avroBinaryDeserializer[F[_] : Sync, V : Codec]: Resource[F, ValueDeserializer[F, Either[ScheduleError, V]]] =
   Codec[V].schema match {

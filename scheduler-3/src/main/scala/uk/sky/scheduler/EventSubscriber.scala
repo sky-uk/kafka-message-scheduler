@@ -14,10 +14,10 @@ import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.converters.all.*
-import uk.sky.scheduler.domain.{Schedule, ScheduleEvent, ScheduleV0}
+import uk.sky.scheduler.domain.{Schedule, ScheduleEvent}
 import uk.sky.scheduler.error.ScheduleError
-import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, avroScheduleV0Codec}
-import uk.sky.scheduler.kafka.json.{JsonSchedule, jsonDeserializer}
+import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec}
+import uk.sky.scheduler.kafka.json.{jsonDeserializer, JsonSchedule}
 import uk.sky.scheduler.message.Message
 
 trait EventSubscriber[F[_]] {
@@ -35,10 +35,6 @@ object EventSubscriber {
     val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[Schedule]]] = {
       given Resource[F, Deserializer[F, Either[ScheduleError, Option[Schedule]]]] =
         avroBinaryDeserializer[F, Schedule]
-          .orElse {
-            avroBinaryDeserializer[F, ScheduleV0]
-              .map(_.option.map(_.map(_.map(_.schedule))))
-          }
           .map(_.option.map(_.sequence))
 
       config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[Schedule]]]

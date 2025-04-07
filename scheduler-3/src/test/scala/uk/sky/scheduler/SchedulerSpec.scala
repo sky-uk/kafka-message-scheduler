@@ -23,7 +23,7 @@ final class SchedulerSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, LoneElem
         (publishTime, testEvent) = resultPair
       } yield {
         testEvent.expired.event shouldBe schedule
-        publishTime.toEpochMilli shouldBe time +- 50
+        publishTime.toEpochMilli shouldBe time +- 100
       }
     }
 

@@ -14,9 +14,9 @@ import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.converters.all.*
-import uk.sky.scheduler.domain.{Schedule, ScheduleEvent}
+import uk.sky.scheduler.domain.{Schedule, ScheduleEvent, ScheduleWithoutHeaders}
 import uk.sky.scheduler.error.ScheduleError
-import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec}
+import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, avroScheduleWithoutHeadersCodec}
 import uk.sky.scheduler.kafka.json.{jsonDeserializer, JsonSchedule}
 import uk.sky.scheduler.message.Message
 
@@ -33,9 +33,24 @@ object EventSubscriber {
   ): F[EventSubscriber[F]] = {
 
     val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[Schedule]]] = {
-      given Resource[F, Deserializer[F, Either[ScheduleError, Option[Schedule]]]] =
-        avroBinaryDeserializer[F, Schedule]
-          .map(_.option.map(_.sequence))
+      given Resource[F, Deserializer[F, Either[ScheduleError, Option[Schedule]]]] = {
+        val scheduleDeserialzer
+            : Resource[F, GenericDeserializer[KeyOrValue, F, Either[ScheduleError, Option[Schedule]]]] =
+          avroBinaryDeserializer[F, Schedule].map(_.option.map(_.sequence))
+        val scheduleWithoutHeadersDeserialzer
+            : Resource[F, GenericDeserializer[KeyOrValue, F, Either[ScheduleError, Option[Schedule]]]] =
+          avroBinaryDeserializer[F, ScheduleWithoutHeaders].map(_.option.map(_.sequence.map(_.map(_.schedule))))
+        scheduleDeserialzer.flatMap { sDeserializer =>
+          scheduleWithoutHeadersDeserialzer.map { swhDeserializer =>
+            sDeserializer.product[KeyOrValue, Either[ScheduleError, Option[Schedule]]](swhDeserializer).map {
+              case (Right(schedule), _)                     => Right(schedule)
+              case (Left(_), Right(scheduleWithoutHeaders)) => Right(scheduleWithoutHeaders)
+              case (Left(scheduleError), Left(_))           => Left(scheduleError)
+            }
+          }
+        }
+
+      }
 
       config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[Schedule]]]
     }

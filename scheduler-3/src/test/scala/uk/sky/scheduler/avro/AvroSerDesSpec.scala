@@ -8,7 +8,7 @@ import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{EitherValues, OptionValues}
-import uk.sky.scheduler.domain.{Schedule, ScheduleV0}
+import uk.sky.scheduler.domain.{Schedule, ScheduleWithoutHeaders}
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.util.ScheduleMatchers
 import vulcan.generic.*
@@ -26,18 +26,8 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
     headers = Map("headerKey" -> "headerValue".getBytes(StandardCharsets.UTF_8))
   )
 
-  private val scheduleWithoutHeaders: Schedule =
+  private val scheduleWithEmptyHeaders: Schedule =
     scheduleWithHeaders.copy(headers = Map.empty[String, Array[Byte]])
-
-  case class WritersSchedule(
-      time: Long,
-      topic: String,
-      key: Array[Byte],
-      value: Option[Array[Byte]],
-      headers: Map[String, Array[Byte]]
-  )
-
-  given testScheduleCodec: Codec[WritersSchedule] = Codec.derive[WritersSchedule]
 
   "avro SerDes" should {
 
@@ -62,11 +52,11 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
       } yield deserialized.value should equalSchedule(scheduleWithHeaders)
     }
 
-    "deserialize a Schedule without headers" in {
+    "deserialize a Schedule with empty headers" in {
       for {
-        avroBinary   <- Codec.toBinary[Schedule](scheduleWithoutHeaders).liftAvro[IO]
+        avroBinary   <- Codec.toBinary[Schedule](scheduleWithEmptyHeaders).liftAvro[IO]
         deserialized <- avroBinaryDeserializer[IO, Schedule].use(_.deserialize("test", Headers.empty, avroBinary))
-      } yield deserialized.value should equalSchedule(scheduleWithoutHeaders)
+      } yield deserialized.value should equalSchedule(scheduleWithEmptyHeaders)
     }
 
     "error if not valid Avro" in {
@@ -76,56 +66,21 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
       } yield deserialized.left.value shouldBe a[ScheduleError.InvalidAvroError]
     }
 
-    "be able to deserialise legacy schedules" in {
+    "be able to deserialise schedules without headers" in {
       // Old Schedule data did not have headers
-      case class LegacySchedule(
-          time: Long,
-          topic: String,
-          key: Array[Byte],
-          value: Option[Array[Byte]]
-      )
-      given legacyScheduleCodec: Codec[LegacySchedule] = Codec.derive[LegacySchedule]
 
-      val legacySchedule: LegacySchedule = LegacySchedule(
-        time = scheduleWithoutHeaders.time,
-        topic = scheduleWithoutHeaders.topic,
-        key = scheduleWithoutHeaders.key,
-        value = scheduleWithoutHeaders.value
+      val schedule: ScheduleWithoutHeaders = ScheduleWithoutHeaders(
+        time = scheduleWithEmptyHeaders.time,
+        topic = scheduleWithEmptyHeaders.topic,
+        key = scheduleWithEmptyHeaders.key,
+        value = scheduleWithEmptyHeaders.value
       )
 
       for {
-        avroBinary   <- Codec.toBinary[LegacySchedule](legacySchedule).liftAvro[IO]
-        deserialized <- avroBinaryDeserializer[IO, ScheduleV0].use(_.deserialize("test", Headers.empty, avroBinary))
-      } yield deserialized.value.schedule should equalSchedule(scheduleWithoutHeaders)
-    }
-
-    "be able to deserialise writers' schedule without headers" in {
-
-      val exampleWithoutHeaders = WritersSchedule(
-        time = scheduleWithoutHeaders.time,
-        topic = scheduleWithoutHeaders.topic,
-        key = scheduleWithoutHeaders.key,
-        value = scheduleWithoutHeaders.value,
-        headers = Map.empty[String, Array[Byte]]
-      )
-      for {
-        avroBinary   <- Codec.toBinary[WritersSchedule](exampleWithoutHeaders).liftAvro[IO]
-        deserialised <- avroBinaryDeserializer[IO, Schedule].use(_.deserialize("test", Headers.empty, avroBinary))
-      } yield deserialised.value should equalSchedule(scheduleWithoutHeaders)
-    }
-
-    "be able to deserialise writers' schedule with headers" in {
-      val exampleWithHeaders = WritersSchedule(
-        time = scheduleWithHeaders.time,
-        topic = scheduleWithHeaders.topic,
-        key = scheduleWithHeaders.key,
-        value = scheduleWithHeaders.value,
-        headers = scheduleWithHeaders.headers
-      )
-      for {
-        avroBinary   <- Codec.toBinary[WritersSchedule](exampleWithHeaders).liftAvro[IO]
-        deserialised <- avroBinaryDeserializer[IO, Schedule].use(_.deserialize("test", Headers.empty, avroBinary))
-      } yield deserialised.value should equalSchedule(scheduleWithHeaders)
+        avroBinary   <- Codec.toBinary[ScheduleWithoutHeaders](schedule).liftAvro[IO]
+        deserialized <-
+          avroBinaryDeserializer[IO, ScheduleWithoutHeaders].use(_.deserialize("test", Headers.empty, avroBinary))
+      } yield deserialized.value.schedule should equalSchedule(scheduleWithEmptyHeaders)
     }
   }
 

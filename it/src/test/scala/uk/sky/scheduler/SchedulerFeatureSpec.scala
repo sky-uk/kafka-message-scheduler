@@ -2,13 +2,14 @@ package uk.sky.scheduler
 
 import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
+import uk.sky.scheduler.domain.{Schedule, ScheduleWithoutHeaders}
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
-import uk.sky.scheduler.domain.{Schedule, ScheduleWithoutHeaders}
 import uk.sky.scheduler.util.KafkaUtil
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
+
 import util.SchedulerFeatureBase
 
 final class SchedulerFeatureSpec extends SchedulerFeatureBase {

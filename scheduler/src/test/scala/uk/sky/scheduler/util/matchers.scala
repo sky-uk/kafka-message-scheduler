@@ -3,13 +3,14 @@ package uk.sky.scheduler.util
 import cats.syntax.all.*
 import fs2.kafka.ProducerRecord
 import org.scalatest.matchers.{MatchResult, Matcher}
-import uk.sky.scheduler.domain.{Schedule, ScheduleEvent}
+import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.Message
 
-private class ScheduleMatcher(right: Schedule) extends Matcher[Schedule] {
-  override def apply(left: Schedule): MatchResult =
+private class AvroScheduleMatcher(right: AvroSchedule) extends Matcher[AvroSchedule] {
+  override def apply(left: AvroSchedule): MatchResult =
     MatchResult(
       left === right,
       s"${left.show} did not equal ${right.show}",
@@ -51,7 +52,7 @@ private class MessageMatcher(right: Message[Either[ScheduleError, Option[Schedul
   */
 
 trait ScheduleMatchers {
-  def equalSchedule(expectedSchedule: Schedule): ScheduleMatcher = ScheduleMatcher(expectedSchedule)
+  def equalSchedule(expectedSchedule: AvroSchedule): AvroScheduleMatcher = AvroScheduleMatcher(expectedSchedule)
 
   def equalSchedule(expectedSchedule: JsonSchedule): JsonScheduleMatcher = JsonScheduleMatcher(expectedSchedule)
 }

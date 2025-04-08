@@ -2,18 +2,20 @@ package uk.sky.scheduler.converters
 
 import cats.syntax.all.*
 import fs2.kafka.ConsumerRecord
+import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import io.scalaland.chimney.partial.Result
 import org.typelevel.ci.CIString
 import uk.sky.scheduler.domain.{Metadata, Schedule, ScheduleEvent}
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.{Message, Metadata as MessageMetadata}
 
 import scala.util.chaining.*
 
 private trait ConsumerRecordConverter {
-  extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | Schedule]]]) {
+  extension (cr: ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]]) {
     def toMessage: Message[Either[ScheduleError, Option[ScheduleEvent]]] = {
       val key: String   = cr.key
       val topic: String = cr.topic
@@ -27,7 +29,8 @@ private trait ConsumerRecordConverter {
           val metadata = Metadata(key, topic)
 
           input match {
-            case schedule: Schedule =>
+            case avroSchedule: AvroSchedule =>
+              val schedule = avroSchedule.transformInto[Schedule]
               ScheduleEvent(metadata, schedule).some.asRight[ScheduleError]
 
             case jsonSchedule: JsonSchedule =>

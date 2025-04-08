@@ -86,7 +86,7 @@ object Dependencies {
   }
 
   val avro4s =
-    "com.sksamuel.avro4s" %% "avro4s-core" % "4.1.2" // todo: this will need to be depricated in the issue #126
+    "com.sksamuel.avro4s" %% "avro4s-core" % "5.0.14" // todo: this will need to be depricated in the issue #126
   val chimney        = "io.scalaland"  %% "chimney"                % "1.5.0"
   val fs2TopicLoader = "uk.sky"        %% "fs2-kafka-topic-loader" % "0.1.0"
   val mouse          = "org.typelevel" %% "mouse"                  % "1.3.2"

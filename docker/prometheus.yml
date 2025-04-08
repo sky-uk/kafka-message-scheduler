@@ -5,6 +5,6 @@ global:
 scrape_configs:
   - job_name: 'kafka-message-scheduler'
     static_configs:
-      - targets: ['kms:9095']
+      - targets: ['kms:9401']
         labels:
           app_name: 'kafka-message-scheduler'

@@ -36,8 +36,10 @@ object EventSubscriber {
       given Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] = {
         val scheduleDeserialzer: Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
           avroBinaryDeserializer[F, AvroSchedule].map(_.option.map(_.sequence))
-        val scheduleWithoutHeadersDeserializer
-            : Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
+        val scheduleWithoutHeadersDeserializer: Resource[
+          F,
+          ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]
+        ] =
           avroBinaryDeserializer[F, AvroScheduleWithoutHeaders].map(_.option.map(_.sequence.map(_.map(_.avroSchedule))))
 
         for {

@@ -1,5 +1,7 @@
 package uk.sky.scheduler.util
 
+import java.nio.charset.StandardCharsets
+
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.kafka.ValueSerializer
@@ -8,8 +10,6 @@ import uk.sky.scheduler.converters.base64.*
 import uk.sky.scheduler.domain.{Schedule, ScheduleWithoutHeaders}
 import uk.sky.scheduler.kafka.avro.{avroBinarySerializer, avroScheduleCodec, avroScheduleWithoutHeadersCodec}
 import uk.sky.scheduler.kafka.json.{jsonSerializer, JsonSchedule}
-
-import java.nio.charset.StandardCharsets
 
 trait ScheduleHelpers {
 

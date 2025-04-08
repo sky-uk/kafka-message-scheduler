@@ -1,5 +1,7 @@
 package uk.sky.scheduler.util
 
+import java.time.Instant
+
 import cats.effect.Async
 import cats.effect.syntax.all.*
 import cats.syntax.all.*
@@ -9,7 +11,6 @@ import org.apache.kafka.common.TopicPartition
 import org.scalatest.exceptions.TestFailedException
 import uk.sky.scheduler.util.KafkaUtil.ConsumerResult
 
-import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 
 trait KafkaUtil[F[_]] {

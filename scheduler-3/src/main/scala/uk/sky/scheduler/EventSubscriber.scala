@@ -40,16 +40,16 @@ object EventSubscriber {
         val scheduleWithoutHeadersDeserialzer
             : Resource[F, GenericDeserializer[KeyOrValue, F, Either[ScheduleError, Option[Schedule]]]] =
           avroBinaryDeserializer[F, ScheduleWithoutHeaders].map(_.option.map(_.sequence.map(_.map(_.schedule))))
-        scheduleDeserialzer.flatMap { sDeserializer =>
-          scheduleWithoutHeadersDeserialzer.map { swhDeserializer =>
-            sDeserializer.product[KeyOrValue, Either[ScheduleError, Option[Schedule]]](swhDeserializer).map {
-              case (Right(schedule), _)                     => Right(schedule)
-              case (Left(_), Right(scheduleWithoutHeaders)) => Right(scheduleWithoutHeaders)
-              case (Left(scheduleError), Left(_))           => Left(scheduleError)
-            }
-          }
-        }
 
+        for {
+          sDeserializer   <- scheduleDeserialzer
+          swhDeserializer <- scheduleWithoutHeadersDeserialzer
+        } yield sDeserializer.flatMap {
+          case Right(maybeSchedule) =>
+            GenericDeserializer
+              .const[F, Either[ScheduleError, Option[Schedule]]](Right(maybeSchedule))
+          case Left(_)              => swhDeserializer
+        }
       }
 
       config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[Schedule]]]

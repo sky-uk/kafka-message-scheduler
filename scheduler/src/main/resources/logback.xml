@@ -1,24 +1,14 @@
-<configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <if condition='isDefined("KMS_LOGGING_LOGSTASH")'>
-            <then>
-                <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-            </then>
-            <else>
-                <encoder>
-                    <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-                </encoder>
-            </else>
-        </if>
+<configuration scan="true" scanPeriod="60 seconds">
+    <include resource="logback-${LOG_TYPE:-scs}.xml"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
     </appender>
 
-    <logger name="com.sky" level="${KMS_LOGGING_LEVEL:-INFO}" additivity="false">
-        <appender-ref ref="STDOUT" />
-    </logger>
-
-    <logger name="org.apache.kafka.common.metrics" level="OFF" additivity="false" />
-
-    <root level="${KMS_ROOT_LOGGING_LEVEL:-WARN}">
-        <appender-ref ref="STDOUT" />
+    <logger name="org.apache.kafka.common.metrics" level="OFF" additivity="false"/>
+    <root level="INFO">
+        <appender-ref ref="console" />
     </root>
 </configuration>

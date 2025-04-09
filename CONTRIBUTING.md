@@ -17,13 +17,14 @@ changes need some adjustment before they are ready for submission.
 
 The software is written in [Scala](https://scala-lang.org/) and is built with [SBT](http://www.scala-sbt.org/).
 
-To compile and run tests: `sbt test`.
+To compile and run tests start sbt with `./sbt` and then run `project scheduler; test;`. To run integrated tests run `project it; dockerComposeUp; test;` 
 
 ## Performing a release (for project maintainers)
 
-1. Run `docker login --username=<username>` and when prompted add the password for your Docker Hub account. Note that you need to be a member of the `skyuk` Docker Hub organization.
-2. Run `sbt ciRelease` to perform the release of the Docker artifact to Docker Hub.
-3. The Docker Image will be immediately live and therefore will need to be deleted if there has been a problem.
+1. The version of the project should follow the semantic versioning scheme on [semver.org](https://semver.org/) and [sbt-release](https://github.com/sbt/sbt-release#requirements) requirements.
+1. `version.sbt` file must be updated with the version to be released with each new PR. This will be the Release Version.
+1. Please note, that any qualifier such as `-SNAPSHOT` will be removed from the Release Version automatically during the `cdBuild` phase.
+1. The Docker Image will be released once the PR is merged.
 
 ## Contributor Code of Conduct
 

@@ -25,7 +25,7 @@ object Main extends IOApp.Simple {
     _                       <- logger.info(show"Running ${Config.metadata.appName} with version ${Config.metadata.version}")
     _                       <- logger.info(show"Loaded $config")
     _                       <- Supervisor[IO].use { supervisor =>
-                                 Scheduler.live[IO](supervisor).apply(config.kafka).flatMap {
+                                 Scheduler.live[IO](supervisor).apply(config).flatMap {
                                    _.stream
                                      .onFinalizeCase[IO] {
                                        case ExitCase.Succeeded  => logger.info("Stream Succeeded")

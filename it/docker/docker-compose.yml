@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   kafka-message-scheduler:
-    image: kafka-message-scheduler-3:latest<localBuild>
+    image: ${CONTAINER_REPOSITORY}/kafka-message-scheduler:latest<localBuild>
     restart: "on-failure"
     ports:
       - "9401:9401"
@@ -15,11 +15,12 @@ services:
       OTEL_LOGS_EXPORTER: 'none'
       OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: 'grpc'
       KAFKA_BROKERS: 'kafka:9092'
-      AVRO_SCHEDULE_TOPICS: 'avro-schedules'
-      JSON_SCHEDULE_TOPICS: 'json-schedules'
       KMS_LOGGING_LOGSTASH: 'true'
       KMS_LOGGING_LEVEL: INFO
       KMS_ROOT_LOGGING_LEVEL: INFO
+      JAVA_TOOL_OPTIONS:
+        -Dscheduler.topics.avro.0=avro-schedules
+        -Dscheduler.topics.json.0=json-schedules
     depends_on:
       kafka:
         condition: service_started

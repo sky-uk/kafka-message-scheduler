@@ -4,10 +4,11 @@ import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
-import util.{KafkaUtil, SchedulerFeatureBase, TestAvroSchedule, TestAvroScheduleNoHeaders}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
+
+import util.{KafkaUtil, SchedulerFeatureBase, TestAvroSchedule, TestAvroScheduleNoHeaders}
 
 final class SchedulerFeatureSpec extends SchedulerFeatureBase {
 

@@ -12,6 +12,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import org.typelevel.ci.CIString
 import uk.sky.scheduler.domain.{Schedule, ScheduleEvent}
 import uk.sky.scheduler.error.ScheduleError
+import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.message.{Message, Metadata}
 import uk.sky.scheduler.util.Generator.given
@@ -32,11 +33,11 @@ class ConsumerRecordConverterSpec
     "transform an update into a Message" in forAll { (scheduleEvent: ScheduleEvent) =>
       val jsonSchedule: JsonSchedule =
         scheduleEvent.schedule.transformInto[JsonSchedule]
-      val avroSchedule: Schedule     =
-        scheduleEvent.schedule.into[Schedule].transform
+      val avroSchedule: AvroSchedule =
+        scheduleEvent.schedule.into[AvroSchedule].transform
 
-      forAll(Table("schedule", jsonSchedule, avroSchedule)) { (schedule: JsonSchedule | Schedule) =>
-        val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | Schedule]]](
+      forAll(Table("schedule", jsonSchedule, avroSchedule)) { (schedule: JsonSchedule | AvroSchedule) =>
+        val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]](
           topic = scheduleEvent.metadata.scheduleTopic,
           partition = 0,
           offset = 0L,
@@ -59,7 +60,7 @@ class ConsumerRecordConverterSpec
       val jsonSchedule: JsonSchedule =
         scheduleEvent.schedule.transformInto[JsonSchedule].copy(key = "invalid-base64")
 
-      val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | Schedule]]](
+      val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]](
         topic = scheduleEvent.metadata.scheduleTopic,
         partition = 0,
         offset = 0L,
@@ -71,12 +72,12 @@ class ConsumerRecordConverterSpec
     }
 
     "transform a delete into a Message" in forAll { (scheduleEvent: ScheduleEvent) =>
-      val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | Schedule]]](
+      val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]](
         topic = scheduleEvent.metadata.scheduleTopic,
         partition = 0,
         offset = 0L,
         key = scheduleEvent.metadata.id,
-        value = none[JsonSchedule | Schedule].asRight[ScheduleError]
+        value = none[JsonSchedule | AvroSchedule].asRight[ScheduleError]
       ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map(Header.apply)))
 
       val message = Message[Either[ScheduleError, Option[ScheduleEvent]]](
@@ -90,12 +91,12 @@ class ConsumerRecordConverterSpec
     }
 
     "transform an error into a Message" in forAll { (scheduleEvent: ScheduleEvent, scheduleError: ScheduleError) =>
-      val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | Schedule]]](
+      val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]](
         topic = scheduleEvent.metadata.scheduleTopic,
         partition = 0,
         offset = 0L,
         key = scheduleEvent.metadata.id,
-        value = scheduleError.asLeft[Option[JsonSchedule | Schedule]]
+        value = scheduleError.asLeft[Option[JsonSchedule | AvroSchedule]]
       ).withHeaders(Headers.fromIterable(scheduleEvent.schedule.headers.map(Header.apply)))
 
       val decodeError = ScheduleError.DecodeError(scheduleEvent.metadata.id, scheduleError)
@@ -117,7 +118,7 @@ class ConsumerRecordConverterSpec
         partition = 0,
         offset = 0L,
         key = "key",
-        value = none[JsonSchedule | Schedule].asRight[ScheduleError]
+        value = none[JsonSchedule | AvroSchedule].asRight[ScheduleError]
       ).withHeaders(nonNullHeaders concat nullHeaders)
 
       consumerRecord.toMessage.metadata.value should contain only (CIString("foo") -> "bar")

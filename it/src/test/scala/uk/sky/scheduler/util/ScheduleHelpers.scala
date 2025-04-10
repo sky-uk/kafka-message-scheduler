@@ -5,11 +5,33 @@ import cats.syntax.all.*
 import fs2.kafka.ValueSerializer
 import uk.sky.scheduler.circe.scheduleEncoder
 import uk.sky.scheduler.converters.base64.*
-import uk.sky.scheduler.domain.{Schedule, ScheduleWithoutHeaders}
-import uk.sky.scheduler.kafka.avro.{avroBinarySerializer, avroScheduleCodec, avroScheduleWithoutHeadersCodec}
+import uk.sky.scheduler.kafka.avro.{
+  avroBinarySerializer,
+  avroScheduleCodec,
+  avroScheduleWithoutHeadersCodec,
+  AvroSchedule,
+  AvroScheduleWithoutHeaders
+}
 import uk.sky.scheduler.kafka.json.{jsonSerializer, JsonSchedule}
+import vulcan.Codec
+import vulcan.generic.*
 
 import java.nio.charset.StandardCharsets
+
+case class TestAvroSchedule(
+    time: Long,
+    topic: String,
+    key: Array[Byte],
+    value: Option[Array[Byte]],
+    headers: Map[String, Array[Byte]]
+)
+
+case class TestAvroScheduleNoHeaders(
+    time: Long,
+    topic: String,
+    key: Array[Byte],
+    value: Option[Array[Byte]]
+)
 
 trait ScheduleHelpers {
 
@@ -22,13 +44,13 @@ trait ScheduleHelpers {
   ): JsonSchedule =
     JsonSchedule(time = time, topic = topic, key = key.base64Encode, value = value.base64Encode.some, headers = headers)
 
-  def createAvroSchedule(
+  def createTestAvroSchedule(
       time: Long,
       topic: String,
       key: String,
       value: String,
       headers: Map[String, Array[Byte]] = Map.empty[String, Array[Byte]]
-  ): Schedule = Schedule(
+  ): TestAvroSchedule = TestAvroSchedule(
     time,
     topic,
     key.getBytes(StandardCharsets.UTF_8),
@@ -36,19 +58,24 @@ trait ScheduleHelpers {
     headers
   )
 
-  def createAvroScheduleWithoutHeaders(
+  def createTestAvroScheduleWithoutHeaders(
       time: Long,
       topic: String,
       key: String,
       value: String
-  ): ScheduleWithoutHeaders = ScheduleWithoutHeaders(
+  ): TestAvroScheduleNoHeaders = TestAvroScheduleNoHeaders(
     time,
     topic,
     key.getBytes(StandardCharsets.UTF_8),
     value.getBytes(StandardCharsets.UTF_8).some
   )
 
-  given ValueSerializer[IO, JsonSchedule]           = jsonSerializer[IO, JsonSchedule]
-  given ValueSerializer[IO, Schedule]               = avroBinarySerializer[IO, Schedule]
-  given ValueSerializer[IO, ScheduleWithoutHeaders] = avroBinarySerializer[IO, ScheduleWithoutHeaders]
+  given Codec[TestAvroSchedule]          = Codec.derive[TestAvroSchedule]
+  given Codec[TestAvroScheduleNoHeaders] = Codec.derive[TestAvroScheduleNoHeaders]
+
+  given ValueSerializer[IO, JsonSchedule]               = jsonSerializer[IO, JsonSchedule]
+  given ValueSerializer[IO, AvroSchedule]               = avroBinarySerializer[IO, AvroSchedule]
+  given ValueSerializer[IO, AvroScheduleWithoutHeaders] = avroBinarySerializer[IO, AvroScheduleWithoutHeaders]
+  given ValueSerializer[IO, TestAvroSchedule]           = avroBinarySerializer[IO, TestAvroSchedule]
+  given ValueSerializer[IO, TestAvroScheduleNoHeaders]  = avroBinarySerializer[IO, TestAvroScheduleNoHeaders]
 }

@@ -2,15 +2,12 @@ package uk.sky.scheduler
 
 import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
-import uk.sky.scheduler.domain.{Schedule, ScheduleWithoutHeaders}
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
-import uk.sky.scheduler.util.KafkaUtil
+import util.{KafkaUtil, SchedulerFeatureBase, TestAvroSchedule, TestAvroScheduleNoHeaders}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
-
-import util.SchedulerFeatureBase
 
 final class SchedulerFeatureSpec extends SchedulerFeatureBase {
 
@@ -48,8 +45,8 @@ final class SchedulerFeatureSpec extends SchedulerFeatureBase {
 
       for {
         scheduledTime <- Clock[IO].epochMilli(_.plusSeconds(5))
-        schedule       = createAvroSchedule(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
-        _             <- kafkaUtil.produce[Schedule]("avro-schedules", "input-key-avro" -> schedule.some)
+        schedule       = createTestAvroSchedule(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
+        _             <- kafkaUtil.produce[TestAvroSchedule]("avro-schedules", "input-key-avro" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement
@@ -103,8 +100,8 @@ final class SchedulerFeatureSpec extends SchedulerFeatureBase {
 
       for {
         scheduledTime <- Clock[IO].epochMilli(_.plusSeconds(5))
-        schedule       = createAvroScheduleWithoutHeaders(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
-        _             <- kafkaUtil.produce[ScheduleWithoutHeaders]("avro-schedules", "input-key-avro" -> schedule.some)
+        schedule       = createTestAvroScheduleWithoutHeaders(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
+        _             <- kafkaUtil.produce[TestAvroScheduleNoHeaders]("avro-schedules", "input-key-avro" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement

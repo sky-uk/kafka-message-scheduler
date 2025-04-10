@@ -14,9 +14,9 @@ import uk.sky.fs2.kafka.topicloader.TopicLoader
 import uk.sky.scheduler.circe.jsonScheduleDecoder
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.converters.all.*
-import uk.sky.scheduler.domain.{Schedule, ScheduleEvent, ScheduleWithoutHeaders}
+import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
-import uk.sky.scheduler.kafka.avro.{avroBinaryDeserializer, avroScheduleCodec, avroScheduleWithoutHeadersCodec}
+import uk.sky.scheduler.kafka.avro.{*, given}
 import uk.sky.scheduler.kafka.json.{jsonDeserializer, JsonSchedule}
 import uk.sky.scheduler.message.Message
 
@@ -32,14 +32,13 @@ object EventSubscriber {
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {
 
-    val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[Schedule]]] = {
-      given Resource[F, Deserializer[F, Either[ScheduleError, Option[Schedule]]]] = {
-        val scheduleDeserialzer
-            : Resource[F, GenericDeserializer[KeyOrValue, F, Either[ScheduleError, Option[Schedule]]]] =
-          avroBinaryDeserializer[F, Schedule].map(_.option.map(_.sequence))
+    val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]] = {
+      given Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] = {
+        val scheduleDeserialzer: Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
+          avroBinaryDeserializer[F, AvroSchedule].map(_.option.map(_.sequence))
         val scheduleWithoutHeadersDeserialzer
-            : Resource[F, GenericDeserializer[KeyOrValue, F, Either[ScheduleError, Option[Schedule]]]] =
-          avroBinaryDeserializer[F, ScheduleWithoutHeaders].map(_.option.map(_.sequence.map(_.map(_.schedule))))
+            : Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
+          avroBinaryDeserializer[F, AvroScheduleWithoutHeaders].map(_.option.map(_.sequence.map(_.map(_.avroSchedule))))
 
         for {
           sDeserializer   <- scheduleDeserialzer
@@ -47,12 +46,12 @@ object EventSubscriber {
         } yield sDeserializer.flatMap {
           case Right(maybeSchedule) =>
             GenericDeserializer
-              .const[F, Either[ScheduleError, Option[Schedule]]](Right(maybeSchedule))
+              .const[F, Either[ScheduleError, Option[AvroSchedule]]](Right(maybeSchedule))
           case Left(_)              => swhDeserializer
         }
       }
 
-      config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[Schedule]]]
+      config.kafka.consumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]]
     }
 
     val jsonConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[JsonSchedule]]] = {
@@ -80,7 +79,7 @@ object EventSubscriber {
           case ExitCase.Errored(_) | ExitCase.Canceled => Async[F].unit
         }
 
-      private val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[Schedule]]]] =
+      private val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[AvroSchedule]]]] =
         config.topics.avro
           .flatMap(_.toNel)
           .fold(Stream.exec(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(

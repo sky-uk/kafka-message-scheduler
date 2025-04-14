@@ -66,7 +66,6 @@ final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionV
     }
 
     "be able to deserialise schedules without headers" in {
-      // Old Schedule data did not have headers
 
       val schedule: AvroScheduleWithoutHeaders = AvroScheduleWithoutHeaders(
         time = scheduleWithEmptyHeaders.time,

@@ -34,8 +34,7 @@ class ConsumerRecordConverterSpec
       val jsonSchedule: JsonSchedule =
         scheduleEvent.schedule.transformInto[JsonSchedule]
       val avroSchedule: AvroSchedule =
-        scheduleEvent.schedule.into[AvroSchedule].transform
-
+        scheduleEvent.schedule.transformInto[AvroSchedule]
       forAll(Table("schedule", jsonSchedule, avroSchedule)) { (schedule: JsonSchedule | AvroSchedule) =>
         val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]](
           topic = scheduleEvent.metadata.scheduleTopic,

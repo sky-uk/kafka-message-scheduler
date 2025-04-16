@@ -2,15 +2,13 @@ package uk.sky.scheduler
 
 import cats.effect.{Clock, IO, Resource}
 import cats.syntax.all.*
-import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
 import uk.sky.scheduler.syntax.all.*
-import uk.sky.scheduler.util.KafkaUtil
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*
 
-import util.SchedulerFeatureBase
+import util.{KafkaUtil, SchedulerFeatureBase, TestAvroSchedule, TestAvroScheduleNoHeaders}
 
 final class SchedulerFeatureSpec extends SchedulerFeatureBase {
 
@@ -48,8 +46,8 @@ final class SchedulerFeatureSpec extends SchedulerFeatureBase {
 
       for {
         scheduledTime <- Clock[IO].epochMilli(_.plusSeconds(5))
-        schedule       = createAvroSchedule(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
-        _             <- kafkaUtil.produce[AvroSchedule]("avro-schedules", "input-key-avro" -> schedule.some)
+        schedule       = createTestAvroSchedule(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
+        _             <- kafkaUtil.produce[TestAvroSchedule]("avro-schedules", "input-key-avro" -> schedule.some)
         messages      <- kafkaUtil.consume[String](outputTopic, 1)
       } yield {
         val message = messages.loneElement
@@ -93,6 +91,22 @@ final class SchedulerFeatureSpec extends SchedulerFeatureBase {
         val tombstone = inputMessages.lastOption.value
         tombstone.keyValue shouldBe scheduleKey -> None
         tombstone.headers.get("schedule:expired").value shouldBe "true"
+      }
+    }
+
+    "process an avro schedule without headers" in { kafkaUtil =>
+      val outputTopic     = "output-avro-topic"
+      val outputAvroKey   = "avroKey"
+      val outputAvroValue = "avroValue"
+
+      for {
+        scheduledTime <- Clock[IO].epochMilli(_.plusSeconds(5))
+        schedule       = createTestAvroScheduleWithoutHeaders(scheduledTime, outputTopic, outputAvroKey, outputAvroValue)
+        _             <- kafkaUtil.produce[TestAvroScheduleNoHeaders]("avro-schedules", "input-key-avro" -> schedule.some)
+        messages      <- kafkaUtil.consume[String](outputTopic, 1)
+      } yield {
+        val message = messages.loneElement
+        message.keyValue shouldBe outputAvroKey -> outputAvroValue
       }
     }
 

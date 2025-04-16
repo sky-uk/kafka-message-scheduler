@@ -10,7 +10,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{EitherValues, LoneElement}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import org.typelevel.ci.CIString
-import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.domain.{Schedule, ScheduleEvent}
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.kafka.avro.AvroSchedule
 import uk.sky.scheduler.kafka.json.JsonSchedule
@@ -34,8 +34,7 @@ class ConsumerRecordConverterSpec
       val jsonSchedule: JsonSchedule =
         scheduleEvent.schedule.transformInto[JsonSchedule]
       val avroSchedule: AvroSchedule =
-        scheduleEvent.schedule.into[AvroSchedule].withFieldComputed(_.optionalHeaders, _.headers.some).transform
-
+        scheduleEvent.schedule.transformInto[AvroSchedule]
       forAll(Table("schedule", jsonSchedule, avroSchedule)) { (schedule: JsonSchedule | AvroSchedule) =>
         val consumerRecord = ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule | AvroSchedule]]](
           topic = scheduleEvent.metadata.scheduleTopic,

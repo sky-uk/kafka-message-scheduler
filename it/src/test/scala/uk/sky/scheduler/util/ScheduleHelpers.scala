@@ -1,5 +1,7 @@
 package uk.sky.scheduler.util
 
+import java.nio.charset.StandardCharsets
+
 import cats.effect.IO
 import cats.syntax.all.*
 import fs2.kafka.ValueSerializer
@@ -15,8 +17,6 @@ import uk.sky.scheduler.kafka.avro.{
 import uk.sky.scheduler.kafka.json.{jsonSerializer, JsonSchedule}
 import vulcan.Codec
 import vulcan.generic.*
-
-import java.nio.charset.StandardCharsets
 
 case class TestAvroSchedule(
     time: Long,

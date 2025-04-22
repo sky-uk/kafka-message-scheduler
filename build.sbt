@@ -38,9 +38,7 @@ lazy val scheduler = (project in file("scheduler"))
     libraryDependencies ++= Dependencies.core,
     buildInfoSettings("uk.sky"),
     dockerSettings,
-    releaseSettings,
-    scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix.conf"),
-    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt.conf"
+    releaseSettings
   )
 
 lazy val it = (project in file("it"))
@@ -51,9 +49,7 @@ lazy val it = (project in file("it"))
       libraryDependencies ++= Dependencies.it,
       Test / fork             := true,
       dockerImageCreationTask := (scheduler / Docker / publishLocal).value,
-      composeFile             := "it/docker/docker-compose.yml",
-      scalafixConfig          := Some((ThisBuild / baseDirectory).value / ".scalafix.conf"),
-      scalafmtConfig          := (ThisBuild / baseDirectory).value / ".scalafmt.conf"
+      composeFile             := "it/docker/docker-compose.yml"
     )
   }
   .settings(settings)
@@ -66,7 +62,7 @@ lazy val avro = (project in file("avro"))
   .settings(scala3Settings)
   .settings(libraryDependencies += Dependencies.avro4s)
   .settings(schema := (Compile / run).toTask("").value)
-  .dependsOn(scheduler % "compile->compile")
+  .dependsOn(scheduler)
   .disablePlugins(ReleasePlugin)
 
 lazy val root = (project in file("."))

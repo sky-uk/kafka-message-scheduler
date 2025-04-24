@@ -11,21 +11,6 @@ ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-val scala2Settings = Seq(
-  scalaVersion             := "2.13.15",
-  tpolecatScalacOptions ++= Set(
-    ScalacOptions.other("-Ymacro-annotations"),
-    ScalacOptions.source3
-  ),
-  tpolecatExcludeOptions ++= Set(
-    ScalacOptions.warnNonUnitStatement,
-    ScalacOptions.warnValueDiscard
-  ),
-  run / fork               := true,
-  Test / fork              := true,
-  Test / parallelExecution := false
-)
-
 val scala3Settings = Seq(
   scalaVersion             := "3.6.2",
   tpolecatScalacOptions ++= Set(
@@ -44,30 +29,16 @@ val buildInfoSettings = (pkg: String) =>
     buildInfoPackage := pkg
   )
 
-lazy val schedulerScala2 = (project in file("scheduler"))
-  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
-  .settings(scala2Settings)
-  .settings(
-    libraryDependencies ++= Dependencies.scheduler,
-    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
-    javaAgents += "io.kamon" % "kanela-agent" % "1.0.18",
-    buildInfoSettings("com.sky"),
-    dockerSettings,
-    releaseSettings
-  )
-
-lazy val scheduler = (project in file("scheduler-3"))
+lazy val scheduler = (project in file("scheduler"))
   .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
   .settings(scala3Settings)
   .settings(javaOptions += "-Dotel.java.global-autoconfigure.enabled=true")
   .settings(javaAgents += Dependencies.OpenTelemetry.javaAgent)
   .settings(
-    libraryDependencies ++= Dependencies.scheduler3,
+    libraryDependencies ++= Dependencies.core,
     buildInfoSettings("uk.sky"),
     dockerSettings,
-    releaseSettings,
-    scalafixConfig := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
-    scalafmtConfig := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
+    releaseSettings
   )
 
 lazy val it = (project in file("it"))
@@ -78,9 +49,7 @@ lazy val it = (project in file("it"))
       libraryDependencies ++= Dependencies.it,
       Test / fork             := true,
       dockerImageCreationTask := (scheduler / Docker / publishLocal).value,
-      composeFile             := "it/docker/docker-compose.yml",
-      scalafixConfig          := Some((ThisBuild / baseDirectory).value / ".scalafix3.conf"),
-      scalafmtConfig          := (ThisBuild / baseDirectory).value / ".scalafmt3.conf"
+      composeFile             := "it/docker/docker-compose.yml"
     )
   }
   .settings(settings)
@@ -90,10 +59,10 @@ lazy val it = (project in file("it"))
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 
 lazy val avro = (project in file("avro"))
-  .settings(scala2Settings)
+  .settings(scala3Settings)
   .settings(libraryDependencies += Dependencies.avro4s)
   .settings(schema := (Compile / run).toTask("").value)
-  .dependsOn(schedulerScala2 % "compile->compile")
+  .dependsOn(scheduler)
   .disablePlugins(ReleasePlugin)
 
 lazy val root = (project in file("."))

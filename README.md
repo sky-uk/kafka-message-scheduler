@@ -58,7 +58,7 @@ above). See the [Schema](#schema) section for details of generating the Avro sch
 
 ### Monitoring
 
-Metrics are exposed and reported using Kamon. By default, the [Kamon Prometheus reporter](https://kamon.io/docs/latest/reporters/prometheus/) is used for reporting and the scraping endpoint for Prometheus is exposed on port `9095` (this is configurable by setting the `PROMETHEUS_SCRAPING_ENDPOINT_PORT` environment variable).
+Metrics are exposed and reported using OpenTelemetry. By default, the [otel4s](https://typelevel.org/otel4s/index.html) is used for reporting and the scraping endpoint for Prometheus is exposed on port `9401` (this is configurable by setting the `OTEL_EXPORTER_PROMETHEUS_PORT` environment variable).
 
 Prometheus is included as part of the docker-compose and will expose a monitoring dashboard on port `9090`.
 

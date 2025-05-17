@@ -60,10 +60,11 @@ val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule sche
 
 lazy val avro = (project in file("avro"))
   .settings(scala3Settings)
-  .settings(libraryDependencies += Dependencies.avro4s)
+  .settings(libraryDependencies ++= Dependencies.avro)
   .settings(schema := (Compile / run).toTask("").value)
+  .settings(buildInfoSettings("uk.sky"))
   .dependsOn(scheduler)
-  .disablePlugins(ReleasePlugin)
+  .disablePlugins(ReleasePlugin, BuildInfoPlugin)
 
 lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")

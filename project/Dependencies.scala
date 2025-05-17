@@ -20,6 +20,13 @@ object Dependencies {
     lazy val test                   = Seq(testKit, scalatest)
   }
 
+  object Decline {
+    private lazy val version = "2.5.0"
+
+    lazy val core   = "com.monovore" %% "decline"        % version
+    lazy val effect = "com.monovore" %% "decline-effect" % version
+  }
+
   object Fs2 {
     private lazy val version      = "3.11.0"
     private lazy val kafkaVersion = "3.6.0"
@@ -134,5 +141,11 @@ object Dependencies {
     Fs2.kafka,
     logbackClassic,
     scalaTest
+  )
+
+  val avro: Seq[ModuleID] = Seq(
+    Decline.core,
+    Decline.effect,
+    Fs2.io
   )
 }

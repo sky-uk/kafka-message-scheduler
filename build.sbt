@@ -53,7 +53,6 @@ lazy val it = (project in file("it"))
     )
   }
   .settings(settings)
-  .settings(Seq(envVars := Map(kafkaPort)))
   .dependsOn(scheduler % "compile->compile;test->test")
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")

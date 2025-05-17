@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   kafka-message-scheduler:
     image: ${CONTAINER_REPOSITORY}/kafka-message-scheduler:latest<localBuild>
@@ -22,50 +20,57 @@ services:
         -Dscheduler.topics.avro.0=avro-schedules
         -Dscheduler.topics.json.0=json-schedules
     depends_on:
-      kafka:
-        condition: service_started
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.1
-    environment:
-      ZOOKEEPER_CLIENT_PORT: '2181'
+      init-topics:
+        condition: service_completed_successfully
 
   kafka:
-    image: confluentinc/cp-kafka:7.5.1
+    image: bitnami/kafka:latest
     ports:
-      - "${KAFKA_PORT}:${KAFKA_PORT}"
+      - "9092:9092"
+      - "9094:9094"
     environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,OUTSIDE://localhost:${KAFKA_PORT}
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    healthcheck:
+      test: [ "CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Create the input topics
+  init-topics:
+    image: bitnami/kafka:latest
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: sh
+    command:
+      - -c
+      - >
+        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --topic avro-schedules &&
+        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --topic json-schedules
 
 #  http://localhost:9090/ - Uncomment to expose Prometheus for local metrics testing.
-#  prometheus:
-#    image: prom/prometheus
-#    command: --config.file=/etc/prometheus/prometheus.yml
-#    volumes:
-#      - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml
-#    ports:
-#      - "9090:9090"
-
+  prometheus:
+    image: prom/prometheus:latest
+    command: --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
 
 # http://localhost:8080/ - Uncomment to expose AKHQ for viewing Kafka topic contents.
 #  akhq:
-#    image: tchiotludo/akhq:0.25.1
-#    depends_on:
-#      - kafka
+#    image: tchiotludo/akhq:latest
 #    ports:
 #      - "8080:8080"
 #    volumes:
 #      - ${PWD}/docker/akhq.yml:/app/application.yml
-#    environment:
-#      AKHQ_CONFIGURATION: |
-#        akhq:
-#          connections:
-#              map:
-#                properties:
-#                  bootstrap.servers: "kafka:9092"
-#                schema-registry:
-#                  url: "http://schema-registry:${SCHEMA_REGISTRY_PORT}"
-#                  type: "confluent"
+#    depends_on:
+#      kafka:
+#        condition: service_healthy

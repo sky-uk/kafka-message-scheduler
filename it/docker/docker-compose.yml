@@ -56,13 +56,13 @@ services:
         kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --topic json-schedules
 
 #  http://localhost:9090/ - Uncomment to expose Prometheus for local metrics testing.
-  prometheus:
-    image: prom/prometheus:latest
-    command: --config.file=/etc/prometheus/prometheus.yml
-    volumes:
-      - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
+#  prometheus:
+#    image: prom/prometheus:latest
+#    command: --config.file=/etc/prometheus/prometheus.yml
+#    volumes:
+#      - ${PWD}/docker/prometheus.yml:/etc/prometheus/prometheus.yml
+#    ports:
+#      - "9090:9090"
 
 # http://localhost:8080/ - Uncomment to expose AKHQ for viewing Kafka topic contents.
 #  akhq:

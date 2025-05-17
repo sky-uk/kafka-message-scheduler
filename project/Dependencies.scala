@@ -113,7 +113,6 @@ object Dependencies {
     Circe.parser,
     Fs2.core,
     Fs2.kafka,
-    Fs2.io,
     fs2TopicLoader,
     logbackClassic,
     Logstash.logbackEncoder,
@@ -131,12 +130,7 @@ object Dependencies {
   )
 
   val it: Seq[ModuleID] = Seq(
-    Cats.effect,
     Cats.effectTesting,
-    Circe.generic,
-    Circe.parser,
-    Fs2.core,
-    Fs2.kafka,
     logbackClassic,
     scalaTest
   )

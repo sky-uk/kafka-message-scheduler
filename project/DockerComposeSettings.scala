@@ -1,23 +1,23 @@
+import DockerPublish.registry
 import com.tapad.docker.DockerComposePlugin.autoImport.variablesForSubstitution
-import DockerPublish.allRegistries
+import sbt.Def
 
 import java.net.ServerSocket
+import scala.util.Using
 
 object DockerComposeSettings {
 
-  val freePort: Int = {
-    val socket = new ServerSocket(0)
-    socket.setReuseAddress(true)
-    val port   = socket.getLocalPort
-    socket.close()
-    port
-  }
+  def freePort: Int =
+    Using.resource(new ServerSocket(0)) { socket =>
+      socket.setReuseAddress(true)
+      socket.getLocalPort
+    }
 
-  val kafkaPort = "KAFKA_PORT" -> freePort.toString
+  lazy val kafkaPort: (String, String) = "KAFKA_PORT" -> freePort.toString
 
-  lazy val settings = Seq(
+  lazy val settings: Seq[Def.Setting[?]] = Seq(
     variablesForSubstitution ++= Map(
-      "CONTAINER_REPOSITORY" -> allRegistries.head,
+      "CONTAINER_REPOSITORY" -> registry,
       kafkaPort
     )
   )

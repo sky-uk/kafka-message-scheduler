@@ -1,13 +1,20 @@
-import sbt.*
+import sbt.{addCommandAlias, Def}
 
 object Aliases {
 
-  lazy val defineCommandAliases =
-    addCommandAlias("ciBuild", "checkFmt; checkFix; test; schema") ++
-      addCommandAlias("ciRelease", "clean; schema; project scheduler; release with-defaults") ++
-      addCommandAlias("checkFix", "scalafixAll --check OrganizeImports; scalafixAll --check") ++
-      addCommandAlias("runFix", "scalafixAll OrganizeImports; scalafixAll") ++
-      addCommandAlias("checkFmt", "scalafmtCheckAll; scalafmtSbtCheck") ++
-      addCommandAlias("runFmt", "scalafmtAll; scalafmtSbt")
+  type Settings = Seq[Def.Setting[?]]
 
+  val ModuleName = "kafka-message-scheduler"
+
+  def alias(name: String, value: String): Settings = addCommandAlias(s"$ModuleName-$name", value)
+
+  def cdBuild(module: String) =
+    s"checkFix; checkFmt; project $module; test; release with-defaults;"
+
+  def scalaPrBuild(module: String) =
+    s"checkFix; checkFmt; project $module; test;"
+
+  lazy val core: Settings =
+    alias("cdBuild", cdBuild("scheduler")) ++
+      alias("prBuild", scalaPrBuild("scheduler"))
 }

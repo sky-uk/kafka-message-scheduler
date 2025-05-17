@@ -1,63 +1,73 @@
-import Aliases.*
 import Release.*
 import DockerPublish.*
 import org.typelevel.scalacoptions.ScalacOptions
+import DockerComposeSettings.*
 
-ThisBuild / scalafmtOnCompile                              := true
-ThisBuild / semanticdbEnabled                              := true
-ThisBuild / semanticdbVersion                              := scalafixSemanticdb.revision
-ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+ThisBuild / organization := "com.sky"
+
+ThisBuild / scalafmtOnCompile := true
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oF")
-
-val commonSettings = Seq(
-  organization := "com.sky",
-  scalaVersion := "2.13.10"
+val scala3Settings = Seq(
+  scalaVersion             := "3.6.2",
+  tpolecatScalacOptions ++= Set(
+    ScalacOptions.other("-no-indent"),
+    ScalacOptions.other("-old-syntax")
+  ),
+  Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement,
+  run / fork               := true,
+  Test / fork              := true,
+  Test / parallelExecution := false
 )
 
-val compilerSettings = Seq(
-  tpolecatScalacOptions ++= Set(ScalacOptions.other("-Ymacro-annotations"), ScalacOptions.source3),
-  tpolecatExcludeOptions ++= Set(ScalacOptions.warnNonUnitStatement, ScalacOptions.warnValueDiscard)
-)
-
-val buildInfoSettings = Seq(
-  buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-  buildInfoPackage := "com.sky"
-)
+val buildInfoSettings = (pkg: String) =>
+  Seq(
+    buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := pkg
+  )
 
 lazy val scheduler = (project in file("scheduler"))
-  .enablePlugins(BuildInfoPlugin, JavaAppPackaging, UniversalDeployPlugin, JavaAgent, DockerPlugin)
-  .settings(commonSettings)
-  .settings(compilerSettings)
+  .enablePlugins(JavaAgent, DockerPlugin, JavaAppPackaging, BuildInfoPlugin)
+  .settings(scala3Settings)
+  .settings(javaOptions += "-Dotel.java.global-autoconfigure.enabled=true")
+  .settings(javaAgents += Dependencies.OpenTelemetry.javaAgent)
   .settings(
-    libraryDependencies ++= Dependencies.all,
-    addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.3" cross CrossVersion.full),
-    run / fork               := true,
-    Test / fork              := true,
-    javaAgents += "io.kamon"  % "kanela-agent" % "1.0.18",
-    buildInfoSettings,
+    libraryDependencies ++= Dependencies.core,
+    buildInfoSettings("uk.sky"),
     dockerSettings,
-    releaseSettings,
-    Test / parallelExecution := false
+    releaseSettings
   )
+
+lazy val it = (project in file("it"))
+  .enablePlugins(DockerComposePlugin)
+  .settings(scala3Settings)
+  .settings {
+    Seq(
+      libraryDependencies ++= Dependencies.it,
+      Test / fork             := true,
+      dockerImageCreationTask := (scheduler / Docker / publishLocal).value,
+      composeFile             := "it/docker/docker-compose.yml"
+    )
+  }
+  .settings(settings)
+  .settings(Seq(envVars := Map(kafkaPort)))
+  .dependsOn(scheduler % "compile->compile;test->test")
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 
 lazy val avro = (project in file("avro"))
-  .settings(commonSettings)
-  .settings(compilerSettings)
+  .settings(scala3Settings)
   .settings(libraryDependencies += Dependencies.avro4s)
   .settings(schema := (Compile / run).toTask("").value)
-  .dependsOn(scheduler % "compile->compile")
+  .dependsOn(scheduler)
   .disablePlugins(ReleasePlugin)
 
 lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
-  .settings(commonSettings)
-  .settings(defineCommandAliases)
-  .settings(dockerImageCreationTask := (scheduler / Docker / publishLocal).value)
-  .aggregate(scheduler, avro)
+  .aggregate(scheduler, it)
   .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)
+  .settings(Aliases.core)

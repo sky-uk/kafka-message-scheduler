@@ -1,10 +1,10 @@
 global:
-  scrape_interval:     15s
-  evaluation_interval: 15s
+  scrape_interval:     5s
+  evaluation_interval: 5s
 
 scrape_configs:
   - job_name: 'kafka-message-scheduler'
     static_configs:
-      - targets: ['kms:9401']
+      - targets: ['kafka-message-scheduler:9401']
         labels:
           app_name: 'kafka-message-scheduler'

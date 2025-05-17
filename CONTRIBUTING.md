@@ -3,28 +3,24 @@
 Contributions are welcomed!
 
 When contributing to this repository, please first discuss the change you wish to make via GitHub
-issue before making a change.  This saves everyone from wasted effort in the event that the proposed
+issue before making a change. This saves everyone from wasted effort in the event that the proposed
 changes need some adjustment before they are ready for submission.
 
 ## Pull Request Process
 
 1. Fork the repo, push your commits to a branch of your fork, open the PR.
 2. Make sure you update the README.md where relevant.
-3. Project maintainers will squash-merge Pull Requests once they are happy.  There may be one or more
+3. Project maintainers will squash-merge Pull Requests once they are happy. There may be one or more
    cycles of feedback on the PR before they are satisfied.
 
 ## Build and run tests locally
 
 The software is written in [Scala](https://scala-lang.org/) and is built with [SBT](http://www.scala-sbt.org/).
 
-To compile and run tests start sbt with `./sbt` and then run `project scheduler; test;`. To run integrated tests run `project it; dockerComposeUp; test;` 
-
 ## Performing a release (for project maintainers)
 
-1. The version of the project should follow the semantic versioning scheme on [semver.org](https://semver.org/) and [sbt-release](https://github.com/sbt/sbt-release#requirements) requirements.
-1. `version.sbt` file must be updated with the version to be released with each new PR. This will be the Release Version.
-1. Please note, that any qualifier such as `-SNAPSHOT` will be removed from the Release Version automatically during the `cdBuild` phase.
-1. The Docker Image will be released once the PR is merged.
+1. Create a new tag following [semver.org](https://semver.org/).
+2. Run `Docker / publish`; [sbt-dynver](https://github.com/sbt/sbt-dynver) will set the version from the tag.
 
 ## Contributor Code of Conduct
 

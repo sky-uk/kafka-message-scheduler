@@ -15,8 +15,8 @@ object Message {
     (key, source, value, metadata)
   }
 
-  given [V : Show]: Show[Message[V]] = Show.show { case Message(key, source, value, metadata) =>
-    show"""Message(key=$key, source=$source, value=$value, metadata=$metadata)"""
+  given [V : Show]: Show[Message[V]] = { case Message(key, source, value, metadata) =>
+    show"Message(key=$key, source=$source, value=$value, metadata=$metadata)"
   }
 
   given Functor[Message] = new Functor[Message] {

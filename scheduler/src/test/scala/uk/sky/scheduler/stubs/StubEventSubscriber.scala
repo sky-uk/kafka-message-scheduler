@@ -1,5 +1,6 @@
 package uk.sky.scheduler.stubs
 
+import cats.Functor
 import cats.effect.Async
 import cats.effect.std.Queue
 import cats.syntax.all.*
@@ -9,7 +10,7 @@ import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.message.Message
 
-final case class StubEventSubscriber[F[_] : Async](
+final case class StubEventSubscriber[F[_] : Functor](
     input: Queue[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]]
 ) extends EventSubscriber[F] {
   override def messages: Stream[F, Message[Either[ScheduleError, Option[ScheduleEvent]]]] =

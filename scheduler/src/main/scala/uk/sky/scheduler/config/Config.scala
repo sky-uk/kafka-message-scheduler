@@ -1,10 +1,11 @@
 package uk.sky.scheduler.config
 
 import cats.Show
-import cats.effect.{Resource, Sync}
+import cats.effect.Resource
 import fs2.kafka.*
 import pureconfig.ConfigReader
 import uk.sky.BuildInfo
+import uk.sky.scheduler.kafka.*
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -17,11 +18,12 @@ object Config {
   private[config] final case class Metadata(appName: String, version: String)
   val metadata: Metadata = Metadata(appName = BuildInfo.name, version = BuildInfo.version)
 
-  given configShow: Show[Config] = Show.show { c =>
-    s"Kafka Config: Avro Topics [${c.topics.avro
-        .mkString(",")}]; Json Topics [${c.topics.json.mkString(",")}]; Broker ${c.kafka.consumer.bootstrapServers}"
+  given configShow: Show[Config] = { case Config(topics, kafka) =>
+    s"Kafka Config: " +
+      s"Avro Topics [${topics.avro.mkString(",")}]; " +
+      s"Json Topics [${topics.json.mkString(",")}]; " +
+      s"Broker ${kafka.consumer.bootstrapServers}"
   }
-
 }
 
 final case class KafkaConfig(
@@ -32,7 +34,7 @@ final case class KafkaConfig(
 
 object KafkaConfig {
   extension (config: KafkaConfig) {
-    def consumerSettings[F[_] : Sync, K, V](using
+    def consumerSettings[F[_], K, V](using
         Resource[F, KeyDeserializer[F, K]],
         Resource[F, ValueDeserializer[F, V]]
     ): ConsumerSettings[F, K, V] =
@@ -41,13 +43,15 @@ object KafkaConfig {
         .withProperties(config.consumer.properties)
         .withAutoOffsetReset(AutoOffsetReset.Earliest)
 
-    def producerSettings[F[_] : Sync, K, V](using
+    def producerSettings[F[_], K, V](using
         Resource[F, KeySerializer[F, K]],
         Resource[F, ValueSerializer[F, V]]
     ): ProducerSettings[F, K, V] =
       ProducerSettings[F, K, V]
         .withBootstrapServers(config.producer.bootstrapServers)
         .withProperties(config.producer.properties)
+        .atLeastOnce
+        .performant
   }
 }
 

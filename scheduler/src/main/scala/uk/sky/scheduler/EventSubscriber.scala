@@ -27,7 +27,7 @@ trait EventSubscriber[F[_]] {
 object EventSubscriber {
   private type Output = Either[ScheduleError, Option[ScheduleEvent]]
 
-  def kafka[F[_] : Async : Parallel : LoggerFactory](
+  def kafka[F[_] : Async : LoggerFactory](
       config: Config,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {

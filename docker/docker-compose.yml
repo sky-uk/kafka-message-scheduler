@@ -2,24 +2,36 @@ version: '3.8'
 
 services:
 
-  kms:
-    image: skyuk/kafka-message-scheduler:latest<localBuild>
+  kafka-message-scheduler:
+    image: ${CONTAINER_REPOSITORY}/kafka-message-scheduler:latest<localBuild>
     depends_on:
       - kafka
       - zookeeper
     environment:
-      KAFKA_BROKERS: kafka:9092
-      SCHEDULE_TOPICS: schedules
+      OTEL_METRICS_EXPORTER: prometheus
+      OTEL_EXPORTER_PROMETHEUS_PORT: 9401
+      OTEL_SERVICE_NAME: kafka-message-scheduler
+      OTEL_INSTRUMENTATION_GRPC_ENABLED: 'false'
+      OTEL_TRACES_EXPORTER: 'none'
+      OTEL_LOGS_EXPORTER: 'none'
+      OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: 'grpc'
+      KAFKA_BROKERS: 'kafka:9092'
+      KMS_LOGGING_LOGSTASH: 'true'
+      KMS_LOGGING_LEVEL: INFO
+      KMS_ROOT_LOGGING_LEVEL: INFO
+      JAVA_TOOL_OPTIONS:
+        -Dscheduler.topics.avro.0=avro-schedules
+        -Dscheduler.topics.json.0=json-schedules
     ports:
-      - "9095:9095"
+      - "9401:9401"
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.0.1
+    image: confluentinc/cp-zookeeper:7.5.1
     environment:
       ZOOKEEPER_CLIENT_PORT: '2181'
 
   kafka:
-    image: confluentinc/cp-kafka:7.0.1
+    image: confluentinc/cp-kafka:7.5.1
     ports:
       - "9093:9093"
     depends_on:

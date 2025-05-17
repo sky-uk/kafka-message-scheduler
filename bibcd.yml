@@ -1,0 +1,20 @@
+version: 1
+context: map
+tenant: prs-map
+triggering: master-and-prs
+
+modules:
+
+  kafka-message-scheduler:
+    directory: /scheduler
+    pipelineShape: buildOnly
+    serviceName: MetadataAssemblyPipeline
+    additionalSourceDirectories:
+      - /project
+
+defaultTaskExecution: './sbt ${module}-${phase}'
+
+defaultNodes:
+  prBuild: l-asdf
+  cdBuild: l-asdf
+  cdStubbedNft: asdf-nft-agent

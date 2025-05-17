@@ -36,14 +36,6 @@ object Dependencies {
     lazy val kafka = "com.github.fd4s" %% "fs2-kafka" % kafkaVersion
   }
 
-  object Kafka {
-    private val version = "3.1.0"
-    val kafkaClients    = "org.apache.kafka"  % "kafka-clients" % version
-    val kafka           = "org.apache.kafka" %% "kafka"         % version % Test
-    val base            = Seq(kafkaClients)
-    val test            = Seq(kafka)
-  }
-
   object Logstash {
     lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.0" % Runtime
   }
@@ -90,9 +82,9 @@ object Dependencies {
     lazy val parser  = "io.circe" %% "circe-parser"  % version
   }
 
-  val chimney        = "io.scalaland"  %% "chimney"                % "1.7.3"
-  val fs2TopicLoader = "uk.sky"        %% "fs2-kafka-topic-loader" % "0.1.0"
-  val mouse          = "org.typelevel" %% "mouse"                  % "1.3.2"
+  val chimney     = "io.scalaland"  %% "chimney"                % "1.7.3"
+  val topicLoader = "uk.sky"        %% "fs2-kafka-topic-loader" % "0.1.0"
+  val mouse       = "org.typelevel" %% "mouse"                  % "1.3.2"
 
   val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.15" % Runtime
 
@@ -113,7 +105,7 @@ object Dependencies {
     Circe.parser,
     Fs2.core,
     Fs2.kafka,
-    fs2TopicLoader,
+    topicLoader,
     logbackClassic,
     Logstash.logbackEncoder,
     Monocle.core,

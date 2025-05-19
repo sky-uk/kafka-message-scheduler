@@ -8,12 +8,11 @@ object DockerPublish {
   lazy val dockerSettings: Seq[Def.Setting[?]] = imageSettings
 
   private lazy val imageSettings = Seq(
-    Docker / packageName  := "kafka-message-scheduler",
-    dockerBaseImage       := "alpine:3.21",
-    dockerRepository      := Some(registry),
-    dockerLabels          := Map("maintainer" -> "Sky"),
-    dockerUpdateLatest    := true,
-    dockerBuildxPlatforms := Seq("linux/arm64", "linux/amd64"),
+    Docker / packageName := "kafka-message-scheduler",
+    dockerBaseImage      := "alpine:3.21",
+    dockerRepository     := Some(registry),
+    dockerLabels         := Map("maintainer" -> "Sky"),
+    dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
       Cmd("RUN", "apk add --no-cache bash openjdk17")

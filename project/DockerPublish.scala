@@ -16,7 +16,7 @@ object DockerPublish {
   private lazy val imageSettings = Seq(
     Docker / packageName := "kafka-message-scheduler",
     dockerBaseImage      := "alpine:3.21",
-    dockerRepository     := registry,
+    dockerRepository     := Some(registry),
     dockerLabels         := Map("maintainer" -> "Sky"),
     dockerUpdateLatest   := true,
     dockerCommands ++= Seq(
@@ -26,9 +26,12 @@ object DockerPublish {
     dockerAliases ++= additionalRegistries.map(host => dockerAlias.value.withRegistryHost(Some(host)))
   )
 
-  val allRegistries                     = sys.env.get("CONTAINER_REPOSITORIES").fold(List("test"))(_.split(" ").toList)
-  val registry                          = allRegistries.headOption // Provide a docker registry host
-  val additionalRegistries              = allRegistries.drop(1)    // Remove the first host, because it is already provide.
+  lazy val allRegistries: List[String]      = sys.env.get("CONTAINER_REPOSITORIES").fold(List("test"))(_.split(" ").toList)
+  lazy val (registry, additionalRegistries) = allRegistries match {
+    case registry :: additionalRegistries => registry -> additionalRegistries
+    case other                            => sys.error("Expected at least one Docker registry")
+  }
+
   private lazy val dockerBuildxSettings = Seq(
     ensureDockerBuildx    := {
       if (Process("docker buildx inspect multi-arch-builder").! == 1) {

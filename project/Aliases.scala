@@ -6,13 +6,26 @@ object Aliases {
 
   val ModuleName = "kafka-message-scheduler"
 
-  def alias(name: String, value: String): Settings = addCommandAlias(s"$ModuleName-$name", value)
+  private def alias(name: String, tasks: List[String]): Settings =
+    addCommandAlias(s"$ModuleName-$name", tasks.mkString("; "))
 
-  def cdBuild(module: String) =
-    s"checkFix; checkFmt; project $module; test; release with-defaults;"
+  private def cdBuild(module: String): List[String] =
+    List(
+      s"project $module",
+      "Docker / publish"
+    )
 
-  def scalaPrBuild(module: String) =
-    s"checkFix; checkFmt; project $module; test; project it; dockerComposeUp; test; dockerComposeStop"
+  private def scalaPrBuild(module: String): List[String] =
+    List(
+      "checkFix",
+      "checkFmt",
+      s"project $module",
+      "test",
+      "project it",
+      "dockerComposeUp",
+      "test",
+      "dockerComposeStop"
+    )
 
   lazy val linting: Settings =
     addCommandAlias("checkFix", "scalafixAll --check OrganizeImports; scalafixAll --check") ++
@@ -23,7 +36,7 @@ object Aliases {
       addCommandAlias("runLint", "runFmt; runFix")
 
   lazy val core: Settings =
-    alias("cdBuild", cdBuild("scheduler")) ++
+    alias("cdBuild", scalaPrBuild("scheduler") ++ cdBuild("scheduler")) ++
       alias("prBuild", scalaPrBuild("scheduler")) ++
       linting
 

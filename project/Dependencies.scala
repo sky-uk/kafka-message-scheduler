@@ -46,8 +46,9 @@ object Dependencies {
 
   object PureConfig {
     private val version = "0.17.8"
-    val core            = "com.github.pureconfig" %% "pureconfig-core"        % version
-    val catsEffect      = "com.github.pureconfig" %% "pureconfig-cats-effect" % version
+    val core            = "com.github.pureconfig" %% "pureconfig-core"           % version
+    val catsEffect      = "com.github.pureconfig" %% "pureconfig-cats-effect"    % version
+    val generic         = "com.github.pureconfig" %% "pureconfig-generic-scala3" % version
   }
 
   object OpenTelemetry {
@@ -113,6 +114,7 @@ object Dependencies {
     Otel4s.testkit,
     PureConfig.catsEffect,
     PureConfig.core,
+    PureConfig.generic,
     Vulcan.core,
     Vulcan.generic,
     chimney,

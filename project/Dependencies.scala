@@ -36,8 +36,16 @@ object Dependencies {
     lazy val kafka = "com.github.fd4s" %% "fs2-kafka" % kafkaVersion
   }
 
+  object Janino {
+    val janino = "org.codehaus.janino" % "janino" % "3.1.12" % Runtime
+  }
+
+  object Logback {
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.18" % Runtime
+  }
+
   object Logstash {
-    lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.0" % Runtime
+    lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1" % Runtime
   }
 
   object Monocle {
@@ -87,8 +95,6 @@ object Dependencies {
   val topicLoader = "uk.sky"        %% "fs2-kafka-topic-loader" % "0.1.0"
   val mouse       = "org.typelevel" %% "mouse"                  % "1.3.2"
 
-  val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.15" % Runtime
-
   val scalaTest = "org.scalatest" %% "scalatest" % "3.2.18" % Test
 
   val core: Seq[ModuleID] = Seq(
@@ -105,6 +111,8 @@ object Dependencies {
     Circe.parser,
     Fs2.core,
     Fs2.kafka,
+    Janino.janino,
+    Logback.classic,
     Logstash.logbackEncoder,
     Monocle.core,
     OpenTelemetry.exporterOtlp,
@@ -118,14 +126,13 @@ object Dependencies {
     Vulcan.core,
     Vulcan.generic,
     chimney,
-    logbackClassic,
     mouse,
     topicLoader
   )
 
   val it: Seq[ModuleID] = Seq(
     Cats.effectTesting,
-    logbackClassic,
+    Logback.classic,
     scalaTest
   )
 

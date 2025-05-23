@@ -20,6 +20,13 @@ object Dependencies {
     lazy val test                   = Seq(testKit, scalatest)
   }
 
+  object Decline {
+    private lazy val version = "2.5.0"
+
+    lazy val core   = "com.monovore" %% "decline"        % version
+    lazy val effect = "com.monovore" %% "decline-effect" % version
+  }
+
   object Fs2 {
     private lazy val version      = "3.11.0"
     private lazy val kafkaVersion = "3.6.0"
@@ -27,14 +34,6 @@ object Dependencies {
     lazy val core  = "co.fs2"          %% "fs2-core"  % version
     lazy val io    = "co.fs2"          %% "fs2-io"    % version
     lazy val kafka = "com.github.fd4s" %% "fs2-kafka" % kafkaVersion
-  }
-
-  object Kafka {
-    private val version = "3.1.0"
-    val kafkaClients    = "org.apache.kafka"  % "kafka-clients" % version
-    val kafka           = "org.apache.kafka" %% "kafka"         % version % Test
-    val base            = Seq(kafkaClients)
-    val test            = Seq(kafka)
   }
 
   object Logstash {
@@ -47,8 +46,9 @@ object Dependencies {
 
   object PureConfig {
     private val version = "0.17.8"
-    val core            = "com.github.pureconfig" %% "pureconfig-core"        % version
-    val catsEffect      = "com.github.pureconfig" %% "pureconfig-cats-effect" % version
+    val core            = "com.github.pureconfig" %% "pureconfig-core"           % version
+    val catsEffect      = "com.github.pureconfig" %% "pureconfig-cats-effect"    % version
+    val generic         = "com.github.pureconfig" %% "pureconfig-generic-scala3" % version
   }
 
   object OpenTelemetry {
@@ -83,11 +83,9 @@ object Dependencies {
     lazy val parser  = "io.circe" %% "circe-parser"  % version
   }
 
-  val avro4s =
-    "com.sksamuel.avro4s" %% "avro4s-core" % "5.0.14"
-  val chimney        = "io.scalaland"  %% "chimney"                % "1.7.3"
-  val fs2TopicLoader = "uk.sky"        %% "fs2-kafka-topic-loader" % "0.1.0"
-  val mouse          = "org.typelevel" %% "mouse"                  % "1.3.2"
+  val chimney     = "io.scalaland"  %% "chimney"                % "1.7.3"
+  val topicLoader = "uk.sky"        %% "fs2-kafka-topic-loader" % "0.1.0"
+  val mouse       = "org.typelevel" %% "mouse"                  % "1.3.2"
 
   val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.15" % Runtime
 
@@ -103,36 +101,37 @@ object Dependencies {
     Cats.log4cats,
     Cats.log4catsSlf4j,
     Cats.testKit,
-    chimney,
     Circe.generic,
     Circe.parser,
     Fs2.core,
     Fs2.kafka,
-    Fs2.io,
-    fs2TopicLoader,
-    logbackClassic,
     Logstash.logbackEncoder,
     Monocle.core,
-    mouse,
-    Vulcan.core,
-    Vulcan.generic,
-    PureConfig.catsEffect,
-    PureConfig.core,
     OpenTelemetry.exporterOtlp,
     OpenTelemetry.exporterPrometheus,
     OpenTelemetry.sdkAutoconfigure,
     Otel4s.java,
-    Otel4s.testkit
+    Otel4s.testkit,
+    PureConfig.catsEffect,
+    PureConfig.core,
+    PureConfig.generic,
+    Vulcan.core,
+    Vulcan.generic,
+    chimney,
+    logbackClassic,
+    mouse,
+    topicLoader
   )
 
   val it: Seq[ModuleID] = Seq(
-    Cats.effect,
     Cats.effectTesting,
-    Circe.generic,
-    Circe.parser,
-    Fs2.core,
-    Fs2.kafka,
     logbackClassic,
     scalaTest
+  )
+
+  val avro: Seq[ModuleID] = Seq(
+    Decline.core,
+    Decline.effect,
+    Fs2.io
   )
 }

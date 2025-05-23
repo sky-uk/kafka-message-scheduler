@@ -10,6 +10,9 @@ modules:
     pipelineShape: buildOnly
     serviceName: MetadataAssemblyPipeline
     additionalSourceDirectories:
+      - /avro
+      - /docker
+      - /it
       - /project
 
 defaultTaskExecution: './sbt ${module}-${phase}'

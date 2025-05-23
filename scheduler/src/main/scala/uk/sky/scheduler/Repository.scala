@@ -4,7 +4,6 @@ import cats.effect.std.MapRef
 import cats.effect.{Async, Sync}
 import cats.syntax.all.*
 import cats.{Functor, Monad, Parallel}
-import mouse.all.*
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Meter
 
@@ -30,9 +29,15 @@ object Repository {
       override def delete(key: K): F[Unit]        = underlying.delete(key).void
     }
 
-  private val totalAttribute  = Attribute("counter.type", "total")
-  private val setAttribute    = Attribute("counter.type", "set")
-  private val deleteAttribute = Attribute("counter.type", "delete")
+  private object RepositoryAttribute {
+    private def attribute(value: String) = Attribute("counter.type", value)
+
+    val Total: Attribute[String]  = attribute("total")
+    val Set: Attribute[String]    = attribute("set")
+    val Delete: Attribute[String] = attribute("delete")
+    val Hit: Attribute[String]    = attribute("hit")
+    val Miss: Attribute[String]   = attribute("miss")
+  }
 
   def observed[F[_] : Monad : Parallel : Meter, K, V](name: String)(
       mapRef: MapRef[F, K, Option[V]]
@@ -44,15 +49,26 @@ object Repository {
         override def set(key: K, value: V): F[Unit] =
           underlying
             .set(key, value)
-            .foldF(counter.inc(totalAttribute) &> counter.inc(setAttribute))(_ => Monad[F].unit)
+            .flatMap {
+              case Some(_) => counter.inc(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Set)
+              case None    => Monad[F].unit
+            }
 
         override def get(key: K): F[Option[V]] =
-          underlying.get(key)
+          underlying
+            .get(key)
+            .flatTap {
+              case Some(_) => counter.inc(RepositoryAttribute.Hit)
+              case None    => counter.inc(RepositoryAttribute.Miss)
+            }
 
         override def delete(key: K): F[Unit] =
           underlying
             .delete(key)
-            .foldF(Monad[F].unit)(_ => counter.dec(totalAttribute) &> counter.inc(deleteAttribute))
+            .flatMap {
+              case Some(_) => Monad[F].unit
+              case None    => counter.dec(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Delete)
+            }
       }
     }
 

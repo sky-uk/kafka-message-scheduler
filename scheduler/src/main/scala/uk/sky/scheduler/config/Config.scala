@@ -6,6 +6,7 @@ import fs2.kafka.*
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto
 import uk.sky.BuildInfo
+import uk.sky.scheduler.kafka.*
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -24,7 +25,6 @@ object Config {
       s"Json Topics [${topics.json.mkString(",")}]; " +
       s"Broker ${kafka.consumer.bootstrapServers}"
   }
-
 }
 
 final case class KafkaConfig(
@@ -51,6 +51,8 @@ object KafkaConfig {
       ProducerSettings[F, K, V]
         .withBootstrapServers(config.producer.bootstrapServers)
         .withProperties(config.producer.properties)
+        .atLeastOnce
+        .performant
   }
 }
 

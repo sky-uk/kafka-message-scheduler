@@ -22,7 +22,7 @@ trait ScheduleQueue[F[_]] {
 object ScheduleQueue {
   type CancelableSchedule[F[_]] = Fiber[F, Throwable, Unit]
 
-  def apply[F[_] : Async : Parallel](
+  def apply[F[_] : Async](
       allowEnqueue: Deferred[F, Unit],
       repository: Repository[F, String, CancelableSchedule[F]],
       queue: Queue[F, ScheduleEvent],

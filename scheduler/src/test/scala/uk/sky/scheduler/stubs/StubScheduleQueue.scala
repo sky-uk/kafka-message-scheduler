@@ -1,6 +1,5 @@
 package uk.sky.scheduler.stubs
 
-import cats.Parallel
 import cats.effect.std.{MapRef, Queue, Supervisor}
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Deferred, Resource}
@@ -10,7 +9,7 @@ import uk.sky.scheduler.ScheduleQueue.CancelableSchedule
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.{Repository, ScheduleQueue}
 
-final class StubScheduleQueue[F[_] : Async : Parallel](
+final class StubScheduleQueue[F[_] : Async](
     events: Queue[F, TestEvent],
     allowEnqueue: Deferred[F, Unit],
     repo: Repository[F, String, CancelableSchedule[F]],
@@ -30,7 +29,7 @@ final class StubScheduleQueue[F[_] : Async : Parallel](
 }
 
 object StubScheduleQueue {
-  def apply[F[_] : Async : Parallel](
+  def apply[F[_] : Async](
       events: Queue[F, TestEvent],
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, StubScheduleQueue[F]] =

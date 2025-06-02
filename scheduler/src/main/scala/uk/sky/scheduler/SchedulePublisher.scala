@@ -1,6 +1,5 @@
 package uk.sky.scheduler
 
-import cats.Parallel
 import cats.data.Reader
 import cats.effect.Async
 import cats.syntax.all.*
@@ -31,7 +30,7 @@ object SchedulePublisher {
         } yield ()
     }
 
-  def live[F[_] : Async : Parallel]: Reader[Config, SchedulePublisher[F, Unit]] = Reader { config =>
+  def live[F[_] : Async]: Reader[Config, SchedulePublisher[F, Unit]] = Reader { config =>
     kafka[F](config)
   }
 }

@@ -4,6 +4,7 @@ import cats.Show
 import cats.effect.Resource
 import fs2.kafka.*
 import pureconfig.ConfigReader
+import pureconfig.generic.semiauto
 import uk.sky.BuildInfo
 import uk.sky.scheduler.kafka.*
 
@@ -65,14 +66,13 @@ final case class CommitConfig(
     maxInterval: FiniteDuration
 ) derives ConfigReader
 
-final case class TopicConfig(avro: Option[List[String]] = None, json: Option[List[String]] = None)
+final case class TopicConfig(avro: List[String], json: List[String])
 
 object TopicConfig {
-  given topicConfigReader: ConfigReader[TopicConfig] =
-    ConfigReader
-      .forProduct2[TopicConfig, Option[List[String]], Option[List[String]]]("avro", "json")(TopicConfig.apply)
-      .ensure(
-        config => config.avro.nonEmpty || config.json.nonEmpty,
-        message = _ => "both Avro and JSON topics were empty"
-      )
+  given ConfigReader[TopicConfig] = semiauto
+    .deriveReader[TopicConfig]
+    .ensure(
+      config => config.avro.nonEmpty || config.json.nonEmpty,
+      message = _ => "both Avro and JSON topics were empty"
+    )
 }

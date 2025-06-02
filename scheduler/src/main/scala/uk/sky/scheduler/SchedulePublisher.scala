@@ -21,7 +21,7 @@ object SchedulePublisher {
       override def publish: Pipe[F, ScheduleEvent, Unit] = scheduleEventStream =>
         for {
           producer <- KafkaProducer.stream(producerSettings)
-          _        <- scheduleEventStream.chunks.evalMapChunk { scheduleEventChunk =>
+          _        <- scheduleEventStream.chunks.evalMap { scheduleEventChunk =>
                         val producerRecordChunk = scheduleEventChunk.flatMap(scheduleEvent =>
                           Chunk(scheduleEvent.toProducerRecord, scheduleEvent.toTombstone)
                         )

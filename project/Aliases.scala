@@ -21,6 +21,8 @@ object Aliases {
       "checkFmt",
       s"project $module",
       "test",
+      "project /",
+      "schema",
       "project it",
       "dockerComposeUp",
       "test",

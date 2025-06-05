@@ -1,6 +1,5 @@
 package uk.sky.scheduler
 
-import cats.Parallel
 import cats.data.Reader
 import cats.effect.Async
 import cats.syntax.all.*
@@ -22,7 +21,7 @@ object SchedulePublisher {
       override def publish: Pipe[F, ScheduleEvent, Unit] = scheduleEventStream =>
         for {
           producer <- KafkaProducer.stream(producerSettings)
-          _        <- scheduleEventStream.chunks.evalMapChunk { scheduleEventChunk =>
+          _        <- scheduleEventStream.chunks.evalMap { scheduleEventChunk =>
                         val producerRecordChunk = scheduleEventChunk.flatMap(scheduleEvent =>
                           Chunk(scheduleEvent.toProducerRecord, scheduleEvent.toTombstone)
                         )
@@ -31,7 +30,7 @@ object SchedulePublisher {
         } yield ()
     }
 
-  def live[F[_] : Async : Parallel]: Reader[Config, SchedulePublisher[F, Unit]] = Reader { config =>
+  def live[F[_] : Async]: Reader[Config, SchedulePublisher[F, Unit]] = Reader { config =>
     kafka[F](config)
   }
 }

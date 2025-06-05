@@ -1,7 +1,6 @@
-import Release.*
 import DockerPublish.*
+import Release.*
 import org.typelevel.scalacoptions.ScalacOptions
-import DockerComposeSettings.*
 
 ThisBuild / organization := "com.sky"
 
@@ -44,30 +43,24 @@ lazy val scheduler = (project in file("scheduler"))
 lazy val it = (project in file("it"))
   .enablePlugins(DockerComposePlugin)
   .settings(scala3Settings)
-  .settings {
-    Seq(
-      libraryDependencies ++= Dependencies.it,
-      Test / fork             := true,
-      dockerImageCreationTask := (scheduler / Docker / publishLocal).value,
-      composeFile             := "it/docker/docker-compose.yml"
-    )
-  }
-  .settings(settings)
-  .settings(Seq(envVars := Map(kafkaPort)))
+  .settings(libraryDependencies ++= Dependencies.it)
+  .settings(DockerCompose.settings(scheduler))
   .dependsOn(scheduler % "compile->compile;test->test")
 
 val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule schema.")
 
 lazy val avro = (project in file("avro"))
   .settings(scala3Settings)
-  .settings(libraryDependencies += Dependencies.avro4s)
+  .settings(libraryDependencies ++= Dependencies.avro)
   .settings(schema := (Compile / run).toTask("").value)
+  .settings(buildInfoSettings("uk.sky"))
   .dependsOn(scheduler)
+  .enablePlugins(BuildInfoPlugin)
   .disablePlugins(ReleasePlugin)
 
 lazy val root = (project in file("."))
   .withId("kafka-message-scheduler")
-  .aggregate(scheduler, it)
+  .aggregate(scheduler, it, avro)
   .enablePlugins(DockerComposePlugin)
   .disablePlugins(ReleasePlugin)
   .settings(Aliases.core)

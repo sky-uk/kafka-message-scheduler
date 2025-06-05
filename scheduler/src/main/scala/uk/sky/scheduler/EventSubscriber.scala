@@ -27,14 +27,14 @@ trait EventSubscriber[F[_]] {
 object EventSubscriber {
   private type Output = Either[ScheduleError, Option[ScheduleEvent]]
 
-  def kafka[F[_] : Async : Parallel : LoggerFactory](
+  def kafka[F[_] : Async : LoggerFactory](
       config: Config,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {
 
     val avroConsumerSettings: ConsumerSettings[F, String, Either[ScheduleError, Option[AvroSchedule]]] = {
       given Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] = {
-        val scheduleDeserialzer: Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
+        val scheduleDeserializer: Resource[F, ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]] =
           avroBinaryDeserializer[F, AvroSchedule].map(_.option.map(_.sequence))
         val scheduleWithoutHeadersDeserializer: Resource[
           F,
@@ -43,13 +43,14 @@ object EventSubscriber {
           avroBinaryDeserializer[F, AvroScheduleWithoutHeaders].map(_.option.map(_.sequence.map(_.map(_.avroSchedule))))
 
         for {
-          sDeserializer   <- scheduleDeserialzer
+          sDeserializer   <- scheduleDeserializer
           swhDeserializer <- scheduleWithoutHeadersDeserializer
         } yield sDeserializer.flatMap {
           case Right(maybeSchedule) =>
             GenericDeserializer
               .const[F, Either[ScheduleError, Option[AvroSchedule]]](Right(maybeSchedule))
-          case Left(_)              => swhDeserializer
+
+          case Left(_) => swhDeserializer
         }
       }
 
@@ -82,21 +83,15 @@ object EventSubscriber {
         }
 
       private val avroStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[AvroSchedule]]]] =
-        config.topics.avro
-          .flatMap(_.toNel)
+        config.topics.avro.toNel
           .fold(Stream.exec(avroLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
-            TopicLoader.loadAndRun(_, avroConsumerSettings) { exitCase =>
-              avroLoadedRef.set(true) *> onLoadCompare(exitCase)
-            }
+            TopicLoader.loadAndRun(_, avroConsumerSettings)(avroLoadedRef.set(true) >> onLoadCompare(_))
           )
 
       private val jsonStream: Stream[F, ConsumerRecord[String, Either[ScheduleError, Option[JsonSchedule]]]] =
-        config.topics.json
-          .flatMap(_.toNel)
+        config.topics.json.toNel
           .fold(Stream.exec(jsonLoadedRef.set(true) *> onLoadCompare(ExitCase.Succeeded)))(
-            TopicLoader.loadAndRun(_, jsonConsumerSettings) { exitCase =>
-              jsonLoadedRef.set(true) *> onLoadCompare(exitCase)
-            }
+            TopicLoader.loadAndRun(_, jsonConsumerSettings)(jsonLoadedRef.set(true) >> onLoadCompare(_))
           )
 
       override def messages: Stream[F, Message[Output]] =
@@ -132,7 +127,7 @@ object EventSubscriber {
 
     for {
       counter <- Meter[F].counter[Long]("event-subscriber").create
-      logger   = LoggerFactory[F].getLogger
+      logger  <- LoggerFactory[F].create
     } yield new EventSubscriber[F] {
       override def messages: Stream[F, Message[Output]] =
         delegate.messages.evalTapChunk { case Message(key, source, value, metadata) =>

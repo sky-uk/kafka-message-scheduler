@@ -12,7 +12,7 @@ object Aliases {
     s"checkFix; checkFmt; project $module; test; release with-defaults;"
 
   def scalaPrBuild(module: String) =
-    s"checkFix; checkFmt; project $module; test;"
+    s"checkFix; checkFmt; project $module; test; project it; dockerComposeUp; test; dockerComposeStop"
 
   lazy val linting: Settings =
     addCommandAlias("checkFix", "scalafixAll --check OrganizeImports; scalafixAll --check") ++

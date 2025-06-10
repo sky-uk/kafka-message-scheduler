@@ -1,5 +1,4 @@
 import com.typesafe.sbt.packager.Keys.*
-import com.typesafe.sbt.packager.docker.Cmd
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.Docker
 import sbt.*
 import sbt.Keys.*
@@ -15,14 +14,10 @@ object DockerPublish {
 
   private lazy val imageSettings = Seq(
     Docker / packageName := "kafka-message-scheduler",
-    dockerBaseImage      := "alpine:3.21",
+    dockerBaseImage      := "eclipse-temurin:21-jre-jammy",
     dockerRepository     := Some(registry),
     dockerLabels         := Map("maintainer" -> "Sky"),
     dockerUpdateLatest   := true,
-    dockerCommands ++= Seq(
-      Cmd("USER", "root"),
-      Cmd("RUN", "apk add --no-cache bash openjdk17")
-    ),
     dockerAliases ++= additionalRegistries.map(host => dockerAlias.value.withRegistryHost(Some(host)))
   )
 

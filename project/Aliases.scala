@@ -17,10 +17,11 @@ object Aliases {
 
   private def scalaPrBuild(module: String): List[String] =
     List(
-      "checkFix",
-      "checkFmt",
+      "checkLint",
       s"project $module",
       "test",
+      "project /",
+      "schema",
       "project it",
       "dockerComposeUp",
       "test",

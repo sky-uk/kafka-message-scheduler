@@ -1,9 +1,11 @@
 package uk.sky.scheduler.stubs
 
+import cats.Parallel
 import cats.effect.std.Queue
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Deferred, Fiber, Resource}
 import cats.syntax.all.*
+import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.*
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.error.ScheduleError
@@ -39,7 +41,7 @@ final class StubScheduler[F[_] : Async](
 }
 
 object StubScheduler {
-  def apply[F[_] : Async]: Resource[F, StubScheduler[F]] =
+  def apply[F[_] : Async : Parallel : Meter]: Resource[F, StubScheduler[F]] =
     for {
       events         <- Queue.unbounded[F, TestEvent].toResource
       allowEnqueue   <- Deferred[F, Unit].flatTap(_.complete(())).toResource

@@ -25,8 +25,8 @@ object Main extends IOApp.Simple {
     _                       <- logger.info(show"Running ${Config.metadata.appName} with version ${Config.metadata.version}")
     _                       <- logger.info(show"Loaded $config")
     _                       <- Supervisor[IO].use { supervisor =>
-                                 Scheduler.live[IO](supervisor).apply(config).flatMap {
-                                   _.stream
+                                 Scheduler.live[IO](supervisor).apply(config).use { scheduler =>
+                                   scheduler.stream
                                      .onFinalizeCase[IO] {
                                        case ExitCase.Succeeded  => logger.info("Stream Succeeded")
                                        case ExitCase.Errored(e) => logger.error(e)(s"Stream error - ${e.getMessage}")

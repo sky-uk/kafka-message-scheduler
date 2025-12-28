@@ -49,10 +49,10 @@ object ScheduleQueue {
       Stream.fromQueueUnterminated(outputQueue)
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] = {
-    val logger = LoggerFactory[F].getLogger
-
-    new ScheduleQueue[F] {
+  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): F[ScheduleQueue[F]] =
+    for {
+      logger <- LoggerFactory[F].create
+    } yield new ScheduleQueue[F] {
       override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
         for {
           result <- delegate.schedule(key, scheduleEvent)
@@ -72,7 +72,6 @@ object ScheduleQueue {
           )
         }
     }
-  }
 
   def resource[F[_] : Async : Parallel : LoggerFactory : Meter](
       allowEnqueue: Deferred[F, Unit]
@@ -84,8 +83,8 @@ object ScheduleQueue {
       initialWakeup <- Resource.eval(Deferred[F, Unit])
       wakeupRef     <- Resource.eval(Ref.of[F, Deferred[F, Unit]](initialWakeup))
       scheduleQueue  = ScheduleQueue(allowEnqueue, repo, priorityQueue, outputQueue, wakeupRef)
-      _             <- ScheduleQueue.schedulerFiber(allowEnqueue, repo, priorityQueue, outputQueue, wakeupRef).background
-      observed       = ScheduleQueue.observed(scheduleQueue)
+      _             <- schedulerFiber(allowEnqueue, repo, priorityQueue, outputQueue, wakeupRef).background
+      observed      <- Resource.eval(ScheduleQueue.observed(scheduleQueue))
     } yield observed
 
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
@@ -123,9 +122,7 @@ object ScheduleQueue {
                               newWakeup <- Deferred[F, Unit]
                               _         <- wakeupRef.set(newWakeup)
                             } yield ()
-                          } else {
-                            fireSchedule(key, scheduleEvent)
-                          }
+                          } else fireSchedule(key, scheduleEvent)
           } yield ()
       }
 

@@ -19,14 +19,10 @@ final case class StubScheduler[F[_] : Async](
 ) extends Scheduler[F, ScheduleEvent](eventSubscriber, scheduleQueue, schedulePublisher) {
   def produce(
       messages: Message[Either[ScheduleError, Option[ScheduleEvent]]]*
-  ): F[Unit] =
-    messages
-      .traverse(input.offer)
-      .void
+  ): F[Unit] = messages.traverse_(input.offer)
 
   def takeEvent: F[TestEvent] =
-    events.take
-      .testTimeout()
+    events.take.testTimeout()
 }
 
 object StubScheduler {

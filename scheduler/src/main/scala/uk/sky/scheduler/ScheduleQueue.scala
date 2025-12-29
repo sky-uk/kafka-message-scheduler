@@ -34,7 +34,7 @@ object ScheduleQueue {
         _      <- repository.set(key, scheduleEvent)
         _      <- priorityQueue.enqueue(key, scheduleEvent)
         wakeup <- wakeupRef.get
-        _      <- wakeup.complete(()).attempt
+        _      <- wakeup.complete(())
       } yield ()
 
     override def cancel(key: String): F[Unit] =
@@ -42,7 +42,7 @@ object ScheduleQueue {
         _      <- repository.delete(key)
         _      <- priorityQueue.remove(key)
         wakeup <- wakeupRef.get
-        _      <- wakeup.complete(()).attempt
+        _      <- wakeup.complete(())
       } yield ()
 
     override def schedules: Stream[F, ScheduleEvent] =

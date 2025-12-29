@@ -120,7 +120,7 @@ object ScheduleQueue {
 
     def fireSchedule(key: String, expectedSchedule: ScheduleEvent): F[Unit] =
       repository.get(key).flatMap {
-        case Some(current) if current.schedule.time == expectedSchedule.schedule.time =>
+        case Some(current) if current.schedule.time === expectedSchedule.schedule.time =>
           for {
             _ <- outputQueue.offer(current)
             _ <- repository.delete(key)

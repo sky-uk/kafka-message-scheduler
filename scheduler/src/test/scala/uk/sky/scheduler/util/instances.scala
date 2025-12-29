@@ -46,7 +46,7 @@ private given Eq[JsonSchedule] = Eq.instance((left, right) =>
 )
 
 private given Eq[Metadata] = Eq.instance((left, right) =>
-  left.id == right.id &&
+  left.id === right.id &&
     left.scheduleTopic === right.scheduleTopic
 )
 

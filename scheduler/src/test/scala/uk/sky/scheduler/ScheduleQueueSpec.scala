@@ -1,17 +1,19 @@
 package uk.sky.scheduler
 
 import cats.effect.std.Queue
-import cats.effect.{Deferred, IO}
+import cats.effect.{Clock, Deferred, IO}
 import monocle.syntax.all.*
 import org.scalatest.{Assertion, EitherValues, OptionValues}
 import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.domain.ScheduleEvent
+import uk.sky.scheduler.syntax.all.*
 import uk.sky.scheduler.util.Generator.*
+import uk.sky.scheduler.util.ScheduleMatchers
 import uk.sky.scheduler.util.testSyntax.*
 
 import scala.concurrent.duration.*
 
-final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues {
+final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues, ScheduleMatchers {
 
   "ScheduleQueue" when {
 
@@ -21,14 +23,14 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
           for {
             _             <- scheduleQueue.schedule("key", scheduleEvent)
             maybeSchedule <- repository.get("key")
-          } yield maybeSchedule shouldBe Some(scheduleEvent)
+          } yield maybeSchedule.value should equalSchedule(scheduleEvent)
       }
 
       "remove a ScheduleEvent from the Repository when it is canceled" in withContext {
         case TestContext(repository, _, _, _, scheduleQueue, scheduleEvent) =>
           for {
             _             <- scheduleQueue.schedule("key", scheduleEvent)
-            _             <- repository.get("key").asserting(_ shouldBe Some(scheduleEvent))
+            _             <- repository.get("key").asserting(_.value should equalSchedule(scheduleEvent))
             _             <- scheduleQueue.cancel("key")
             maybeSchedule <- repository.get("key")
           } yield maybeSchedule shouldBe None
@@ -38,11 +40,11 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
         case TestContext(repository, _, _, _, scheduleQueue, scheduleEvent) =>
           for {
             _             <- scheduleQueue.schedule("key", scheduleEvent)
-            _             <- repository.get("key").asserting(_ shouldBe Some(scheduleEvent))
+            _             <- repository.get("key").asserting(_.value should equalSchedule(scheduleEvent))
             newSchedule    = scheduleEvent.focus(_.schedule.time).modify(_ + 100_000L)
             _             <- scheduleQueue.schedule("key", newSchedule)
             maybeSchedule <- repository.get("key")
-          } yield maybeSchedule shouldBe Some(newSchedule)
+          } yield maybeSchedule.value should equalSchedule(newSchedule)
       }
     }
 
@@ -57,7 +59,7 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
             result        <- outputQueue.tryTake
           } yield {
             maybeSchedule shouldBe None
-            result shouldBe Some(scheduleEvent)
+            result.value should equalSchedule(scheduleEvent)
           }
       }
 
@@ -68,7 +70,7 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
             _      <- scheduleQueue.schedule("key", scheduleEvent)
             _      <- IO.sleep(200.millis) // Wait for schedule to fire (100ms delay + buffer)
             result <- outputQueue.tryTake
-          } yield result shouldBe Some(scheduleEvent)
+          } yield result.value should equalSchedule(scheduleEvent)
       }
 
       "offer a ScheduleEvent to the Queue immediately if the specified time has passed" in withSchedulerFiber {
@@ -83,7 +85,7 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
             result      <- outputQueue.tryTake
           } yield {
             stored shouldBe None
-            result shouldBe Some(pastSchedule)
+            result.value should equalSchedule(pastSchedule)
           }
       }
 
@@ -96,10 +98,10 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
             _      <- allowEnqueue.complete(())
             _      <- IO.sleep(50.millis)                            // Small delay for processing
             result <- outputQueue.tryTake
-          } yield result shouldBe Some(scheduleEvent)
+          } yield result.value should equalSchedule(scheduleEvent)
       }
 
-      "verify schedule hasn't changed before firing" in withSchedulerFiber {
+      "verify schedule hasn't changed before firing (different time)" in withSchedulerFiber {
         case TestContext(repository, allowEnqueue, _, outputQueue, scheduleQueue, scheduleEvent) =>
           for {
             _          <- allowEnqueue.complete(())
@@ -113,9 +115,29 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
             result2    <- outputQueue.tryTake
             stored     <- repository.get("key")
           } yield {
-            result1 shouldBe None              // Original should not fire
-            result2 shouldBe Some(newSchedule) // New schedule should fire
-            stored shouldBe None               // Should be removed after firing
+            result1 shouldBe None                           // Original should not fire
+            result2.value should equalSchedule(newSchedule) // New schedule should fire
+            stored shouldBe None                            // Should be removed after firing
+          }
+      }
+
+      "verify schedule hasn't changed before firing (same time, different payload)" in withSchedulerFiber {
+        case TestContext(repository, allowEnqueue, _, outputQueue, scheduleQueue, scheduleEvent) =>
+          for {
+            _       <- allowEnqueue.complete(())
+            now     <- Clock[IO].epochMilli
+            fireTime = now + 100L
+            original = scheduleEvent.focus(_.schedule.time).replace(fireTime)
+            updated  = original.focus(_.schedule.value).replace(Some("different".getBytes))
+            _       <- scheduleQueue.schedule("key", original)
+            _       <- IO.sleep(50.millis)                    // Wait a bit
+            _       <- scheduleQueue.schedule("key", updated) // Update with same time, different payload
+            _       <- IO.sleep(100.millis)                   // Wait for fire time
+            result  <- outputQueue.tryTake
+            stored  <- repository.get("key")
+          } yield {
+            result.value should equalSchedule(updated) // Updated schedule should fire, not original
+            stored shouldBe None                       // Should be removed after firing
           }
       }
 
@@ -130,8 +152,8 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
             stored        <- repository.get("key")
             result        <- outputQueue.tryTake
           } yield {
-            stored shouldBe Some(futureSchedule) // Should still be in repository
-            result shouldBe None                 // Should not have fired
+            stored.value should equalSchedule(futureSchedule) // Should still be in repository
+            result shouldBe None                              // Should not have fired
           }
       }
     }

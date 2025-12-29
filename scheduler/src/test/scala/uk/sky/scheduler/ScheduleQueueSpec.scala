@@ -1,7 +1,7 @@
 package uk.sky.scheduler
 
 import cats.effect.std.Queue
-import cats.effect.{Deferred, IO, Ref}
+import cats.effect.{Deferred, IO}
 import monocle.syntax.all.*
 import org.scalatest.{Assertion, EitherValues, OptionValues}
 import org.typelevel.otel4s.metrics.Meter
@@ -152,15 +152,14 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
       allowEnqueue  <- Deferred[IO, Unit]
       priorityQueue <- PriorityScheduleQueue[IO]
       outputQueue   <- Queue.unbounded[IO, ScheduleEvent]
-      initialWakeup <- Deferred[IO, Unit]
-      wakeupRef     <- Ref.of[IO, Deferred[IO, Unit]](initialWakeup)
+      notifier      <- Notifier[IO]
       scheduleEvent <- generateSchedule[IO](_.plusSeconds(10))
       testContext    = TestContext(
                          repository = repository,
                          allowEnqueue = allowEnqueue,
                          priorityQueue = priorityQueue,
                          outputQueue = outputQueue,
-                         scheduleQueue = ScheduleQueue(allowEnqueue, repository, priorityQueue, outputQueue, wakeupRef),
+                         scheduleQueue = ScheduleQueue(allowEnqueue, repository, priorityQueue, outputQueue, notifier),
                          scheduleEvent = scheduleEvent
                        )
       assertion     <- test(testContext)
@@ -172,19 +171,18 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues 
       allowEnqueue  <- Deferred[IO, Unit]
       priorityQueue <- PriorityScheduleQueue[IO]
       outputQueue   <- Queue.unbounded[IO, ScheduleEvent]
-      initialWakeup <- Deferred[IO, Unit]
-      wakeupRef     <- Ref.of[IO, Deferred[IO, Unit]](initialWakeup)
+      notifier      <- Notifier[IO]
       scheduleEvent <- generateSchedule[IO](_.plusMillis(100)) // Short delay for fast tests
       testContext    = TestContext(
                          repository = repository,
                          allowEnqueue = allowEnqueue,
                          priorityQueue = priorityQueue,
                          outputQueue = outputQueue,
-                         scheduleQueue = ScheduleQueue(allowEnqueue, repository, priorityQueue, outputQueue, wakeupRef),
+                         scheduleQueue = ScheduleQueue(allowEnqueue, repository, priorityQueue, outputQueue, notifier),
                          scheduleEvent = scheduleEvent
                        )
       assertion     <- ScheduleQueue
-                         .schedulerFiber(allowEnqueue, repository, priorityQueue, outputQueue, wakeupRef)
+                         .schedulerFiber(allowEnqueue, repository, priorityQueue, outputQueue, notifier)
                          .background
                          .surround(test(testContext))
     } yield assertion

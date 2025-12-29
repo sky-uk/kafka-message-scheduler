@@ -2,7 +2,7 @@ package uk.sky.scheduler
 
 import cats.effect.std.Queue
 import cats.effect.syntax.all.*
-import cats.effect.{Async, Deferred, Ref, Resource}
+import cats.effect.{Async, Deferred, Resource}
 import cats.syntax.all.*
 import cats.{Monad, Parallel}
 import fs2.Stream
@@ -26,23 +26,21 @@ object ScheduleQueue {
       repository: Repository[F, String, ScheduleEvent],
       priorityQueue: PriorityScheduleQueue[F],
       outputQueue: Queue[F, ScheduleEvent],
-      wakeupRef: Ref[F, Deferred[F, Unit]]
+      notifier: Notifier[F]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
 
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
       for {
-        _      <- repository.set(key, scheduleEvent)
-        _      <- priorityQueue.enqueue(key, scheduleEvent)
-        wakeup <- wakeupRef.get
-        _      <- wakeup.complete(())
+        _ <- repository.set(key, scheduleEvent)
+        _ <- priorityQueue.enqueue(key, scheduleEvent)
+        _ <- notifier.signal
       } yield ()
 
     override def cancel(key: String): F[Unit] =
       for {
-        _      <- repository.delete(key)
-        _      <- priorityQueue.remove(key)
-        wakeup <- wakeupRef.get
-        _      <- wakeup.complete(())
+        _ <- repository.delete(key)
+        _ <- priorityQueue.remove(key)
+        _ <- notifier.signal
       } yield ()
 
     override def schedules: Stream[F, ScheduleEvent] =
@@ -80,10 +78,9 @@ object ScheduleQueue {
       repo          <- Resource.eval(Repository.ofScalaConcurrentTrieMap[F, String, ScheduleEvent]("schedules"))
       priorityQueue <- Resource.eval(PriorityScheduleQueue[F])
       outputQueue   <- Resource.eval(Queue.unbounded[F, ScheduleEvent])
-      initialWakeup <- Resource.eval(Deferred[F, Unit])
-      wakeupRef     <- Resource.eval(Ref.of[F, Deferred[F, Unit]](initialWakeup))
-      scheduleQueue  = ScheduleQueue(allowEnqueue, repo, priorityQueue, outputQueue, wakeupRef)
-      _             <- schedulerFiber(allowEnqueue, repo, priorityQueue, outputQueue, wakeupRef).background
+      notifier      <- Resource.eval(Notifier[F])
+      scheduleQueue  = ScheduleQueue(allowEnqueue, repo, priorityQueue, outputQueue, notifier)
+      _             <- schedulerFiber(allowEnqueue, repo, priorityQueue, outputQueue, notifier).background
       observed      <- Resource.eval(ScheduleQueue.observed(scheduleQueue))
     } yield observed
 
@@ -97,16 +94,13 @@ object ScheduleQueue {
       repository: Repository[F, String, ScheduleEvent],
       priorityQueue: PriorityScheduleQueue[F],
       outputQueue: Queue[F, ScheduleEvent],
-      wakeupRef: Ref[F, Deferred[F, Unit]]
+      notifier: Notifier[F]
   ): F[Unit] = {
 
     def processNext: F[Unit] =
       priorityQueue.peek.flatMap {
         case None =>
-          for {
-            wakeup <- wakeupRef.get
-            _      <- wakeup.get
-          } yield ()
+          notifier.await
 
         case Some((key, scheduleEvent)) =>
           for {
@@ -117,10 +111,8 @@ object ScheduleQueue {
                             .getOrElse(Long.MaxValue.nanos)
             _          <- if (delayMillis > 0) {
                             for {
-                              wakeup    <- wakeupRef.get
-                              _         <- wakeup.get.race(Async[F].sleep(duration)).void
-                              newWakeup <- Deferred[F, Unit]
-                              _         <- wakeupRef.set(newWakeup)
+                              _ <- notifier.await.race(Async[F].sleep(duration)).void
+                              _ <- notifier.refresh
                             } yield ()
                           } else fireSchedule(key, scheduleEvent)
           } yield ()

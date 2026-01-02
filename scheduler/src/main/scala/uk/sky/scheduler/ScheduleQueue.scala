@@ -1,8 +1,8 @@
 package uk.sky.scheduler
 
-import cats.effect.std.{Queue, Supervisor}
+import cats.effect.std.Queue
 import cats.effect.syntax.all.*
-import cats.effect.{Async, Deferred, Fiber}
+import cats.effect.{Async, Deferred, Resource}
 import cats.syntax.all.*
 import cats.{Monad, Parallel}
 import fs2.Stream
@@ -20,71 +20,37 @@ trait ScheduleQueue[F[_]] {
 }
 
 object ScheduleQueue {
-  type CancelableSchedule[F[_]] = Fiber[F, Throwable, Unit]
 
   def apply[F[_] : Async](
       allowEnqueue: Deferred[F, Unit],
-      repository: Repository[F, String, CancelableSchedule[F]],
-      queue: Queue[F, ScheduleEvent],
-      supervisor: Supervisor[F]
+      repository: Repository[F, String, ScheduleEvent],
+      priorityQueue: PriorityScheduleQueue[F],
+      outputQueue: Queue[F, ScheduleEvent],
+      notifier: Notifier[F]
   ): ScheduleQueue[F] = new ScheduleQueue[F] {
-
-    /** Delay offering a schedule to the queue by [[delay]]. This has 3 guarantees:
-      *
-      *   - It will not offer a schedule until [[allowEnqueue]] has been completed. This prevents schedules being
-      *     prematurely fired on startup, if there are pending updates yet to be read.
-      *   - It will not delete a schedule from the repository until [[storeLock]] has been completed. This prevents a
-      *     race condition between storing a schedule and deleting it - for example, if a schedule is to be fired
-      *     immediately the fiber will run `delete` on the repository <b>then</b> store the canceled fiber.
-      *   - If offering a schedule to the queue fails, we guarantee that it will be removed from the repository.
-      *
-      * Note that offering to the underlying queue is uncancelable. This means that a schedule can only be canceled
-      * while in the waiting state and not after it is submitted for scheduling.
-      */
-    private def delayScheduling(
-        key: String,
-        scheduleEvent: ScheduleEvent,
-        delay: FiniteDuration,
-        storeLock: Deferred[F, Unit]
-    ): F[Unit] =
-      Async[F]
-        .delayBy(
-          for {
-            _ <- allowEnqueue.get
-            _ <- queue.offer(scheduleEvent).uncancelable.guarantee(storeLock.get >> repository.delete(key))
-          } yield (),
-          time = delay
-        )
 
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
       for {
-        previous   <- repository.get(key)
-        _          <- previous.fold(Async[F].unit)(_.cancel)
-        now        <- Async[F].epochMilli
-        delay      <- Either
-                        .catchNonFatal(Math.max(0, scheduleEvent.schedule.time - now).milliseconds)
-                        .getOrElse(Long.MaxValue.nanos)
-                        .pure
-        storeLock  <- Deferred[F, Unit]
-        cancelable <- supervisor.supervise(delayScheduling(key, scheduleEvent, delay, storeLock))
-        _          <- repository.set(key, cancelable)
-        _          <- storeLock.complete(())
+        _ <- repository.set(key, scheduleEvent)
+        _ <- priorityQueue.enqueue(key, scheduleEvent)
+        _ <- notifier.signal
       } yield ()
 
     override def cancel(key: String): F[Unit] =
-      repository.get(key).flatMap {
-        case Some(started) => started.cancel.guarantee(repository.delete(key))
-        case None          => Async[F].unit
-      }
+      for {
+        _ <- repository.delete(key)
+        _ <- priorityQueue.remove(key)
+        _ <- notifier.signal
+      } yield ()
 
     override def schedules: Stream[F, ScheduleEvent] =
-      Stream.fromQueueUnterminated(queue)
+      Stream.fromQueueUnterminated(outputQueue)
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] = {
-    val logger = LoggerFactory[F].getLogger
-
-    new ScheduleQueue[F] {
+  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): F[ScheduleQueue[F]] =
+    for {
+      logger <- LoggerFactory[F].create
+    } yield new ScheduleQueue[F] {
       override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
         for {
           result <- delegate.schedule(key, scheduleEvent)
@@ -104,17 +70,77 @@ object ScheduleQueue {
           )
         }
     }
-  }
+
+  def resource[F[_] : Async : Parallel : LoggerFactory : Meter](
+      allowEnqueue: Deferred[F, Unit]
+  ): Resource[F, ScheduleQueue[F]] =
+    for {
+      repo          <- Resource.eval(Repository.ofScalaConcurrentTrieMap[F, String, ScheduleEvent]("schedules"))
+      priorityQueue <- Resource.eval(PriorityScheduleQueue[F])
+      outputQueue   <- Resource.eval(Queue.unbounded[F, ScheduleEvent])
+      notifier      <- Resource.eval(Notifier[F])
+      scheduleQueue  = ScheduleQueue(allowEnqueue, repo, priorityQueue, outputQueue, notifier)
+      _             <- schedulerFiber(allowEnqueue, repo, priorityQueue, outputQueue, notifier).background
+      observed      <- Resource.eval(ScheduleQueue.observed(scheduleQueue))
+    } yield observed
 
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
+      allowEnqueue: Deferred[F, Unit]
+  ): Resource[F, ScheduleQueue[F]] =
+    resource(allowEnqueue)
+
+  private[scheduler] def schedulerFiber[F[_] : Async](
       allowEnqueue: Deferred[F, Unit],
-      supervisor: Supervisor[F]
-  ): F[ScheduleQueue[F]] =
-    for {
-      repo         <- Repository.ofConcurrentHashMap[F, String, CancelableSchedule[F]]("schedules")
-      eventQueue   <- Queue.unbounded[F, ScheduleEvent]
-      scheduleQueue = ScheduleQueue(allowEnqueue, repo, eventQueue, supervisor)
-      observed      = ScheduleQueue.observed(scheduleQueue)
-    } yield observed
+      repository: Repository[F, String, ScheduleEvent],
+      priorityQueue: PriorityScheduleQueue[F],
+      outputQueue: Queue[F, ScheduleEvent],
+      notifier: Notifier[F]
+  ): F[Unit] = {
+
+    def processNext: F[Unit] =
+      priorityQueue.peek.flatMap {
+        case None =>
+          notifier.await
+
+        case Some((key, scheduleEvent)) =>
+          for {
+            now        <- Async[F].epochMilli
+            delayMillis = Math.max(0, scheduleEvent.schedule.time - now)
+            duration    = Either
+                            .catchNonFatal(delayMillis.milliseconds)
+                            .getOrElse(Long.MaxValue.nanos)
+            _          <- if (delayMillis > 0) {
+                            for {
+                              _ <- notifier.await.race(Async[F].sleep(duration)).void
+                              _ <- notifier.refresh
+                            } yield ()
+                          } else fireSchedule(key, scheduleEvent)
+          } yield ()
+      }
+
+    def fireSchedule(key: String, expectedSchedule: ScheduleEvent): F[Unit] =
+      repository.get(key).flatMap {
+        case Some(current) if current.schedule.time === expectedSchedule.schedule.time =>
+          for {
+            _ <- outputQueue.offer(current)
+            _ <- repository.delete(key)
+            _ <- priorityQueue.dequeue
+          } yield ()
+
+        case Some(current) =>
+          for {
+            _ <- priorityQueue.dequeue
+            _ <- priorityQueue.enqueue(key, current)
+          } yield ()
+
+        case None =>
+          priorityQueue.dequeue.void
+      }
+
+    def loop: F[Unit] =
+      processNext >> loop
+
+    allowEnqueue.get >> loop
+  }
 
 }

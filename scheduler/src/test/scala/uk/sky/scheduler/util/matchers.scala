@@ -37,6 +37,15 @@ private class ProducerRecordMatcher(right: ProducerRecord[Array[Byte], Option[Ar
     )
 }
 
+private class ScheduleEventMatcher(right: ScheduleEvent) extends Matcher[ScheduleEvent] {
+  override def apply(left: ScheduleEvent): MatchResult =
+    MatchResult(
+      left === right,
+      s"${left.show} did not equal ${right.show}",
+      s"${left.show} equals ${right.show}"
+    )
+}
+
 private class MessageMatcher(right: Message[Either[ScheduleError, Option[ScheduleEvent]]])
     extends Matcher[Message[Either[ScheduleError, Option[ScheduleEvent]]]] {
   override def apply(left: Message[Either[ScheduleError, Option[ScheduleEvent]]]): MatchResult =
@@ -55,6 +64,8 @@ trait ScheduleMatchers {
   def equalSchedule(expectedSchedule: AvroSchedule): AvroScheduleMatcher = AvroScheduleMatcher(expectedSchedule)
 
   def equalSchedule(expectedSchedule: JsonSchedule): JsonScheduleMatcher = JsonScheduleMatcher(expectedSchedule)
+
+  def equalSchedule(expectedSchedule: ScheduleEvent): ScheduleEventMatcher = ScheduleEventMatcher(expectedSchedule)
 }
 
 trait ProducerRecordMatchers {

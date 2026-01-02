@@ -1,33 +1,32 @@
 package uk.sky.scheduler
 
+import cats.effect.Sync
 import cats.effect.std.MapRef
-import cats.effect.{Async, Sync}
 import cats.syntax.all.*
-import cats.{Functor, Monad, Parallel}
+import cats.{Monad, Parallel}
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Meter
+
+import scala.collection.concurrent.TrieMap
 
 trait Repository[F[_], K, V] {
   def set(key: K, value: V): F[Unit]
   def get(key: K): F[Option[V]]
   def delete(key: K): F[Unit]
+  def getAll: F[Map[K, V]]
+  def size: F[Int]
 }
 
 object Repository {
-  private class RepositoryImpl[F[_], K, V](mapRef: MapRef[F, K, Option[V]]) {
+  private class TrieMapRepository[F[_] : Sync, K, V](trieMap: TrieMap[K, V]) {
+    private val mapRef = MapRef.fromScalaConcurrentMap(trieMap)
+
     def set(key: K, value: V): F[Option[V]] = mapRef(key).getAndSet(value.some)
     def get(key: K): F[Option[V]]           = mapRef(key).get
     def delete(key: K): F[Option[V]]        = mapRef(key).getAndSet(None)
+    def getAll: F[Map[K, V]]                = Sync[F].delay(trieMap.toMap)
+    def size: F[Int]                        = Sync[F].delay(trieMap.size)
   }
-
-  def apply[F[_] : Functor, K, V](mapRef: MapRef[F, K, Option[V]]): Repository[F, K, V] =
-    new Repository[F, K, V] {
-      private val underlying = RepositoryImpl(mapRef)
-
-      override def set(key: K, value: V): F[Unit] = underlying.set(key, value).void
-      override def get(key: K): F[Option[V]]      = underlying.get(key)
-      override def delete(key: K): F[Unit]        = underlying.delete(key).void
-    }
 
   private object RepositoryAttribute {
     private def attribute(value: String) = Attribute("counter.type", value)
@@ -39,19 +38,20 @@ object Repository {
     val Miss: Attribute[String]   = attribute("miss")
   }
 
-  def observed[F[_] : Monad : Parallel : Meter, K, V](name: String)(
-      mapRef: MapRef[F, K, Option[V]]
-  ): F[Repository[F, K, V]] =
-    Meter[F].upDownCounter[Long](s"$name-repository-size").create.map { counter =>
+  def ofScalaConcurrentTrieMap[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
+    for {
+      trieMap <- Sync[F].delay(TrieMap.empty[K, V])
+      counter <- Meter[F].upDownCounter[Long](s"$name-repository-size").create
+    } yield {
       new Repository[F, K, V] {
-        private val underlying = RepositoryImpl(mapRef)
+        private val underlying = TrieMapRepository(trieMap)
 
         override def set(key: K, value: V): F[Unit] =
           underlying
             .set(key, value)
             .flatMap {
-              case Some(_) => counter.inc(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Set)
-              case None    => Monad[F].unit
+              case Some(_) => counter.inc(RepositoryAttribute.Set)
+              case None    => counter.inc(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Set)
             }
 
         override def get(key: K): F[Option[V]] =
@@ -66,18 +66,12 @@ object Repository {
           underlying
             .delete(key)
             .flatMap {
-              case Some(_) => Monad[F].unit
-              case None    => counter.dec(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Delete)
+              case Some(_) => counter.dec(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Delete)
+              case None    => Monad[F].unit
             }
+
+        override def getAll: F[Map[K, V]] = underlying.getAll
+        override def size: F[Int]         = underlying.size
       }
     }
-
-  def ofScalaConcurrentTrieMap[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
-    MapRef.ofScalaConcurrentTrieMap[F, K, V].flatMap(observed(name))
-
-  def ofConcurrentHashMap[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
-    MapRef.ofConcurrentHashMap[F, K, V]().flatMap(observed(name))
-
-  def ofShardedImmutableMap[F[_] : Async : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
-    MapRef.ofShardedImmutableMap[F, K, V](Runtime.getRuntime.availableProcessors()).flatMap(observed(name))
 }

@@ -71,9 +71,6 @@ final class SchedulerSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, LoneElem
 
   private def withRunningScheduler(
       test: StubScheduler[IO] => IO[Assertion]
-  ): IO[Assertion] =
-    StubScheduler[IO].use { stubScheduler =>
-      stubScheduler.runStreamInBackground.surround(test(stubScheduler))
-    }
+  ): IO[Assertion] = StubScheduler.resource[IO].use(test)
 
 }

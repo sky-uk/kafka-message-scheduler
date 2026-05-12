@@ -50,8 +50,8 @@ object Repository {
           underlying
             .set(key, value)
             .flatMap {
-              case Some(_) => counter.inc(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Set)
-              case None    => Monad[F].unit
+              case Some(_) => counter.inc(RepositoryAttribute.Set)
+              case None    => counter.inc(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Set)
             }
 
         override def get(key: K): F[Option[V]] =
@@ -66,8 +66,8 @@ object Repository {
           underlying
             .delete(key)
             .flatMap {
-              case Some(_) => Monad[F].unit
-              case None    => counter.dec(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Delete)
+              case Some(_) => counter.dec(RepositoryAttribute.Total) &> counter.inc(RepositoryAttribute.Delete)
+              case None    => Monad[F].unit
             }
       }
     }

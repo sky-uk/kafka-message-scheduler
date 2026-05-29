@@ -1,10 +1,10 @@
 package uk.sky.scheduler
 
+import cats.Parallel
 import cats.effect.std.{Queue, Supervisor}
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Deferred, Fiber}
 import cats.syntax.all.*
-import cats.{Monad, Parallel}
 import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
@@ -81,14 +81,18 @@ object ScheduleQueue {
       Stream.fromQueueUnterminated(queue)
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] = {
+  def observed[F[_] : Async : LoggerFactory](delegate: ScheduleQueue[F]): ScheduleQueue[F] = {
     val logger = LoggerFactory[F].getLogger
 
     new ScheduleQueue[F] {
       override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
         for {
-          result <- delegate.schedule(key, scheduleEvent)
-          _      <- logger.info(show"Scheduled [$key]")
+          result       <- delegate.schedule(key, scheduleEvent)
+          timeUntilDue <- timeUntilDue(scheduleEvent)
+          _            <-
+            logger.info(
+              show"Scheduling [$key] to ${scheduleEvent.schedule.topic} at ${scheduleEvent.schedule.time} ($timeUntilDue)"
+            )
         } yield result
 
       override def cancel(key: String): F[Unit] =
@@ -100,8 +104,23 @@ object ScheduleQueue {
       override def schedules: Stream[F, ScheduleEvent] =
         delegate.schedules.evalTapChunk { scheduleEvent =>
           logger.info(
-            show"Scheduled [${scheduleEvent.metadata.id}] to ${scheduleEvent.schedule.topic} due at ${scheduleEvent.schedule.time}"
+            show"Scheduled [${scheduleEvent.metadata.id}] to ${scheduleEvent.schedule.topic} as it is due at ${scheduleEvent.schedule.time}"
           )
+        }
+
+      /** Human-readable time of when the schedule is due.
+        */
+      private def timeUntilDue(scheduleEvent: ScheduleEvent): F[String] =
+        for {
+          now <- Async[F].epochMilli
+        } yield {
+          val time    = Math.max(0, scheduleEvent.schedule.time - now)
+          val seconds = time / 1000
+          val minutes = seconds / 60
+          val hours   = minutes / 60
+          val days    = hours / 24
+
+          s"${days}d, ${hours % 24}h, ${minutes % 60}m, ${seconds % 60}s"
         }
     }
   }

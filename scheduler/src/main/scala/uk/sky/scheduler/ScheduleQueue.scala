@@ -100,7 +100,7 @@ object ScheduleQueue {
     def processNext: F[Unit] =
       priorityQueue.peek.flatMap {
         case None =>
-          notifier.await
+          notifier.await >> notifier.refresh
 
         case Some((key, scheduleEvent)) =>
           for {

@@ -1,6 +1,7 @@
 package uk.sky.scheduler
 
 import cats.effect.std.Queue
+import cats.effect.testkit.TestControl
 import cats.effect.{Clock, Deferred, IO}
 import cats.syntax.all.*
 import monocle.syntax.all.*
@@ -174,7 +175,32 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues,
           } yield size shouldBe 0
       }
     }
+
+    "signaled with an empty queue" should {
+      "park the scheduler instead of busy-spinning" in {
+        val signalSchedulerWithEmptyQueue =
+          for {
+            repository    <- Repository.ofScalaConcurrentTrieMap[IO, String, ScheduleEvent]("test")
+            allowEnqueue  <- Deferred[IO, Unit]
+            priorityQueue <- PriorityScheduleQueue[IO]
+            outputQueue   <- Queue.unbounded[IO, ScheduleEvent]
+            notifier      <- Notifier[IO]
+            _             <- allowEnqueue.complete(())
+            _             <- ScheduleQueue
+                               .schedulerFiber(allowEnqueue, repository, priorityQueue, outputQueue, notifier)
+                               .start
+            _             <- notifier.signal
+          } yield ()
+
+        TestControl.execute(signalSchedulerWithEmptyQueue).flatMap { control =>
+          runUntilSchedulerIsWaitingForWork(control).testTimeout().assertNoException
+        }
+      }
+    }
   }
+
+  private def runUntilSchedulerIsWaitingForWork(control: TestControl[Unit]): IO[Unit] =
+    control.tickOne.ifM(runUntilSchedulerIsWaitingForWork(control), IO.unit)
 
   private def scheduleEarlierThanPrevious(
       scheduleQueue: ScheduleQueue[IO],

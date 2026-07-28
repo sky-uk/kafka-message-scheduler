@@ -1,5 +1,7 @@
 package uk.sky.scheduler
 
+import java.time.Instant
+
 import cats.effect.std.Queue
 import cats.effect.testkit.TestControl
 import cats.effect.{Clock, Deferred, IO}
@@ -161,7 +163,7 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues,
     }
 
     "under concurrent load" should {
-      "emit a due schedule even when earlier schedules are concurrently queued" in withSchedulerFiber {
+      "emit a due schedule even when earlier schedules are concurrently queued" in withRealSchedulerFiber {
         case TestContext(repository, allowEnqueue, _, outputQueue, scheduleQueue, _) =>
           val indices = (0 until 2000).toList
           for {
@@ -199,6 +201,26 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues,
     }
   }
 
+  final case class TestContext(
+      repository: Repository[IO, String, ScheduleEvent],
+      allowEnqueue: Deferred[IO, Unit],
+      priorityQueue: PriorityScheduleQueue[IO],
+      outputQueue: Queue[IO, ScheduleEvent],
+      scheduleQueue: ScheduleQueue[IO],
+      scheduleEvent: ScheduleEvent
+  )
+
+  private def withContext(test: TestContext => IO[Assertion])(using Meter[IO]): IO[Assertion] =
+    TestControl.executeEmbed {
+      buildContext(_.plusSeconds(10)).flatMap((testContext, _) => test(testContext))
+    }
+
+  private def withSchedulerFiber(test: TestContext => IO[Assertion])(using Meter[IO]): IO[Assertion] =
+    TestControl.executeEmbed(withSchedulerFiberRunning(test))
+
+  private def withRealSchedulerFiber(test: TestContext => IO[Assertion])(using Meter[IO]): IO[Assertion] =
+    withSchedulerFiberRunning(test)
+
   private def runUntilSchedulerIsWaitingForWork(control: TestControl[Unit]): IO[Unit] =
     control.tickOne.ifM(runUntilSchedulerIsWaitingForWork(control), IO.unit)
 
@@ -210,54 +232,35 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues,
   ): IO[Unit] =
     generateSchedule[IO](relativeToMillis - 1000L - order.toLong).flatMap(scheduleQueue.schedule(key, _))
 
-  final case class TestContext(
-      repository: Repository[IO, String, ScheduleEvent],
-      allowEnqueue: Deferred[IO, Unit],
-      priorityQueue: PriorityScheduleQueue[IO],
-      outputQueue: Queue[IO, ScheduleEvent],
-      scheduleQueue: ScheduleQueue[IO],
-      scheduleEvent: ScheduleEvent
-  )
+  private def withSchedulerFiberRunning(test: TestContext => IO[Assertion])(using Meter[IO]): IO[Assertion] =
+    buildContext(_.plusMillis(100)).flatMap { (testContext, notifier) =>
+      ScheduleQueue
+        .schedulerFiber(
+          testContext.allowEnqueue,
+          testContext.repository,
+          testContext.priorityQueue,
+          testContext.outputQueue,
+          notifier
+        )
+        .background
+        .surround(test(testContext))
+    }
 
-  private def withContext(test: TestContext => IO[Assertion])(using Meter[IO]): IO[Assertion] =
+  private def buildContext(scheduleDelay: Instant => Instant)(using Meter[IO]): IO[(TestContext, Notifier[IO])] =
     for {
       repository    <- Repository.ofScalaConcurrentTrieMap[IO, String, ScheduleEvent]("test")
       allowEnqueue  <- Deferred[IO, Unit]
       priorityQueue <- PriorityScheduleQueue[IO]
       outputQueue   <- Queue.unbounded[IO, ScheduleEvent]
       notifier      <- Notifier[IO]
-      scheduleEvent <- generateSchedule[IO](_.plusSeconds(10))
-      testContext    = TestContext(
-                         repository = repository,
-                         allowEnqueue = allowEnqueue,
-                         priorityQueue = priorityQueue,
-                         outputQueue = outputQueue,
-                         scheduleQueue = ScheduleQueue(allowEnqueue, repository, priorityQueue, outputQueue, notifier),
-                         scheduleEvent = scheduleEvent
-                       )
-      assertion     <- test(testContext)
-    } yield assertion
-
-  private def withSchedulerFiber(test: TestContext => IO[Assertion])(using Meter[IO]): IO[Assertion] =
-    for {
-      repository    <- Repository.ofScalaConcurrentTrieMap[IO, String, ScheduleEvent]("test")
-      allowEnqueue  <- Deferred[IO, Unit]
-      priorityQueue <- PriorityScheduleQueue[IO]
-      outputQueue   <- Queue.unbounded[IO, ScheduleEvent]
-      notifier      <- Notifier[IO]
-      scheduleEvent <- generateSchedule[IO](_.plusMillis(100)) // Short delay for fast tests
-      testContext    = TestContext(
-                         repository = repository,
-                         allowEnqueue = allowEnqueue,
-                         priorityQueue = priorityQueue,
-                         outputQueue = outputQueue,
-                         scheduleQueue = ScheduleQueue(allowEnqueue, repository, priorityQueue, outputQueue, notifier),
-                         scheduleEvent = scheduleEvent
-                       )
-      assertion     <- ScheduleQueue
-                         .schedulerFiber(allowEnqueue, repository, priorityQueue, outputQueue, notifier)
-                         .background
-                         .surround(test(testContext))
-    } yield assertion
+      scheduleEvent <- generateSchedule[IO](scheduleDelay)
+    } yield TestContext(
+      repository = repository,
+      allowEnqueue = allowEnqueue,
+      priorityQueue = priorityQueue,
+      outputQueue = outputQueue,
+      scheduleQueue = ScheduleQueue(allowEnqueue, repository, priorityQueue, outputQueue, notifier),
+      scheduleEvent = scheduleEvent
+    ) -> notifier
 
 }

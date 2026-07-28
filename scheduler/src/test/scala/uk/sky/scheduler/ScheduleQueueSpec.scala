@@ -2,6 +2,7 @@ package uk.sky.scheduler
 
 import cats.effect.std.Queue
 import cats.effect.{Clock, Deferred, IO}
+import cats.syntax.all.*
 import monocle.syntax.all.*
 import org.scalatest.{Assertion, EitherValues, OptionValues}
 import org.typelevel.otel4s.metrics.Meter
@@ -157,7 +158,31 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues,
           }
       }
     }
+
+    "under concurrent load" should {
+      "emit a due schedule even when earlier schedules are concurrently queued" in withSchedulerFiber {
+        case TestContext(repository, allowEnqueue, _, outputQueue, scheduleQueue, _) =>
+          val indices = (0 until 2000).toList
+          for {
+            now  <- Clock[IO].epochMilli
+            _    <- allowEnqueue.complete(())
+            _    <- indices.traverse_ { i =>
+                      scheduleEarlierThanPrevious(scheduleQueue, key = s"key-$i", relativeToMillis = now, order = i)
+                    }
+            _    <- indices.traverse_(_ => outputQueue.take).testTimeout()
+            size <- repository.size
+          } yield size shouldBe 0
+      }
+    }
   }
+
+  private def scheduleEarlierThanPrevious(
+      scheduleQueue: ScheduleQueue[IO],
+      key: String,
+      relativeToMillis: Long,
+      order: Int
+  ): IO[Unit] =
+    generateSchedule[IO](relativeToMillis - 1000L - order.toLong).flatMap(scheduleQueue.schedule(key, _))
 
   final case class TestContext(
       repository: Repository[IO, String, ScheduleEvent],

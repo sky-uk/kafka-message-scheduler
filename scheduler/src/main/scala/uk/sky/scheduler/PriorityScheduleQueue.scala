@@ -13,7 +13,6 @@ import scala.collection.immutable.TreeMap
 trait PriorityScheduleQueue[F[_]] {
   def peek: F[Option[(String, ScheduleEvent)]]
   def enqueue(key: String, scheduleEvent: ScheduleEvent): F[Unit]
-  def dequeue: F[Option[(String, ScheduleEvent)]]
   def remove(key: String): F[Unit]
 }
 
@@ -56,20 +55,6 @@ object PriorityScheduleQueue {
             queue = stateWithoutOld.queue.updated((time, key), scheduleEvent),
             keyIndex = stateWithoutOld.keyIndex.updated(key, time)
           )
-        }
-
-      override def dequeue: F[Option[(String, ScheduleEvent)]] =
-        state.modify { state =>
-          state.queue.headOption match {
-            case Some(((time, key), event)) =>
-              val newState = State(
-                queue = state.queue.tail,
-                keyIndex = state.keyIndex - key
-              )
-              (newState, Some((key, event)))
-
-            case None => (state, None)
-          }
         }
 
       override def remove(key: String): F[Unit] =

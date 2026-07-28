@@ -124,17 +124,14 @@ object ScheduleQueue {
           for {
             _ <- outputQueue.offer(current)
             _ <- repository.delete(key)
-            _ <- priorityQueue.dequeue
+            _ <- priorityQueue.remove(key)
           } yield ()
 
         case Some(current) =>
-          for {
-            _ <- priorityQueue.dequeue
-            _ <- priorityQueue.enqueue(key, current)
-          } yield ()
+          priorityQueue.enqueue(key, current)
 
         case None =>
-          priorityQueue.dequeue.void
+          priorityQueue.remove(key)
       }
 
     def loop: F[Unit] =

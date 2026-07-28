@@ -31,9 +31,9 @@ object ScheduleQueue {
 
     override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
       for {
-        _ <- repository.set(key, scheduleEvent)
-        _ <- priorityQueue.enqueue(key, scheduleEvent)
-        _ <- notifier.signal
+        _           <- repository.set(key, scheduleEvent)
+        headChanged <- priorityQueue.enqueue(key, scheduleEvent)
+        _           <- notifier.signal.whenA(headChanged)
       } yield ()
 
     override def cancel(key: String): F[Unit] =
@@ -128,7 +128,7 @@ object ScheduleQueue {
           } yield ()
 
         case Some(current) =>
-          priorityQueue.enqueue(key, current)
+          priorityQueue.enqueue(key, current).void
 
         case None =>
           priorityQueue.remove(key)

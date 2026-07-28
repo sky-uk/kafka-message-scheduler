@@ -52,6 +52,33 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues,
       }
     }
 
+    "enqueuing onto the priority queue" should {
+      "report that the head changed when the enqueued schedule is the new earliest" in withContext {
+        case TestContext(_, _, priorityQueue, _, _, scheduleEvent) =>
+          val earlier = scheduleEvent.focus(_.schedule.time).modify(_ - 1000L)
+          for {
+            _           <- priorityQueue.enqueue("later", scheduleEvent)
+            headChanged <- priorityQueue.enqueue("earlier", earlier)
+          } yield headChanged shouldBe true
+      }
+
+      "report that the head did not change when the enqueued schedule is not the new earliest" in withContext {
+        case TestContext(_, _, priorityQueue, _, _, scheduleEvent) =>
+          val later = scheduleEvent.focus(_.schedule.time).modify(_ + 1000L)
+          for {
+            _           <- priorityQueue.enqueue("earlier", scheduleEvent)
+            headChanged <- priorityQueue.enqueue("later", later)
+          } yield headChanged shouldBe false
+      }
+
+      "report that the head changed when enqueuing onto an empty queue" in withContext {
+        case TestContext(_, _, priorityQueue, _, _, scheduleEvent) =>
+          for {
+            headChanged <- priorityQueue.enqueue("key", scheduleEvent)
+          } yield headChanged shouldBe true
+      }
+    }
+
     "scheduler fiber" should {
       "remove a ScheduleEvent from the Repository when it is due" in withSchedulerFiber {
         case TestContext(repository, allowEnqueue, _, outputQueue, scheduleQueue, scheduleEvent) =>

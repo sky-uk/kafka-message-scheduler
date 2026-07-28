@@ -12,7 +12,9 @@ import scala.collection.immutable.TreeMap
   */
 trait PriorityScheduleQueue[F[_]] {
   def peek: F[Option[(String, ScheduleEvent)]]
-  def enqueue(key: String, scheduleEvent: ScheduleEvent): F[Unit]
+
+  /** Enqueues a schedule, returning `true` if it became the new head (earliest) of the queue. */
+  def enqueue(key: String, scheduleEvent: ScheduleEvent): F[Boolean]
   def remove(key: String): F[Unit]
 }
 
@@ -47,14 +49,16 @@ object PriorityScheduleQueue {
         state.get
           .map(_.queue.headOption.map { case ((_, key), event) => key -> event })
 
-      override def enqueue(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
-        state.update { state =>
+      override def enqueue(key: String, scheduleEvent: ScheduleEvent): F[Boolean] =
+        state.modify { state =>
           val stateWithoutOld = state.removeKey(key)
           val time            = scheduleEvent.schedule.time
-          State(
+          val updated         = State(
             queue = stateWithoutOld.queue.updated((time, key), scheduleEvent),
             keyIndex = stateWithoutOld.keyIndex.updated(key, time)
           )
+          val isHead          = updated.queue.head._1 == (time, key)
+          updated -> isHead
         }
 
       override def remove(key: String): F[Unit] =

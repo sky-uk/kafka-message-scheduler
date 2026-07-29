@@ -15,7 +15,7 @@ modules:
       - /it
       - /project
 
-defaultTaskExecution: './sbt ${module}-${phase}'
+defaultTaskExecution: 'sbt ${module}-${phase}'
 
 defaultNodes:
   prBuild: l-asdf

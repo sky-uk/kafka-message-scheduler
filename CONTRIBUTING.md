@@ -17,6 +17,19 @@ changes need some adjustment before they are ready for submission.
 
 The software is written in [Scala](https://scala-lang.org/) and is built with [SBT](http://www.scala-sbt.org/).
 
+### Toolchain
+
+We manage tool versions with [asdf](https://asdf-vm.com/), which reads the Java and SBT versions from
+`.tool-versions`. Install asdf first (see its [getting started guide](https://asdf-vm.com/guide/getting-started.html)).
+
+Add the `java` and `sbt` plugins, then install the pinned versions:
+
+```sh
+asdf plugin add java
+asdf plugin add sbt
+asdf install
+```
+
 ## Performing a release (for project maintainers)
 
 1. Create a new tag following [semver.org](https://semver.org/).

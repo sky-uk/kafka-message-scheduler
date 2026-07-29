@@ -2,7 +2,6 @@ package uk.sky.scheduler
 
 import cats.Parallel
 import cats.effect.*
-import cats.effect.std.Supervisor
 import cats.effect.syntax.all.*
 import cats.syntax.all.*
 import fs2.Stream
@@ -10,7 +9,6 @@ import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.config.Config
 import uk.sky.scheduler.core.ResourceReader
-import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.message.Message
 import uk.sky.scheduler.message.Metadata.*
 import uk.sky.scheduler.syntax.all.*
@@ -37,9 +35,7 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter](
-      supervisor: Supervisor[F]
-  ): ResourceReader[F, Config, Scheduler[F, Unit]] =
+  def live[F[_] : Async : Parallel : LoggerFactory : Meter]: ResourceReader[F, Config, Scheduler[F, Unit]] =
     for {
       schedulePublisher <- SchedulePublisher.live[F].lift.mapF(_.toResource)
       allowEnqueue      <- ResourceReader.liftF(Deferred[F, Unit]).mapF(_.toResource)

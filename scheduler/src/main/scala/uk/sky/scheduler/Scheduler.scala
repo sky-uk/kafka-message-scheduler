@@ -1,14 +1,14 @@
 package uk.sky.scheduler
 
 import cats.Parallel
-import cats.data.ReaderT
 import cats.effect.*
 import cats.effect.std.Supervisor
-import cats.syntax.all.*
+import cats.effect.syntax.all.*
 import fs2.Stream
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.config.Config
+import uk.sky.scheduler.core.ResourceReader
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.message.Message
 import uk.sky.scheduler.message.Metadata.*
@@ -34,16 +34,11 @@ class Scheduler[F[_] : Concurrent, O](
 object Scheduler {
   def live[F[_] : Async : Parallel : LoggerFactory : Meter](
       supervisor: Supervisor[F]
-  ): ReaderT[F, Config, Scheduler[F, Unit]] =
+  ): ResourceReader[F, Config, Scheduler[F, Unit]] =
     for {
-      schedulePublisher <- SchedulePublisher.live[F].lift
-      scheduler         <- ReaderT[F, Config, Scheduler[F, Unit]] { conf =>
-                             for {
-                               allowEnqueue  <- Deferred[F, Unit]
-                               scheduleQueue <- ScheduleQueue.live(allowEnqueue, supervisor)
-                               subscriber    <- EventSubscriber.live[F](conf, allowEnqueue)
-                             } yield new Scheduler(subscriber, scheduleQueue, schedulePublisher)
-                           }
-
-    } yield scheduler
+      schedulePublisher <- SchedulePublisher.live[F].lift.mapF(_.toResource)
+      allowEnqueue      <- ResourceReader.liftF(Deferred[F, Unit]).mapF(_.toResource)
+      scheduleQueue     <- ResourceReader.liftF(ScheduleQueue.live(allowEnqueue))
+      subscriber        <- ResourceReader(EventSubscriber.live[F](_, allowEnqueue)).mapF(_.toResource)
+    } yield new Scheduler(subscriber, scheduleQueue, schedulePublisher)
 }

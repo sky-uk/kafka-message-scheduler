@@ -1,22 +1,24 @@
 package uk.sky.scheduler.stubs
 
-import cats.effect.std.{MapRef, Queue, Supervisor}
+import cats.Parallel
+import cats.effect.std.Queue
 import cats.effect.syntax.all.*
 import cats.effect.{Async, Deferred, Resource}
 import cats.syntax.all.*
 import fs2.Stream
-import uk.sky.scheduler.ScheduleQueue.CancelableSchedule
+import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.domain.ScheduleEvent
-import uk.sky.scheduler.{Repository, ScheduleQueue}
+import uk.sky.scheduler.{Notifier, PriorityScheduleQueue, Repository, ScheduleQueue}
 
 final class StubScheduleQueue[F[_] : Async](
     events: Queue[F, TestEvent],
     allowEnqueue: Deferred[F, Unit],
-    repo: Repository[F, String, CancelableSchedule[F]],
-    scheduleQueue: Queue[F, ScheduleEvent],
-    supervisor: Supervisor[F]
+    repo: Repository[F, String, ScheduleEvent],
+    priorityQueue: PriorityScheduleQueue[F],
+    outputQueue: Queue[F, ScheduleEvent],
+    notifier: Notifier[F]
 ) extends ScheduleQueue[F] {
-  private val impl = ScheduleQueue(allowEnqueue, repo, scheduleQueue, supervisor)
+  private val impl = ScheduleQueue(allowEnqueue, repo, priorityQueue, outputQueue, notifier)
 
   override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
     impl.schedule(key, scheduleEvent) *> events.offer(TestEvent.Scheduled(scheduleEvent))
@@ -29,16 +31,15 @@ final class StubScheduleQueue[F[_] : Async](
 }
 
 object StubScheduleQueue {
-  def apply[F[_] : Async](
+  def apply[F[_] : Async : Parallel](
       events: Queue[F, TestEvent],
       allowEnqueue: Deferred[F, Unit]
-  ): Resource[F, StubScheduleQueue[F]] =
+  )(using Meter[F]): Resource[F, StubScheduleQueue[F]] =
     for {
-      repo          <- MapRef
-                         .ofScalaConcurrentTrieMap[F, String, CancelableSchedule[F]]
-                         .map(Repository[F, String, CancelableSchedule[F]](_))
-                         .toResource
-      scheduleQueue <- Queue.unbounded[F, ScheduleEvent].toResource
-      supervisor    <- Supervisor[F]
-    } yield new StubScheduleQueue(events, allowEnqueue, repo, scheduleQueue, supervisor)
+      repo          <- Repository.ofScalaConcurrentTrieMap[F, String, ScheduleEvent]("test").toResource
+      priorityQueue <- PriorityScheduleQueue[F].toResource
+      outputQueue   <- Queue.unbounded[F, ScheduleEvent].toResource
+      notifier      <- Notifier[F].toResource
+      _             <- ScheduleQueue.schedulerFiber(allowEnqueue, repo, priorityQueue, outputQueue, notifier).background
+    } yield new StubScheduleQueue(events, allowEnqueue, repo, priorityQueue, outputQueue, notifier)
 }

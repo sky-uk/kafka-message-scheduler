@@ -3,21 +3,19 @@ package uk.sky.scheduler.kafka.json
 import java.nio.charset.StandardCharsets
 
 import cats.effect.IO
-import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.syntax.all.*
 import fs2.kafka.Headers
 import io.circe.generic.semiauto
 import io.circe.syntax.*
 import io.circe.{Codec, Encoder, Json}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{EitherValues, OptionValues}
+import uk.sky.scheduler.AsyncSpecBase
 import uk.sky.scheduler.circe.given
 import uk.sky.scheduler.converters.base64.*
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.util.ScheduleMatchers
 
-final class JsonSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues, ScheduleMatchers {
+final class JsonSerDesSpec extends AsyncSpecBase, OptionValues, EitherValues, ScheduleMatchers {
 
   val schedule = JsonSchedule(
     time = Long.MinValue,

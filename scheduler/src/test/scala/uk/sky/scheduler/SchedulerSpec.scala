@@ -1,17 +1,15 @@
 package uk.sky.scheduler
 
-import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.{Clock, IO}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{Assertion, LoneElement}
+import org.typelevel.otel4s.metrics.Meter
 import uk.sky.scheduler.domain.ScheduleEvent
 import uk.sky.scheduler.stubs.StubScheduler
 import uk.sky.scheduler.syntax.all.*
 import uk.sky.scheduler.util.Generator.*
 import uk.sky.scheduler.util.testSyntax.*
 
-final class SchedulerSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, LoneElement {
+final class SchedulerSpec extends AsyncSpecBase, LoneElement {
 
   "Scheduler" should {
     "add a scheduled event to the queue" in withRunningScheduler { scheduler =>
@@ -71,7 +69,7 @@ final class SchedulerSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, LoneElem
 
   private def withRunningScheduler(
       test: StubScheduler[IO] => IO[Assertion]
-  ): IO[Assertion] =
+  )(using Meter[IO]): IO[Assertion] =
     StubScheduler[IO].use { stubScheduler =>
       stubScheduler.runStreamInBackground.surround(test(stubScheduler))
     }

@@ -2,20 +2,18 @@ package uk.sky.scheduler.kafka.avro
 
 import java.nio.charset.StandardCharsets
 
-import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.{IO, MonadCancelThrow}
 import cats.syntax.all.*
 import fs2.kafka.Headers
 import org.scalatest.exceptions.TestFailedException
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.{EitherValues, OptionValues}
+import uk.sky.scheduler.AsyncSpecBase
 import uk.sky.scheduler.error.ScheduleError
 import uk.sky.scheduler.util.ScheduleMatchers
 import vulcan.generic.*
 import vulcan.{AvroError, Codec}
 
-final class AvroSerDesSpec extends AsyncWordSpec, AsyncIOSpec, Matchers, OptionValues, EitherValues, ScheduleMatchers {
+final class AvroSerDesSpec extends AsyncSpecBase, OptionValues, EitherValues, ScheduleMatchers {
 
   private val scheduleWithHeaders = AvroSchedule(
     time = Long.MinValue,

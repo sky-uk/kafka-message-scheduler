@@ -52,7 +52,7 @@ val schema = inputKey[Unit]("Generate the Avro schema file for the Schedule sche
 lazy val avro = (project in file("avro"))
   .settings(scala3Settings)
   .settings(libraryDependencies ++= Dependencies.avro)
-  .settings(schema := (Compile / run).toTask("").value)
+  .settings(schema := (Compile / run).toTask(" --pretty-print").value)
   .settings(buildInfoSettings("uk.sky"))
   .dependsOn(scheduler)
 

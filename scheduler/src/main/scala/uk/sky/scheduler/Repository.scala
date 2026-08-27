@@ -38,7 +38,7 @@ object Repository {
     val Miss: Attribute[String]   = attribute("miss")
   }
 
-  def ofScalaConcurrentTrieMap[F[_] : Sync : Parallel : Meter, K, V](name: String): F[Repository[F, K, V]] =
+  def ofScalaConcurrentTrieMap[F[_] : {Sync, Parallel, Meter}, K, V](name: String): F[Repository[F, K, V]] =
     for {
       trieMap <- Sync[F].delay(TrieMap.empty[K, V])
       counter <- Meter[F].upDownCounter[Long](s"$name-repository-size").create

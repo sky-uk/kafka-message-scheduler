@@ -1,16 +1,21 @@
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <if condition='isDefined("KMS_LOGGING_LOGSTASH")'>
-            <then>
+    <condition class="ch.qos.logback.core.boolex.IsPropertyDefinedCondition">
+        <key>KMS_LOGGING_LOGSTASH</key>
+    </condition>
+    <if>
+        <then>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
                 <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-            </then>
-            <else>
+            </appender>
+        </then>
+        <else>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
                 <encoder>
                     <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
                 </encoder>
-            </else>
-        </if>
-    </appender>
+            </appender>
+        </else>
+    </if>
 
     <logger name="com.sky" level="${KMS_LOGGING_LEVEL:-INFO}" additivity="false">
         <appender-ref ref="STDOUT" />

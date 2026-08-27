@@ -286,7 +286,7 @@ final class ScheduleQueueSpec extends AsyncSpecBase, OptionValues, EitherValues,
       allowEnqueue = allowEnqueue,
       priorityQueue = priorityQueue,
       outputQueue = outputQueue,
-      scheduleQueue = ScheduleQueue(allowEnqueue, repository, priorityQueue, outputQueue, notifier),
+      scheduleQueue = ScheduleQueue(repository, priorityQueue, outputQueue, notifier),
       scheduleEvent = scheduleEvent
     ) -> notifier
 

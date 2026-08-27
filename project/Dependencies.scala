@@ -4,11 +4,11 @@ object Dependencies {
 
   object Cats {
     private val version           = "2.13.0"
-    private val catsEffectVersion = "3.6.1"
-    private val log4catsVersion   = "2.7.0"
+    private val catsEffectVersion = "3.7.1"
+    private val log4catsVersion   = "2.8.0"
 
     lazy val effectTestKit          = "org.typelevel"    %% "cats-effect-testkit"           % catsEffectVersion % Test
-    lazy val effectTesting          = "org.typelevel"    %% "cats-effect-testing-scalatest" % "1.6.0"           % Test
+    lazy val effectTesting          = "org.typelevel"    %% "cats-effect-testing-scalatest" % "1.8.0"           % Test
     lazy val effectTestkitScalatest = "org.typelevel"    %% "cats-testkit-scalatest"        % "2.1.5"           % Test
     lazy val caseInsensitive        = "org.typelevel"    %% "case-insensitive"              % "1.5.0"
     lazy val caseInsensitiveTesting = "org.typelevel"    %% "case-insensitive-testing"      % "1.5.0"           % Test
@@ -21,15 +21,15 @@ object Dependencies {
   }
 
   object Decline {
-    private lazy val version = "2.5.0"
+    private lazy val version = "2.6.2"
 
     lazy val core   = "com.monovore" %% "decline"        % version
     lazy val effect = "com.monovore" %% "decline-effect" % version
   }
 
   object Fs2 {
-    private lazy val version      = "3.11.0"
-    private lazy val kafkaVersion = "3.6.0"
+    private lazy val version      = "3.13.0"
+    private lazy val kafkaVersion = "3.9.1"
 
     lazy val core  = "co.fs2"          %% "fs2-core"  % version
     lazy val io    = "co.fs2"          %% "fs2-io"    % version
@@ -41,11 +41,11 @@ object Dependencies {
   }
 
   object Logback {
-    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.5.18" % Runtime
+    lazy val classic = "ch.qos.logback" % "logback-classic" % "1.6.3" % Runtime
   }
 
   object Logstash {
-    lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1" % Runtime
+    lazy val logbackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0" % Runtime
   }
 
   object Monocle {
@@ -53,15 +53,15 @@ object Dependencies {
   }
 
   object PureConfig {
-    private val version = "0.17.8"
+    private val version = "0.17.10"
     val core            = "com.github.pureconfig" %% "pureconfig-core"           % version
     val catsEffect      = "com.github.pureconfig" %% "pureconfig-cats-effect"    % version
     val generic         = "com.github.pureconfig" %% "pureconfig-generic-scala3" % version
   }
 
   object OpenTelemetry {
-    private lazy val version      = "1.45.0"
-    private lazy val agentVersion = "2.11.0"
+    private lazy val version      = "1.65.0"
+    private lazy val agentVersion = "2.31.1"
 
     lazy val exporterOtlp       = "io.opentelemetry" % "opentelemetry-exporter-otlp"               % version           % Runtime
     lazy val exporterPrometheus = "io.opentelemetry" % "opentelemetry-exporter-prometheus"         % s"$version-alpha" % Runtime
@@ -71,31 +71,31 @@ object Dependencies {
   }
 
   object Otel4s {
-    private lazy val version = "0.11.2"
+    private lazy val version = "1.1.0"
 
     lazy val java    = "org.typelevel" %% "otel4s-oteljava"         % version
     lazy val testkit = "org.typelevel" %% "otel4s-oteljava-testkit" % version % Test
   }
 
   object Vulcan {
-    private lazy val version = "1.11.1"
+    private lazy val version = "1.13.0"
 
     val core    = "com.github.fd4s" %% "vulcan"         % version
     val generic = "com.github.fd4s" %% "vulcan-generic" % version
   }
 
   object Circe {
-    private lazy val version = "0.14.12"
+    private lazy val version = "0.14.16"
 
     lazy val generic = "io.circe" %% "circe-generic" % version
     lazy val parser  = "io.circe" %% "circe-parser"  % version
   }
 
-  val chimney     = "io.scalaland"  %% "chimney"                % "1.7.3"
+  val chimney     = "io.scalaland"  %% "chimney"                % "1.11.0"
   val topicLoader = "uk.sky"        %% "fs2-kafka-topic-loader" % "0.1.0"
-  val mouse       = "org.typelevel" %% "mouse"                  % "1.3.2"
+  val mouse       = "org.typelevel" %% "mouse"                  % "1.4.0"
 
-  val scalaTest = "org.scalatest" %% "scalatest" % "3.2.18" % Test
+  val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20" % Test
 
   val core: Seq[ModuleID] = Seq(
     Cats.caseInsensitive,

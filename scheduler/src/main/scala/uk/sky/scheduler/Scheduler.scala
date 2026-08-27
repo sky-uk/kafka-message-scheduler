@@ -35,7 +35,7 @@ class Scheduler[F[_] : Concurrent, O](
 }
 
 object Scheduler {
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter]: ResourceReader[F, Config, Scheduler[F, Unit]] =
+  def live[F[_] : {Async, Parallel, LoggerFactory, Meter}]: ResourceReader[F, Config, Scheduler[F, Unit]] =
     for {
       schedulePublisher <- SchedulePublisher.live[F].lift.mapF(_.toResource)
       allowEnqueue      <- ResourceReader.liftF(Deferred[F, Unit]).mapF(_.toResource)

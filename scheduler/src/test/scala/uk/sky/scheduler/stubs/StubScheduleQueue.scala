@@ -30,7 +30,7 @@ final class StubScheduleQueue[F[_] : Async](
 }
 
 object StubScheduleQueue {
-  def apply[F[_] : Async : Parallel](
+  def apply[F[_] : {Async, Parallel}](
       events: Queue[F, TestEvent],
       allowEnqueue: Deferred[F, Unit]
   )(using Meter[F]): Resource[F, StubScheduleQueue[F]] =

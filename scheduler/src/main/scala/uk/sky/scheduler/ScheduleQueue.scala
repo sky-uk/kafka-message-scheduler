@@ -46,7 +46,7 @@ object ScheduleQueue {
       Stream.fromQueueUnterminated(outputQueue)
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): F[ScheduleQueue[F]] =
+  def observed[F[_] : {Monad, LoggerFactory}](delegate: ScheduleQueue[F]): F[ScheduleQueue[F]] =
     for {
       logger <- LoggerFactory[F].create
     } yield new ScheduleQueue[F] {
@@ -70,7 +70,7 @@ object ScheduleQueue {
         }
     }
 
-  def resource[F[_] : Async : Parallel : LoggerFactory : Meter](
+  def resource[F[_] : {Async, Parallel, LoggerFactory, Meter}](
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, ScheduleQueue[F]] =
     for {
@@ -83,7 +83,7 @@ object ScheduleQueue {
       observed      <- Resource.eval(ScheduleQueue.observed(scheduleQueue))
     } yield observed
 
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter](
+  def live[F[_] : {Async, Parallel, LoggerFactory, Meter}](
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, ScheduleQueue[F]] =
     resource(allowEnqueue)

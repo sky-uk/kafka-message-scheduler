@@ -69,9 +69,6 @@ final class SchedulerSpec extends AsyncSpecBase, LoneElement {
 
   private def withRunningScheduler(
       test: StubScheduler[IO] => IO[Assertion]
-  )(using Meter[IO]): IO[Assertion] =
-    StubScheduler[IO].use { stubScheduler =>
-      stubScheduler.runStreamInBackground.surround(test(stubScheduler))
-    }
+  )(using Meter[IO]): IO[Assertion] = StubScheduler.resource[IO].use(test)
 
 }

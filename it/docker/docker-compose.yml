@@ -7,6 +7,7 @@ services:
     environment:
       OTEL_METRICS_EXPORTER: prometheus
       OTEL_EXPORTER_PROMETHEUS_PORT: 9401
+      OTEL_EXPORTER_PROMETHEUS_HOST: 0.0.0.0
       OTEL_SERVICE_NAME: kafka-message-scheduler
       OTEL_INSTRUMENTATION_GRPC_ENABLED: 'false'
       OTEL_TRACES_EXPORTER: 'none'

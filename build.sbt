@@ -11,7 +11,7 @@ ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 val scala3Settings = Seq(
-  scalaVersion             := "3.8.4",
+  scalaVersion             := "3.9.0",
   tpolecatScalacOptions ++= Set(
     ScalacOptions.other("-no-indent"),
     ScalacOptions.other("-old-syntax")

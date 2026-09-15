@@ -22,7 +22,6 @@ trait ScheduleQueue[F[_]] {
 object ScheduleQueue {
 
   def apply[F[_] : Async](
-      allowEnqueue: Deferred[F, Unit],
       repository: Repository[F, String, ScheduleEvent],
       priorityQueue: PriorityScheduleQueue[F],
       outputQueue: Queue[F, ScheduleEvent],
@@ -47,7 +46,7 @@ object ScheduleQueue {
       Stream.fromQueueUnterminated(outputQueue)
   }
 
-  def observed[F[_] : Monad : LoggerFactory](delegate: ScheduleQueue[F]): F[ScheduleQueue[F]] =
+  def observed[F[_] : {Monad, LoggerFactory}](delegate: ScheduleQueue[F]): F[ScheduleQueue[F]] =
     for {
       logger <- LoggerFactory[F].create
     } yield new ScheduleQueue[F] {
@@ -71,7 +70,7 @@ object ScheduleQueue {
         }
     }
 
-  def resource[F[_] : Async : Parallel : LoggerFactory : Meter](
+  def resource[F[_] : {Async, Parallel, LoggerFactory, Meter}](
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, ScheduleQueue[F]] =
     for {
@@ -79,12 +78,12 @@ object ScheduleQueue {
       priorityQueue <- Resource.eval(PriorityScheduleQueue[F])
       outputQueue   <- Resource.eval(Queue.unbounded[F, ScheduleEvent])
       notifier      <- Resource.eval(Notifier[F])
-      scheduleQueue  = ScheduleQueue(allowEnqueue, repo, priorityQueue, outputQueue, notifier)
+      scheduleQueue  = ScheduleQueue(repo, priorityQueue, outputQueue, notifier)
       _             <- schedulerFiber(allowEnqueue, repo, priorityQueue, outputQueue, notifier).background
       observed      <- Resource.eval(ScheduleQueue.observed(scheduleQueue))
     } yield observed
 
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter](
+  def live[F[_] : {Async, Parallel, LoggerFactory, Meter}](
       allowEnqueue: Deferred[F, Unit]
   ): Resource[F, ScheduleQueue[F]] =
     resource(allowEnqueue)

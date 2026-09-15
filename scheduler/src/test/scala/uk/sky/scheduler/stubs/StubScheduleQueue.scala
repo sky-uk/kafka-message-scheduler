@@ -12,13 +12,12 @@ import uk.sky.scheduler.{Notifier, PriorityScheduleQueue, Repository, ScheduleQu
 
 final class StubScheduleQueue[F[_] : Async](
     events: Queue[F, TestEvent],
-    allowEnqueue: Deferred[F, Unit],
     repo: Repository[F, String, ScheduleEvent],
     priorityQueue: PriorityScheduleQueue[F],
     outputQueue: Queue[F, ScheduleEvent],
     notifier: Notifier[F]
 ) extends ScheduleQueue[F] {
-  private val impl = ScheduleQueue(allowEnqueue, repo, priorityQueue, outputQueue, notifier)
+  private val impl = ScheduleQueue(repo, priorityQueue, outputQueue, notifier)
 
   override def schedule(key: String, scheduleEvent: ScheduleEvent): F[Unit] =
     impl.schedule(key, scheduleEvent) *> events.offer(TestEvent.Scheduled(scheduleEvent))
@@ -31,7 +30,7 @@ final class StubScheduleQueue[F[_] : Async](
 }
 
 object StubScheduleQueue {
-  def apply[F[_] : Async : Parallel](
+  def apply[F[_] : {Async, Parallel}](
       events: Queue[F, TestEvent],
       allowEnqueue: Deferred[F, Unit]
   )(using Meter[F]): Resource[F, StubScheduleQueue[F]] =
@@ -41,5 +40,5 @@ object StubScheduleQueue {
       outputQueue   <- Queue.unbounded[F, ScheduleEvent].toResource
       notifier      <- Notifier[F].toResource
       _             <- ScheduleQueue.schedulerFiber(allowEnqueue, repo, priorityQueue, outputQueue, notifier).background
-    } yield new StubScheduleQueue(events, allowEnqueue, repo, priorityQueue, outputQueue, notifier)
+    } yield new StubScheduleQueue(events, repo, priorityQueue, outputQueue, notifier)
 }

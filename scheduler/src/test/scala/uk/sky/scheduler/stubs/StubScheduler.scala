@@ -41,7 +41,7 @@ final class StubScheduler[F[_] : Async](
 }
 
 object StubScheduler {
-  def apply[F[_] : Async : Parallel : Meter]: Resource[F, StubScheduler[F]] =
+  def apply[F[_] : {Async, Parallel, Meter}]: Resource[F, StubScheduler[F]] =
     for {
       events         <- Queue.unbounded[F, TestEvent].toResource
       allowEnqueue   <- Deferred[F, Unit].flatTap(_.complete(())).toResource

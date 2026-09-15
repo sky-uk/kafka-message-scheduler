@@ -27,7 +27,7 @@ trait EventSubscriber[F[_]] {
 object EventSubscriber {
   private type Output = Either[ScheduleError, Option[ScheduleEvent]]
 
-  def kafka[F[_] : Async : LoggerFactory](
+  def kafka[F[_] : {Async, LoggerFactory}](
       config: Config,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] = {
@@ -39,7 +39,7 @@ object EventSubscriber {
         val scheduleWithoutHeadersDeserializer: Resource[
           F,
           ValueDeserializer[F, Either[ScheduleError, Option[AvroSchedule]]]
-        ] =
+        ]                                                                                                        =
           avroBinaryDeserializer[F, AvroScheduleWithoutHeaders].map(_.option.map(_.sequence.map(_.map(_.avroSchedule))))
 
         for {
@@ -99,7 +99,7 @@ object EventSubscriber {
     }
   }
 
-  def observed[F[_] : Monad : Parallel : LoggerFactory : Meter](delegate: EventSubscriber[F]): F[EventSubscriber[F]] = {
+  def observed[F[_] : {Monad, Parallel, LoggerFactory, Meter}](delegate: EventSubscriber[F]): F[EventSubscriber[F]] = {
     given Show[ScheduleError] = {
       case _: ScheduleError.InvalidAvroError    => "invalid-avro"
       case _: ScheduleError.NotJsonError        => "not-json"
@@ -151,7 +151,7 @@ object EventSubscriber {
     }
   }
 
-  def live[F[_] : Async : Parallel : LoggerFactory : Meter](
+  def live[F[_] : {Async, Parallel, LoggerFactory, Meter}](
       config: Config,
       loaded: Deferred[F, Unit]
   ): F[EventSubscriber[F]] =

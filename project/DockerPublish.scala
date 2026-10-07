@@ -14,7 +14,7 @@ object DockerPublish {
 
   private lazy val imageSettings = Seq(
     Docker / packageName := "kafka-message-scheduler",
-    dockerBaseImage      := "eclipse-temurin:21-jre-noble",
+    dockerBaseImage      := "eclipse-temurin:25-jre-noble",
     dockerRepository     := Some(registry),
     dockerLabels         := Map("maintainer" -> "Sky"),
     dockerUpdateLatest   := true,
